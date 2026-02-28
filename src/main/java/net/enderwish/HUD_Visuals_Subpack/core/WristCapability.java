@@ -4,7 +4,6 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 
 /**
- * Modern NeoForge 1.21 Data Attachment.
  * Tracks BPM, Energy, Watch State, and Limb Damage.
  */
 public class WristCapability {

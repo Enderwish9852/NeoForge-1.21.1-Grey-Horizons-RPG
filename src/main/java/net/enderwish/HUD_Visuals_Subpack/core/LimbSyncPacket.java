@@ -9,7 +9,6 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 /**
  * Packet sent from Server to Client to sync WristCapability data.
- * Manual StreamCodec implementation to bypass the 'composite' argument limit.
  */
 public record LimbSyncPacket(
         int bpm,
@@ -27,7 +26,6 @@ public record LimbSyncPacket(
 
     /**
      * MANUAL STREAM CODEC
-     * This writes and reads fields one-by-one, avoiding the "composite" method limit.
      */
     public static final StreamCodec<FriendlyByteBuf, LimbSyncPacket> STREAM_CODEC = StreamCodec.of(
             (buffer, packet) -> {
@@ -69,9 +67,6 @@ public record LimbSyncPacket(
      */
     public static void handle(final LimbSyncPacket payload, final IPayloadContext context) {
         context.enqueueWork(() -> {
-            // This is where you will update your SportsWatchHUD variables
-            // You can create a static class to hold these values for the overlay
-            // Example: ClientStats.update(payload);
         });
     }
 }

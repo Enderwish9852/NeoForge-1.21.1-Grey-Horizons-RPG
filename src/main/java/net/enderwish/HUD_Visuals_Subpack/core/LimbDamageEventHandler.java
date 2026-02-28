@@ -19,11 +19,10 @@ public class LimbDamageEventHandler {
             return;
         }
 
-        // 1. GET THE DATA DIRECTLY
-        // In 1.21.1, getData returns the object itself, not an Optional.
+        // GET THE DATA DIRECTLY
         WristCapability cap = player.getData(ModAttachments.WRIST_CAP);
 
-        // 2. LOGIC
+        // LOGIC
         float damageAmount = event.getNewDamage() * 0.1f; // Scale damage for limb health
         double hitY = RANDOM.nextDouble(); // Simulated hit height
 
@@ -41,7 +40,7 @@ public class LimbDamageEventHandler {
             else cap.damageRightLeg(damageAmount);
         }
 
-        // 3. SYNC THE DATA
+        // SYNC THE DATA
         // Calling setData marks the attachment as "dirty" so NeoForge
         // knows it needs to be synced to the client.
         player.setData(ModAttachments.WRIST_CAP, cap);

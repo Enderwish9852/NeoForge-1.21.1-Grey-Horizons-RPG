@@ -7,14 +7,9 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 /**
  * Handles the "Client-Side" setup for the HUD.
- * Package set to 'net.enderwish.HUD_Visuals_Subpack' to match your project tree.
  */
 public class ExampleModClient {
 
-    /**
-     * Registers the HUD layer.
-     * Note: SportsWatchHUD must be public to be accessed from here.
-     */
     public static void onRegisterGuiLayers(RegisterGuiLayersEvent event) {
         event.registerAbove(
                 VanillaGuiLayers.HOTBAR,

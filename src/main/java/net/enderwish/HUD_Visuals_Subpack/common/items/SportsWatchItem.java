@@ -11,7 +11,6 @@ import java.util.List;
 
 /**
  * The core item for the HUD Visuals subpack.
- * Displays "Epic" (Purple) and "key wearable" (Generic/White) on the same line.
  */
 public class SportsWatchItem extends Item {
 
@@ -22,25 +21,24 @@ public class SportsWatchItem extends Item {
 
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
-        // 1. Create "Epic " and set it to Purple
+        // Create "Epic " and set it to Purple
         MutableComponent epicPart = Component.translatable("item.gh_hud_visuals.sports_watch.epic")
                 .withStyle(ChatFormatting.DARK_PURPLE);
 
-        // 2. Create "key wearable" and explicitly set it to WHITE (Generic color)
-        // This prevents it from inheriting the purple color from the 'epicPart'
+        // Create "key wearable" and explicitly set it to WHITE (Generic color)
         MutableComponent wearablePart = Component.translatable("item.gh_hud_visuals.sports_watch.key_wearable")
                 .withStyle(ChatFormatting.GRAY); // Gray is the standard generic tooltip color
 
-        // 3. Combine them: Epic (Purple) + key wearable (Gray)
+        // Epic (Purple) + key wearable (Gray)
         tooltip.add(epicPart.append(wearablePart));
 
-        // Description: Standard gray text
+        // Standard gray text
         tooltip.add(Component.translatable("item.gh_hud_visuals.sports_watch.desc")
                 .withStyle(ChatFormatting.GRAY));
 
         tooltip.add(Component.empty());
 
-        // Hint: Aqua and Italic
+        // Aqua and Italic
         tooltip.add(Component.translatable("item.gh_hud_visuals.sports_watch.hint")
                 .withStyle(ChatFormatting.AQUA, ChatFormatting.ITALIC));
     }

@@ -14,7 +14,6 @@ import top.theillusivec4.curios.api.CuriosApi;
 
 /**
  * Handles the rendering logic for the Sports Watch HUD.
- * Fixed to apply color tinting correctly using RenderSystem.
  */
 public class SportsWatchHUD {
 
@@ -52,12 +51,11 @@ public class SportsWatchHUD {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
 
-        // 1. Render the main HUD background (reset color to white first)
+        // Render the main HUD background (reset color to white first)
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
         graphics.blit(HUD_TEXTURE, x, y, 0, 0, 100, 70, 100, 70);
 
-        // 2. Render Limbs with Color Tinting
-        // We must call RenderSystem.setShaderColor BEFORE each blit to tint that specific part
+        // Render Limbs with Color Tinting
 
         renderLimb(graphics, x + 44, y + 8, 0, 0, 12, 12, cap.getHeadHealth());       // Head
         renderLimb(graphics, x + 40, y + 21, 12, 0, 20, 24, cap.getTorsoHealth());    // Torso
@@ -69,7 +67,7 @@ public class SportsWatchHUD {
         // Reset color to white for text and other UI elements
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
 
-        // 3. Draw Numerical Health Text
+        // Draw Numerical Health Text
         String healthText = String.format("HP: %.0f/%.0f", player.getHealth(), player.getMaxHealth());
         graphics.drawString(mc.font, healthText, x + 25, y + 2, 0xFFFFFF, true);
 

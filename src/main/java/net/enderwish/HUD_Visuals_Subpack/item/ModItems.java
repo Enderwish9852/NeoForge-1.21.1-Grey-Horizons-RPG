@@ -9,7 +9,6 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 
 /**
  * Updated to use the custom SportsWatchItem class.
- * This ensures the purple name and legendary tooltips work correctly.
  */
 public class ModItems {
     public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(HUDVisualsSubpack.MOD_ID);
