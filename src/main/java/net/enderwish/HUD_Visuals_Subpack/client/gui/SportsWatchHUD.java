@@ -13,85 +13,77 @@ import net.minecraft.world.entity.player.Player;
 import top.theillusivec4.curios.api.CuriosApi;
 
 /**
- * Handles the rendering logic for the Sports Watch HUD.
+ * SPORTS WATCH HUD LOGIC
+ * Positioned at the bottom right of the screen.
  */
 public class SportsWatchHUD {
 
     private static final ResourceLocation HUD_TEXTURE = ResourceLocation.fromNamespaceAndPath(HUDVisualsSubpack.MOD_ID, "textures/gui/sports_watch_hud.png");
     private static final ResourceLocation LIMBS_TEXTURE = ResourceLocation.fromNamespaceAndPath(HUDVisualsSubpack.MOD_ID, "textures/gui/limbs.png");
 
+    // HUD Dimensions for positioning logic
+    private static final int HUD_WIDTH = 100;
+    private static final int HUD_HEIGHT = 70;
+    private static final int MARGIN = 10;
+
     public static final LayeredDraw.Layer SPORTS_WATCH_ELEMENT = (guiGraphics, partialTick) -> {
         Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null || mc.options.hideGui) return;
 
-        if (mc.player == null || mc.level == null || mc.options.hideGui) {
-            return;
-        }
-
-        if (isWatchEquipped(mc.player)) {
-            drawWatchHUD(guiGraphics, mc);
+        if (CuriosApi.getCuriosHelper().findFirstCurio(mc.player, ModItems.SPORTS_WATCH.get()).isPresent()) {
+            renderPaperDoll(guiGraphics, mc);
         }
     };
 
-    private static boolean isWatchEquipped(Player player) {
-        return CuriosApi.getCuriosHelper().findFirstCurio(player, ModItems.SPORTS_WATCH.get()).isPresent();
-    }
-
-    private static void drawWatchHUD(GuiGraphics graphics, Minecraft mc) {
+    private static void renderPaperDoll(GuiGraphics graphics, Minecraft mc) {
         Player player = mc.player;
-        int screenHeight = mc.getWindow().getGuiScaledHeight();
-
-        // Position: Bottom Left
-        int x = 10;
-        int y = screenHeight - 80;
-
-        // Safety check for Capability data
         if (!player.hasData(ModAttachments.WRIST_CAP)) return;
+
         WristCapability cap = player.getData(ModAttachments.WRIST_CAP);
+
+        // DYNAMIC POSITIONING: Calculate bottom-right corner
+        int x = graphics.guiWidth() - HUD_WIDTH - MARGIN;
+        int y = graphics.guiHeight() - HUD_HEIGHT - MARGIN;
 
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
 
-        // Render the main HUD background (reset color to white first)
+        // 1. Draw Background
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-        graphics.blit(HUD_TEXTURE, x, y, 0, 0, 100, 70, 100, 70);
+        graphics.blit(HUD_TEXTURE, x, y, 0, 0, HUD_WIDTH, HUD_HEIGHT, 100, 70);
 
-        // Render Limbs with Color Tinting
+        // 2. Draw Limbs relative to the new X and Y
+        // Head
+        drawLimb(graphics, x + 44, y + 8, 0, 0, 12, 12, cap.getHeadHealth());
 
-        renderLimb(graphics, x + 44, y + 8, 0, 0, 12, 12, cap.getHeadHealth());       // Head
-        renderLimb(graphics, x + 40, y + 21, 12, 0, 20, 24, cap.getTorsoHealth());    // Torso
-        renderLimb(graphics, x + 28, y + 21, 32, 0, 11, 22, cap.getLeftArmHealth());  // Left Arm
-        renderLimb(graphics, x + 61, y + 21, 43, 0, 11, 22, cap.getRightArmHealth()); // Right Arm
-        renderLimb(graphics, x + 40, y + 46, 54, 0, 9, 20, cap.getLeftLegHealth());   // Left Leg
-        renderLimb(graphics, x + 51, y + 46, 63, 0, 9, 20, cap.getRightLegHealth());  // Right Leg
+        // Torso
+        drawLimb(graphics, x + 40, y + 21, 12, 0, 20, 24, cap.getTorsoHealth());
 
-        // Reset color to white for text and other UI elements
+        // Left Arm
+        drawLimb(graphics, x + 28, y + 21, 32, 0, 11, 22, cap.getLeftArmHealth());
+
+        // Right Arm
+        drawLimb(graphics, x + 61, y + 21, 43, 0, 11, 22, cap.getRightArmHealth());
+
+        // Left Leg
+        drawLimb(graphics, x + 40, y + 46, 54, 0, 9, 20, cap.getLeftLegHealth());
+
+        // Right Leg
+        drawLimb(graphics, x + 51, y + 46, 63, 0, 9, 20, cap.getRightLegHealth());
+
+        // 3. Cleanup
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-
-        // Draw Numerical Health Text
-        String healthText = String.format("HP: %.0f/%.0f", player.getHealth(), player.getMaxHealth());
-        graphics.drawString(mc.font, healthText, x + 25, y + 2, 0xFFFFFF, true);
-
         RenderSystem.disableBlend();
     }
 
-    private static void renderLimb(GuiGraphics graphics, int x, int y, int u, int v, int w, int h, float healthPct) {
-        float health = Math.max(0f, Math.min(1f, healthPct));
+    private static void drawLimb(GuiGraphics graphics, int x, int y, int u, int v, int w, int h, float health) {
+        float hClamped = Math.max(0f, Math.min(1f, health));
 
-        float r, g, b = 0.0f;
-        if (health > 0.5f) {
-            // Transition from Yellow (1,1,0) to Green (0,1,0)
-            r = (1f - health) * 2f;
-            g = 1.0f;
-        } else {
-            // Transition from Red (1,0,0) to Yellow (1,1,0)
-            r = 1.0f;
-            g = health * 2f;
-        }
+        float red = hClamped > 0.5f ? (1.0f - hClamped) * 2.0f : 1.0f;
+        float green = hClamped > 0.5f ? 1.0f : hClamped * 2.0f;
+        float blue = 0.0f;
 
-        // Apply the calculated color to the shader
-        RenderSystem.setShaderColor(r, g, b, 1.0F);
-
-        // Render the texture part
-        graphics.blit(LIMBS_TEXTURE, x, y, u, v, w, h, 128, 128);
+        RenderSystem.setShaderColor(red, green, blue, 1.0F);
+        graphics.blit(LIMBS_TEXTURE, x, y, (float)u, (float)v, w, h, 128, 128);
     }
 }
