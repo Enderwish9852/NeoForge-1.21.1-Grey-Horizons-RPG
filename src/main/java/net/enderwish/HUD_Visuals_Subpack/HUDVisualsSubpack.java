@@ -1,6 +1,7 @@
 package net.enderwish.HUD_Visuals_Subpack;
 
 import net.enderwish.HUD_Visuals_Subpack.client.gui.SportsWatchHUD;
+import net.enderwish.HUD_Visuals_Subpack.common.items.SportsWatchItem;
 import net.enderwish.HUD_Visuals_Subpack.core.LimbDamageEventHandler;
 import net.enderwish.HUD_Visuals_Subpack.core.ModAttachments;
 import net.enderwish.HUD_Visuals_Subpack.event.HealthRegenEvents;
@@ -27,15 +28,15 @@ import java.util.function.Supplier;
 public class HUDVisualsSubpack {
     public static final String MOD_ID = "gh_hud_visuals";
 
-    // --- RESTORED REGISTRIES ---
+    // Registries
     public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(MOD_ID);
     public static final DeferredRegister<CreativeModeTab> CREATIVE_TABS = DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MOD_ID);
 
-    // Register the Item
+    // Register the Sports Watch using the custom class
     public static final DeferredItem<Item> SPORTS_WATCH = ITEMS.register("sports_watch",
-            () -> new Item(new Item.Properties().stacksTo(1)));
+            () -> new SportsWatchItem(new Item.Properties()));
 
-    // Register the Creative Tab
+    // Creative Tab setup
     public static final Supplier<CreativeModeTab> SPORTS_TAB = CREATIVE_TABS.register("sports_tab",
             () -> CreativeModeTab.builder()
                     .title(Component.translatable("creativetab.sports_tab"))
@@ -46,18 +47,21 @@ public class HUDVisualsSubpack {
                     .build());
 
     public HUDVisualsSubpack(IEventBus modEventBus) {
-        // Register Item and Tab folders
+        // Registering registries to the bus
         ITEMS.register(modEventBus);
         CREATIVE_TABS.register(modEventBus);
 
-        // Register Attachments
+        // Capability registration
         ModAttachments.register(modEventBus);
 
+        // Network registration
         modEventBus.addListener(this::registerNetworking);
 
+        // Global Event Bus registrations
         NeoForge.EVENT_BUS.register(new HealthRegenEvents());
         NeoForge.EVENT_BUS.register(LimbDamageEventHandler.class);
 
+        // Client-side only registrations
         if (FMLEnvironment.dist.isClient()) {
             modEventBus.addListener(this::onRegisterGuiLayers);
         }
@@ -68,12 +72,14 @@ public class HUDVisualsSubpack {
     }
 
     private void onRegisterGuiLayers(RegisterGuiLayersEvent event) {
+        // Registers your custom Watch HUD above the hotbar
         event.registerAbove(
                 VanillaGuiLayers.HOTBAR,
                 ResourceLocation.fromNamespaceAndPath(MOD_ID, "sports_watch"),
-                SportsWatchHUD.SPORTS_WATCH_ELEMENT
+                (graphics, delta) -> SportsWatchHUD.SPORTS_WATCH_ELEMENT.render(graphics, delta)
         );
 
+        // Hide vanilla HUD elements to make room for the watch display
         event.replaceLayer(VanillaGuiLayers.PLAYER_HEALTH, (gui, delta) -> {});
         event.replaceLayer(VanillaGuiLayers.FOOD_LEVEL, (gui, delta) -> {});
         event.replaceLayer(VanillaGuiLayers.ARMOR_LEVEL, (gui, delta) -> {});
