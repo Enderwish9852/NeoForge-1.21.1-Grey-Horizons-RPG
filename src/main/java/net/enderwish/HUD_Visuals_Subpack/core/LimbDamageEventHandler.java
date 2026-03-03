@@ -1,17 +1,19 @@
 package net.enderwish.HUD_Visuals_Subpack.core;
 
+import net.enderwish.HUD_Visuals_Subpack.HUDVisualsSubpack;
+import net.enderwish.HUD_Visuals_Subpack.network.LimbSyncPacket;
+import net.enderwish.HUD_Visuals_Subpack.network.ModMessages;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageTypes;
-import net.minecraft.world.entity.player.Player;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
-import net.enderwish.HUD_Visuals_Subpack.HUDVisualsSubpack;
 
 import java.util.Random;
 
 /**
- * Merged handler that uses your ModAttachments and scaling logic
- * while adding specific logic for falls and explosions.
+ * Handles the logic for distributing incoming damage to specific limbs.
+ * Updated to include Left and Right Foot support.
  */
 @EventBusSubscriber(modid = HUDVisualsSubpack.MOD_ID)
 public class LimbDamageEventHandler {
@@ -19,51 +21,62 @@ public class LimbDamageEventHandler {
 
     @SubscribeEvent
     public static void onPlayerDamage(LivingDamageEvent.Post event) {
-        // Only process for players on the server side
-        if (!(event.getEntity() instanceof Player player) || player.level().isClientSide) {
-            return;
-        }
+        // Only process for players on the server side to ensure data integrity
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
 
-        // GET THE DATA DIRECTLY
         WristCapability cap = player.getData(ModAttachments.WRIST_CAP);
 
-        // CONFIGURATION
-        float amount = event.getNewDamage() * 0.1f; // Your original 0.1f scale
+        // Scale damage: 0.05f means it takes roughly 20 full hearts of damage to break a limb
+        float amount = event.getNewDamage() * 0.05f;
 
-        // DETERMINISTIC LOGIC (Specific sources)
+        // 1. DETERMINISTIC LOGIC (Environmental Damage)
         if (event.getSource().is(DamageTypes.FALL)) {
-            // Fall damage splits damage between both legs
-            float legDamage = amount / 2f;
-            cap.damageLeftLeg(legDamage);
-            cap.damageRightLeg(legDamage);
-        }
-        else if (event.getSource().is(DamageTypes.EXPLOSION)) {
-            // Explosions are messy: Torso and Legs
-            cap.damageTorso(amount * 0.5f);
-            cap.damageLeftLeg(amount * 0.25f);
-            cap.damageRightLeg(amount * 0.25f);
-        }
-        else {
-            // RANDOMIZED COMBAT LOGIC (Your original height-based system)
+            // Fall damage hits feet hardest, then legs
+            cap.damageLeftFoot(amount * 0.4f);
+            cap.damageRightFoot(amount * 0.4f);
+            cap.damageLeftLeg(amount * 0.1f);
+            cap.damageRightLeg(amount * 0.1f);
+        } else if (event.getSource().is(DamageTypes.EXPLOSION)) {
+            // Explosions hit the lower body and torso
+            cap.damageTorso(amount * 0.4f);
+            cap.damageLeftLeg(amount * 0.2f);
+            cap.damageRightLeg(amount * 0.2f);
+            cap.damageLeftFoot(amount * 0.1f);
+            cap.damageRightFoot(amount * 0.1f);
+        } else {
+            // 2. RANDOMIZED COMBAT LOGIC (Simulating hit height)
             double hitY = RANDOM.nextDouble();
 
-            if (hitY > 0.8) {
+            if (hitY > 0.85) { // Head
                 cap.damageHead(amount);
-            } else if (hitY > 0.4) {
+            } else if (hitY > 0.45) { // Torso
                 cap.damageTorso(amount);
-            } else if (hitY > 0.2) {
-                // Randomly pick an arm
+            } else if (hitY > 0.25) { // Arms
                 if (RANDOM.nextBoolean()) cap.damageLeftArm(amount);
                 else cap.damageRightArm(amount);
-            } else {
-                // Randomly pick a leg
+            } else if (hitY > 0.10) { // Legs
                 if (RANDOM.nextBoolean()) cap.damageLeftLeg(amount);
                 else cap.damageRightLeg(amount);
+            } else { // Feet (Hits very low to the ground)
+                if (RANDOM.nextBoolean()) cap.damageLeftFoot(amount);
+                else cap.damageRightFoot(amount);
             }
         }
 
-        // SYNC THE DATA
-        // Calling setData marks the attachment as "dirty" for NeoForge syncing
-        player.setData(ModAttachments.WRIST_CAP, cap);
+        // 3. SYNC TO CLIENT
+        // Must send all 11 values: bpm, energy, watchState, head, torso, lArm, rArm, lLeg, rLeg, lFoot, rFoot
+        ModMessages.sendToPlayer(new LimbSyncPacket(
+                cap.getBPM(),
+                cap.getEnergy(),
+                cap.hasWatchEquipped(),
+                cap.getHeadHealth(),
+                cap.getTorsoHealth(),
+                cap.getLeftArmHealth(),
+                cap.getRightArmHealth(),
+                cap.getLeftLegHealth(),
+                cap.getRightLegHealth(),
+                cap.getLeftFootHealth(),
+                cap.getRightFootHealth()
+        ), player);
     }
 }

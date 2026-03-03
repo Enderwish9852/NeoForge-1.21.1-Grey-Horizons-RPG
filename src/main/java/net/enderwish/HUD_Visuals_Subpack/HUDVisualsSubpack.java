@@ -2,11 +2,15 @@ package net.enderwish.HUD_Visuals_Subpack;
 
 import net.enderwish.HUD_Visuals_Subpack.client.gui.SportsWatchHUD;
 import net.enderwish.HUD_Visuals_Subpack.core.LimbDamageEventHandler;
-import net.enderwish.HUD_Visuals_Subpack.core.LimbDataProvider;
 import net.enderwish.HUD_Visuals_Subpack.core.ModAttachments;
 import net.enderwish.HUD_Visuals_Subpack.event.HealthRegenEvents;
 import net.enderwish.HUD_Visuals_Subpack.network.ModMessages;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.CreativeModeTab;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.loading.FMLEnvironment;
@@ -14,58 +18,62 @@ import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
+import net.neoforged.neoforge.registries.DeferredItem;
+import net.neoforged.neoforge.registries.DeferredRegister;
 
-/**
- * Main Mod Class for HUD Visuals Subpack.
- * Handles the initialization of networking, HUD layers, and event subscribers.
- */
+import java.util.function.Supplier;
+
 @Mod(HUDVisualsSubpack.MOD_ID)
 public class HUDVisualsSubpack {
     public static final String MOD_ID = "gh_hud_visuals";
 
+    // --- RESTORED REGISTRIES ---
+    public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(MOD_ID);
+    public static final DeferredRegister<CreativeModeTab> CREATIVE_TABS = DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MOD_ID);
+
+    // Register the Item
+    public static final DeferredItem<Item> SPORTS_WATCH = ITEMS.register("sports_watch",
+            () -> new Item(new Item.Properties().stacksTo(1)));
+
+    // Register the Creative Tab
+    public static final Supplier<CreativeModeTab> SPORTS_TAB = CREATIVE_TABS.register("sports_tab",
+            () -> CreativeModeTab.builder()
+                    .title(Component.translatable("creativetab.sports_tab"))
+                    .icon(() -> new ItemStack(SPORTS_WATCH.get()))
+                    .displayItems((parameters, output) -> {
+                        output.accept(SPORTS_WATCH.get());
+                    })
+                    .build());
+
     public HUDVisualsSubpack(IEventBus modEventBus) {
-        // --- MOD BUS REGISTRATION ---
+        // Register Item and Tab folders
+        ITEMS.register(modEventBus);
+        CREATIVE_TABS.register(modEventBus);
 
-        // Register Data Attachments (Limb Data storage)
-        ModAttachments.ATTACHMENT_TYPES.register(modEventBus);
+        // Register Attachments
+        ModAttachments.register(modEventBus);
 
-        // Register Networking Payloads
         modEventBus.addListener(this::registerNetworking);
 
-        // --- FORGE BUS REGISTRATION ---
-
-        // Register server-side events for health and limb logic
         NeoForge.EVENT_BUS.register(new HealthRegenEvents());
-        NeoForge.EVENT_BUS.register(new LimbDamageEventHandler());
-        //Register Limb Health
-        LimbDataProvider.register(modEventBus);
+        NeoForge.EVENT_BUS.register(LimbDamageEventHandler.class);
 
-
-        // --- CLIENT SETUP ---
         if (FMLEnvironment.dist.isClient()) {
             modEventBus.addListener(this::onRegisterGuiLayers);
         }
     }
 
-    /**
-     * Registers custom network payloads using the NeoForge RegisterPayloadHandlersEvent.
-     */
     private void registerNetworking(final RegisterPayloadHandlersEvent event) {
         ModMessages.register(event);
     }
 
-    /**
-     * Handles the registration and modification of HUD elements.
-     */
     private void onRegisterGuiLayers(RegisterGuiLayersEvent event) {
-        // Register the custom Sports Watch HUD above the Hotbar
         event.registerAbove(
                 VanillaGuiLayers.HOTBAR,
                 ResourceLocation.fromNamespaceAndPath(MOD_ID, "sports_watch"),
                 SportsWatchHUD.SPORTS_WATCH_ELEMENT
         );
 
-        // Hide specific Vanilla HUD layers using the requested replacement method
         event.replaceLayer(VanillaGuiLayers.PLAYER_HEALTH, (gui, delta) -> {});
         event.replaceLayer(VanillaGuiLayers.FOOD_LEVEL, (gui, delta) -> {});
         event.replaceLayer(VanillaGuiLayers.ARMOR_LEVEL, (gui, delta) -> {});
