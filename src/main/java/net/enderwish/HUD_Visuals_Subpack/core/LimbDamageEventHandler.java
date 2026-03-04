@@ -10,43 +10,54 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
 import net.neoforged.neoforge.event.tick.EntityTickEvent;
+import top.theillusivec4.curios.api.CuriosApi;
 
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Handles logic for the permanent Limb Damage System.
- * The system is always active; the Watch only acts as a display.
+ * Updates:
+ * 1. Only detects the watch if equipped in the Curios "wrist" slot.
+ * 2. Optimized syncing to prevent HUD flickering.
  */
 @EventBusSubscriber(modid = HUDVisualsSubpack.MOD_ID)
 public class LimbDamageEventHandler {
     private static final Random RANDOM = new Random();
 
     /**
-     * Permanent Health Lock and Watch Detection.
+     * Handles Health Locking and Curios Watch detection.
      */
     @SubscribeEvent
     public static void onPlayerTick(EntityTickEvent.Post event) {
         if (event.getEntity() instanceof ServerPlayer player) {
+            // Only check once every 10 ticks to save performance and reduce network jitter
+            if (player.level().getGameTime() % 10 != 0) return;
+
             WristCapability cap = player.getData(ModAttachments.WRIST_CAP);
             if (cap == null) return;
 
-            // 1. ALWAYS LOCK HEALTH
-            // The player uses the Limb System now. Vanilla health is just a buffer.
+            // 1. ALWAYS LOCK HEALTH (Limb system is the primary health)
             if (player.getHealth() < player.getMaxHealth()) {
                 player.setHealth(player.getMaxHealth());
             }
 
-            // 2. Detect if the watch is in the inventory (only for HUD visibility)
-            boolean hasWatch = false;
-            for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
-                ItemStack stack = player.getInventory().getItem(i);
-                if (stack.is(HUDVisualsSubpack.SPORTS_WATCH.get())) {
-                    hasWatch = true;
-                    break;
-                }
-            }
+            // 2. DETECT WATCH (Curios "wrist" slot only)
+            AtomicBoolean isWearingWatch = new AtomicBoolean(false);
+            CuriosApi.getCuriosInventory(player).ifPresent(inventory -> {
+                inventory.getStacksHandler("wrist").ifPresent(handler -> {
+                    for (int i = 0; i < handler.getStacks().getSlots(); i++) {
+                        ItemStack stack = handler.getStacks().getStackInSlot(i);
+                        if (!stack.isEmpty() && stack.is(HUDVisualsSubpack.SPORTS_WATCH.get())) {
+                            isWearingWatch.set(true);
+                            break;
+                        }
+                    }
+                });
+            });
 
-            // Sync watch state to client so HUD knows when to show up
+            // 3. Update state and sync only if it changed
+            boolean hasWatch = isWearingWatch.get();
             if (cap.hasWatchEquipped() != hasWatch) {
                 cap.setWatchEquipped(hasWatch);
                 syncToClient(player, cap);
@@ -55,7 +66,7 @@ public class LimbDamageEventHandler {
     }
 
     /**
-     * Always distribute damage to limbs, regardless of watch status.
+     * Distributes damage to specific limbs based on damage source.
      */
     @SubscribeEvent
     public static void onPlayerDamage(LivingDamageEvent.Post event) {
@@ -64,7 +75,7 @@ public class LimbDamageEventHandler {
         WristCapability cap = player.getData(ModAttachments.WRIST_CAP);
         if (cap == null) return;
 
-        // Custom Limb Damage Logic - ALWAYS RUNS
+        // Reduce total damage slightly since limbs have individual toughness
         float amount = event.getNewDamage() * 0.5f;
 
         if (event.getSource().is(DamageTypes.FALL)) {
@@ -77,6 +88,7 @@ public class LimbDamageEventHandler {
             cap.damageLeftLeg(amount * 0.2f);
             cap.damageRightLeg(amount * 0.2f);
         } else {
+            // Random distribution based on "height" of the hit
             double hitY = RANDOM.nextDouble();
             if (hitY > 0.85) cap.damageHead(amount);
             else if (hitY > 0.45) cap.damageTorso(amount);
@@ -92,7 +104,7 @@ public class LimbDamageEventHandler {
             }
         }
 
-        // Sync to client so the data is ready whenever they put the watch on
+        // Immediate sync after taking damage so the HUD updates instantly
         syncToClient(player, cap);
     }
 
