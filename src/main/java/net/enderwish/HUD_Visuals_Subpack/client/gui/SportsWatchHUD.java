@@ -14,12 +14,14 @@ import net.minecraft.world.entity.player.Player;
 
 /**
  * SPORTS WATCH HUD
- * Clean version: Removed debug mode and fixed shader reset for a stable UI.
+ * Updated: Moved Paper Doll to the bottom right of the screen.
+ * UV = Texture Source | XY = Cut Dimensions
  */
 public class SportsWatchHUD {
 
     private static final ResourceLocation LIMBS_TEXTURE = ResourceLocation.fromNamespaceAndPath(HUDVisualsSubpack.MOD_ID, "textures/gui/limbs.png");
 
+    // The dimensions of the area the paper doll occupies
     private static final int WATCH_FACE_WIDTH = 100;
     private static final int WATCH_FACE_HEIGHT = 80;
     private static final int MARGIN = 10;
@@ -41,10 +43,11 @@ public class SportsWatchHUD {
         int sw = mc.getWindow().getGuiScaledWidth();
         int sh = mc.getWindow().getGuiScaledHeight();
 
-        // 1. Render status bars (Hunger, Energy, etc.)
+        // 1. Render status bars (kept near center/bottom as per previous logic)
         renderStatusBars(graphics, mc, cap, player, sw, sh);
 
-        // 2. Position and Scale the Watch Face (Paper Doll area)
+        // 2. Position for Bottom Right
+        // We subtract the scaled width/height and a margin from the total screen width/height
         int watchX = sw - (int)(WATCH_FACE_WIDTH * SCALE) - MARGIN;
         int watchY = sh - (int)(WATCH_FACE_HEIGHT * SCALE) - MARGIN;
 
@@ -52,29 +55,44 @@ public class SportsWatchHUD {
         graphics.pose().translate(watchX, watchY, 0);
         graphics.pose().scale(SCALE, SCALE, 1.0F);
 
-        // Prepare Render State
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         RenderSystem.setShader(GameRenderer::getPositionTexShader);
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
 
-        // --- DRAW LIMBS (Adjust x and y here to position them manually) ---
-        drawLimb(graphics, 44, 5, 8, 8, 12, 12, cap.getHeadPct());      // Head
-        drawLimb(graphics, 40, 18, 48, 12, 20, 26, cap.getTorsoPct());  // Torso
-        drawLimb(graphics, 27, 18, 84, 12, 12, 24, cap.getLArmPct());   // Left Arm
-        drawLimb(graphics, 61, 18, 4, 52, 12, 24, cap.getRArmPct());    // Right Arm
-        drawLimb(graphics, 40, 45, 44, 50, 10, 22, cap.getLLegPct());   // Left Leg
-        drawLimb(graphics, 50, 45, 84, 50, 10, 22, cap.getRLegPct());   // Right Leg
-        drawLimb(graphics, 39, 67, 5, 82, 11, 7, cap.getLFootPct());    // Left Foot
-        drawLimb(graphics, 50, 67, 45, 82, 11, 7, cap.getRFootPct());   // Right Foot
+        // --- DRAW LIMBS ---
+        // Format: drawLimb(graphics, screenX, screenY, texU, texV, width, height, healthPct)
 
-        // Draw BPM Text
+        // Head: UV 1,1 | XY 17,17
+        drawLimb(graphics, 42, 5, 1, 1, 17, 17, cap.getHeadPct());
+
+        // Torso: UV 40,1 | XY 17,25
+        drawLimb(graphics, 42, 22, 40, 1, 17, 25, cap.getTorsoPct());
+
+        // Left Arm: UV 80,1 | XY 9,25
+        drawLimb(graphics, 32, 22, 80, 1, 9, 25, cap.getLArmPct());
+
+        // Right Arm: UV 1,40 | XY 9,25
+        drawLimb(graphics, 59, 22, 1, 40, 9, 25, cap.getRArmPct());
+
+        // Left Leg: UV 40,40 | XY 9,21
+        drawLimb(graphics, 42, 47, 40, 40, 9, 21, cap.getLLegPct());
+
+        // Right Leg: UV 80,40 | XY 9,21
+        drawLimb(graphics, 51, 47, 80, 40, 9, 21, cap.getRLegPct());
+
+        // Left Foot: UV 1,80 | XY 11,5
+        drawLimb(graphics, 40, 68, 1, 80, 11, 5, cap.getLFootPct());
+
+        // Right Foot: UV 40,80 | XY 11,5
+        drawLimb(graphics, 51, 68, 40, 80, 11, 5, cap.getRFootPct());
+
+        // Draw BPM Text below the doll
         graphics.drawString(mc.font, cap.getBPM() + " BPM", 5, 5, 0xFFFFFF, true);
 
         graphics.pose().popPose();
 
-        // CRITICAL: Reset the global shader color to White.
-        // This fixes the "Black Screen" issue by restoring standard rendering colors.
+        // Safety reset
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
     }
 
@@ -107,14 +125,11 @@ public class SportsWatchHUD {
     }
 
     private static void drawLimb(GuiGraphics graphics, int x, int y, int u, int v, int width, int height, float pct) {
-        // Dynamic coloring based on health
-        if (pct >= 0.75f) RenderSystem.setShaderColor(0.2F, 1.0F, 0.2F, 1.0F); // Good
-        else if (pct >= 0.4f) RenderSystem.setShaderColor(1.0F, 1.0F, 0.0F, 1.0F); // Wounded
-        else RenderSystem.setShaderColor(1.0F, 0.0F, 0.0F, 1.0F); // Critical
+        if (pct >= 0.75f) RenderSystem.setShaderColor(0.2F, 1.0F, 0.2F, 1.0F);
+        else if (pct >= 0.4f) RenderSystem.setShaderColor(1.0F, 1.0F, 0.0F, 1.0F);
+        else RenderSystem.setShaderColor(1.0F, 0.0F, 0.0F, 1.0F);
 
         graphics.blit(LIMBS_TEXTURE, x, y, u, v, width, height, 128, 128);
-
-        // Local reset to white
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
     }
 }
