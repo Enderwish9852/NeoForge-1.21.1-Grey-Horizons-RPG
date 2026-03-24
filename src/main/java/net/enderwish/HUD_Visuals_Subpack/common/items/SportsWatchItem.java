@@ -2,7 +2,6 @@ package net.enderwish.HUD_Visuals_Subpack.common.items;
 
 import net.enderwish.HUD_Visuals_Subpack.core.ModAttachments;
 import net.enderwish.HUD_Visuals_Subpack.core.WristCapability;
-import net.enderwish.HUD_Visuals_Subpack.network.LimbSyncPacket;
 import net.enderwish.HUD_Visuals_Subpack.network.ModMessages;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
@@ -21,7 +20,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Custom Item class for the Sports Watch.
- * Fix: Updated Curios API check for Minecraft 1.21 compatibility.
+ * Updated: Synchronizes the full 14-argument state including Hunger/Fuel and Thirst.
  */
 public class SportsWatchItem extends Item {
 
@@ -33,13 +32,13 @@ public class SportsWatchItem extends Item {
     public void inventoryTick(ItemStack stack, Level level, Entity entity, int slotId, boolean isSelected) {
         if (!level.isClientSide && entity instanceof ServerPlayer player) {
 
-            // Check once a second
+            // Perform sync and check once a second (20 ticks) to optimize performance
             if (level.getGameTime() % 20 != 0) return;
 
             WristCapability cap = player.getData(ModAttachments.WRIST_CAP);
             if (cap == null) return;
 
-            // Updated Curios 1.21 check
+            // Curios check to see if the watch is actually equipped in the wrist slot
             AtomicBoolean isEquippedInWrist = new AtomicBoolean(false);
 
             CuriosApi.getCuriosInventory(player).ifPresent(inventory -> {
@@ -53,11 +52,13 @@ public class SportsWatchItem extends Item {
                 });
             });
 
-            // Update state and sync
+            // Update the capability state if the physical equipment status changed
             if (cap.hasWatchEquipped() != isEquippedInWrist.get()) {
                 cap.setWatchEquipped(isEquippedInWrist.get());
-                syncToClient(player, cap);
             }
+
+            // Always sync while in inventory so the HUD has the latest survival data
+            syncToClient(player, cap);
         }
     }
 
@@ -80,13 +81,26 @@ public class SportsWatchItem extends Item {
                 .withStyle(ChatFormatting.AQUA, ChatFormatting.ITALIC));
     }
 
+    /**
+     * Synchronizes all capability data to the client via LimbSyncPacket.
+     * Updated: Now provides all 14 arguments required by the updated record.
+     */
     private void syncToClient(ServerPlayer player, WristCapability cap) {
-        ModMessages.sendToPlayer(new LimbSyncPacket(
-                cap.getBPM(), cap.getEnergy(), cap.hasWatchEquipped(),
-                cap.getHeadHealth(), cap.getTorsoHealth(),
-                cap.getLeftArmHealth(), cap.getRightArmHealth(),
-                cap.getLeftLegHealth(), cap.getRightLegHealth(),
-                cap.getLeftFootHealth(), cap.getRightFootHealth()
+        ModMessages.sendToPlayer(new net.enderwish.HUD_Visual_Subpack.network.LimbSyncPacket(
+                cap.getBPM(),
+                cap.getEnergy(),
+                cap.getThirst(),
+                cap.getHunger(),      // <--- ADDED: 4th Argument (Fuel Tank)
+                cap.hasWatchEquipped(),
+                cap.getHeadHealth(),
+                cap.getTorsoHealth(),
+                cap.getLeftArmHealth(),
+                cap.getRightArmHealth(),
+                cap.getLeftLegHealth(),
+                cap.getRightLegHealth(),
+                cap.getLeftFootHealth(),
+                cap.getRightFootHealth(),
+                cap.getStarvationTimer() // <--- 14th Argument
         ), player);
     }
 }

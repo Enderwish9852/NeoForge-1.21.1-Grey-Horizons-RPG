@@ -18,9 +18,9 @@ public class ModMessages {
 
         // Server -> Client (S2C)
         registrar.playToClient(
-                LimbSyncPacket.TYPE,
-                LimbSyncPacket.STREAM_CODEC,
-                LimbSyncPacket::handle
+                net.enderwish.HUD_Visual_Subpack.network.LimbSyncPacket.TYPE,
+                net.enderwish.HUD_Visual_Subpack.network.LimbSyncPacket.STREAM_CODEC,
+                net.enderwish.HUD_Visual_Subpack.network.LimbSyncPacket::handle
         );
 
 

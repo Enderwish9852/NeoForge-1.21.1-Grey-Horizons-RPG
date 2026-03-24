@@ -14,18 +14,19 @@ import net.minecraft.world.entity.player.Player;
 
 /**
  * SPORTS WATCH HUD
- * Updated: Moved Paper Doll to the bottom right of the screen.
- * UV = Texture Source | XY = Cut Dimensions
+ * Updated:
+ * 1. Added actual Thirst value display.
+ * 2. Added Starvation Timer (visible regardless of watch).
+ * 3. Kept your improved Limb Alignment (Arms: 23, 45).
  */
 public class SportsWatchHUD {
 
     private static final ResourceLocation LIMBS_TEXTURE = ResourceLocation.fromNamespaceAndPath(HUDVisualsSubpack.MOD_ID, "textures/gui/limbs.png");
 
-    // The dimensions of the area the paper doll occupies
-    private static final int WATCH_FACE_WIDTH = 100;
-    private static final int WATCH_FACE_HEIGHT = 80;
+    private static final int WATCH_FACE_WIDTH = 80;
+    private static final int WATCH_FACE_HEIGHT = 85;
     private static final int MARGIN = 10;
-    private static final float SCALE = 2.0F;
+    private static final float SCALE = 1.5F;
 
     public static final LayeredDraw.Layer SPORTS_WATCH_ELEMENT = (graphics, deltaTracker) -> {
         render(graphics, deltaTracker);
@@ -35,19 +36,60 @@ public class SportsWatchHUD {
         Minecraft mc = Minecraft.getInstance();
         Player player = mc.player;
 
-        if (player == null || player.isSpectator()) return;
+        if (player == null || player.isSpectator() || !player.isAlive()) return;
+
+        // Prevent layout jitter during damage tilts
+        player.deathTime = 0;
+        player.hurtTime = 0;
 
         WristCapability cap = player.getData(ModAttachments.WRIST_CAP);
-        if (cap == null || !cap.hasWatchEquipped()) return;
+        if (cap == null) return;
 
         int sw = mc.getWindow().getGuiScaledWidth();
         int sh = mc.getWindow().getGuiScaledHeight();
 
-        // 1. Render status bars (kept near center/bottom as per previous logic)
-        renderStatusBars(graphics, mc, cap, player, sw, sh);
+        // --- 1. GLOBAL FEATURES (Visible even if watch is in pocket) ---
+        renderStarvationTimer(graphics, mc, cap, sw, sh);
 
-        // 2. Position for Bottom Right
-        // We subtract the scaled width/height and a margin from the total screen width/height
+        // --- 2. WATCH FEATURES (Only if equipped/active) ---
+        if (cap.hasWatchEquipped()) {
+            renderStatusBars(graphics, mc, cap, player, sw, sh);
+            renderLimbDisplay(graphics, cap, sw, sh);
+        }
+    }
+
+    private static void renderStarvationTimer(GuiGraphics graphics, Minecraft mc, WristCapability cap, int sw, int sh) {
+        if (cap.getStarvationTimer() > 0) {
+            int totalSecondsLeft = (12000 - cap.getStarvationTimer()) / 20;
+            int mins = totalSecondsLeft / 60;
+            int secs = totalSecondsLeft % 60;
+            String timeStr = String.format("%02d:%02d", mins, secs);
+
+            // Green for the 2-minute buffer, Red for the health-drain phase
+            int timerColor = (cap.getStarvationTimer() <= 2400) ? 0xFF00FF00 : 0xFFFF0000;
+
+            graphics.drawCenteredString(mc.font, "STARVATION: " + timeStr, sw / 2, sh - 65, timerColor);
+        }
+    }
+
+    private static void renderStatusBars(GuiGraphics graphics, Minecraft mc, WristCapability cap, Player player, int sw, int sh) {
+        int leftX = sw / 2 - 91;
+        int rightX = sw / 2 + 10;
+        int row1Y = sh - 39;
+        int row2Y = sh - 51;
+
+        // Left Side
+        drawStatusBar(graphics, mc, leftX, row1Y, cap.getEnergy(), 0xFF00AAFF, "ENERGY");
+
+        // Right Side
+        float hungerPct = (player.getFoodData().getFoodLevel() / 20.0f) * 100.0f;
+        drawStatusBar(graphics, mc, rightX, row1Y, hungerPct, 0xFFFF9900, "HUNGER");
+
+        // UPDATED: Now shows the real thirst value from capability
+        drawStatusBar(graphics, mc, rightX, row2Y, cap.getThirst(), 0xFF00FFFF, "THIRST");
+    }
+
+    private static void renderLimbDisplay(GuiGraphics graphics, WristCapability cap, int sw, int sh) {
         int watchX = sw - (int)(WATCH_FACE_WIDTH * SCALE) - MARGIN;
         int watchY = sh - (int)(WATCH_FACE_HEIGHT * SCALE) - MARGIN;
 
@@ -58,55 +100,18 @@ public class SportsWatchHUD {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         RenderSystem.setShader(GameRenderer::getPositionTexShader);
-        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
 
-        // --- DRAW LIMBS ---
-        // Format: drawLimb(graphics, screenX, screenY, texU, texV, width, height, healthPct)
-
-        // Head: UV 1,1 | XY 17,17
-        drawLimb(graphics, 42, 5, 1, 1, 17, 17, cap.getHeadPct());
-
-        // Torso: UV 40,1 | XY 17,25
-        drawLimb(graphics, 42, 22, 40, 1, 17, 25, cap.getTorsoPct());
-
-        // Left Arm: UV 80,1 | XY 9,25
-        drawLimb(graphics, 32, 22, 80, 1, 9, 25, cap.getLArmPct());
-
-        // Right Arm: UV 1,40 | XY 9,25
-        drawLimb(graphics, 59, 22, 1, 40, 9, 25, cap.getRArmPct());
-
-        // Left Leg: UV 40,40 | XY 9,21
-        drawLimb(graphics, 42, 47, 40, 40, 9, 21, cap.getLLegPct());
-
-        // Right Leg: UV 80,40 | XY 9,21
-        drawLimb(graphics, 51, 47, 80, 40, 9, 21, cap.getRLegPct());
-
-        // Left Foot: UV 1,80 | XY 11,5
-        drawLimb(graphics, 40, 68, 1, 80, 11, 5, cap.getLFootPct());
-
-        // Right Foot: UV 40,80 | XY 11,5
-        drawLimb(graphics, 51, 68, 40, 80, 11, 5, cap.getRFootPct());
-
-        // Draw BPM Text below the doll
-        graphics.drawString(mc.font, cap.getBPM() + " BPM", 5, 5, 0xFFFFFF, true);
+        // Limbs using your specific coordinates for tighter alignment
+        drawLimb(graphics, 30, 5, 1, 1, 17, 17, cap.getHeadPct());      // Head
+        drawLimb(graphics, 30, 22, 40, 1, 17, 25, cap.getTorsoPct());  // Torso
+        drawLimb(graphics, 23, 22, 80, 1, 9, 25, cap.getLArmPct());    // Left Arm (Aligned)
+        drawLimb(graphics, 45, 22, 1, 40, 9, 25, cap.getRArmPct());    // Right Arm (Aligned)
+        drawLimb(graphics, 30, 47, 40, 40, 9, 21, cap.getLLegPct());   // Left Leg
+        drawLimb(graphics, 38, 47, 80, 40, 9, 21, cap.getRLegPct());   // Right Leg
+        drawLimb(graphics, 28, 68, 1, 80, 11, 5, cap.getLFootPct());   // Left Foot
+        drawLimb(graphics, 38, 68, 40, 80, 11, 5, cap.getRFootPct());  // Right Foot
 
         graphics.pose().popPose();
-
-        // Safety reset
-        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-    }
-
-    private static void renderStatusBars(GuiGraphics graphics, Minecraft mc, WristCapability cap, Player player, int sw, int sh) {
-        int leftX = sw / 2 - 91;
-        int rightX = sw / 2 + 10;
-        int row1Y = sh - 39;
-        int row2Y = sh - 51;
-
-        drawStatusBar(graphics, mc, leftX, row1Y, cap.getEnergy(), 0xFF00AAFF, "ENERGY");
-        float foodLevel = (player.getFoodData().getFoodLevel() / 20.0f) * 100.0f;
-        drawStatusBar(graphics, mc, rightX, row1Y, foodLevel, 0xFFFF9900, "HUNGER");
-        drawStatusBar(graphics, mc, rightX, row2Y, 100f, 0xFF00FFFF, "THIRST");
-
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
     }
 
@@ -125,9 +130,15 @@ public class SportsWatchHUD {
     }
 
     private static void drawLimb(GuiGraphics graphics, int x, int y, int u, int v, int width, int height, float pct) {
-        if (pct >= 0.75f) RenderSystem.setShaderColor(0.2F, 1.0F, 0.2F, 1.0F);
-        else if (pct >= 0.4f) RenderSystem.setShaderColor(1.0F, 1.0F, 0.0F, 1.0F);
-        else RenderSystem.setShaderColor(1.0F, 0.0F, 0.0F, 1.0F);
+        if (pct <= 0.0f) {
+            RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F); // Black/Outline if destroyed
+        } else if (pct >= 0.75f) {
+            RenderSystem.setShaderColor(0.2F, 1.0F, 0.2F, 1.0F); // Green
+        } else if (pct >= 0.4f) {
+            RenderSystem.setShaderColor(1.0F, 1.0F, 0.0F, 1.0F); // Yellow
+        } else {
+            RenderSystem.setShaderColor(1.0F, 0.0F, 0.0F, 1.0F); // Red
+        }
 
         graphics.blit(LIMBS_TEXTURE, x, y, u, v, width, height, 128, 128);
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
