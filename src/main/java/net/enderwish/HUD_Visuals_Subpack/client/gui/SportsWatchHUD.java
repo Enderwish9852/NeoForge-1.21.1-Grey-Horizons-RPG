@@ -2,7 +2,9 @@ package net.enderwish.HUD_Visuals_Subpack.client.gui;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.enderwish.HUD_Visuals_Subpack.HUDVisualsSubpack;
+import net.enderwish.HUD_Visuals_Subpack.client.ClientSeasonHandler;
 import net.enderwish.HUD_Visuals_Subpack.core.ModAttachments;
+import net.enderwish.HUD_Visuals_Subpack.core.Season;
 import net.enderwish.HUD_Visuals_Subpack.core.WristCapability;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
@@ -14,10 +16,7 @@ import net.minecraft.world.entity.player.Player;
 
 /**
  * SPORTS WATCH HUD
- * * Logic:
- * 1. Z-Layering: We push arms/legs to Z = -0.01 so the Torso/Head (at Z = 0)
- * draws their outlines over the limbs, fixing the "messy overlap" look.
- * 2. Proportions: Kept X-axis tight (23 and 45) for a natural body silhouette.
+ * Uses internal ClientSeasonHandler to display the custom season system.
  */
 public class SportsWatchHUD {
 
@@ -38,7 +37,6 @@ public class SportsWatchHUD {
 
         if (player == null || player.isSpectator() || !player.isAlive()) return;
 
-        // Reset visual damage states for the HUD entity
         player.deathTime = 0;
         player.hurtTime = 0;
 
@@ -53,7 +51,30 @@ public class SportsWatchHUD {
         if (cap.hasWatchEquipped()) {
             renderStatusBars(graphics, mc, cap, player, sw, sh);
             renderLimbDisplay(graphics, cap, sw, sh);
+            renderSeasonInfo(graphics, mc, sw, sh);
         }
+    }
+
+    private static void renderSeasonInfo(GuiGraphics graphics, Minecraft mc, int sw, int sh) {
+        // Using your project's ClientSeasonHandler (from image_e57d84.jpg)
+        Season currentSeason = ClientSeasonHandler.getClientSeason();
+        int currentDay = ClientSeasonHandler.getClientDay();
+
+        if (currentSeason == null) return;
+
+        // Create display text: e.g., "SPRING - DAY 5"
+        String seasonText = currentSeason.name() + " - DAY " + currentDay;
+        int seasonColor = getSeasonColor(currentSeason);
+
+        graphics.pose().pushPose();
+        graphics.pose().scale(0.8f, 0.8f, 0.8f);
+
+        // Positioned slightly above the status bars
+        int scaledX = (int) ((sw / 2) / 0.8f);
+        int scaledY = (int) ((sh - 62) / 0.8f);
+
+        graphics.drawCenteredString(mc.font, seasonText, scaledX, scaledY, seasonColor);
+        graphics.pose().popPose();
     }
 
     private static void renderStarvationTimer(GuiGraphics graphics, Minecraft mc, WristCapability cap, int sw, int sh) {
@@ -91,24 +112,18 @@ public class SportsWatchHUD {
         RenderSystem.defaultBlendFunc();
         RenderSystem.setShader(GameRenderer::getPositionTexShader);
 
-        // --- BACKGROUND LAYER (Limbs) ---
-        // We push these back slightly so the torso outline sits on top
         graphics.pose().pushPose();
         graphics.pose().translate(0, 0, -0.01f);
-
-        drawLimb(graphics, 23, 22, 80, 1, 9, 25, cap.getLArmPct());    // L Arm
-        drawLimb(graphics, 45, 22, 1, 40, 9, 25, cap.getRArmPct());    // R Arm
-        drawLimb(graphics, 30, 47, 40, 40, 9, 21, cap.getLLegPct());   // L Leg
-        drawLimb(graphics, 38, 47, 80, 40, 9, 21, cap.getRLegPct());   // R Leg
-        drawLimb(graphics, 28, 68, 1, 80, 11, 5, cap.getLFootPct());   // L Foot
-        drawLimb(graphics, 38, 68, 41, 80, 11, 5, cap.getRFootPct());  // R Foot
-
+        drawLimb(graphics, 23, 22, 80, 1, 9, 25, cap.getLArmPct());
+        drawLimb(graphics, 45, 22, 1, 40, 9, 25, cap.getRArmPct());
+        drawLimb(graphics, 30, 47, 40, 40, 9, 21, cap.getLLegPct());
+        drawLimb(graphics, 38, 47, 80, 40, 9, 21, cap.getRLegPct());
+        drawLimb(graphics, 28, 68, 1, 80, 11, 5, cap.getLFootPct());
+        drawLimb(graphics, 38, 68, 41, 80, 11, 5, cap.getRFootPct());
         graphics.pose().popPose();
 
-        // --- FOREGROUND LAYER (Core Body) ---
-        // These stay at Z=0, appearing on top of the limbs
-        drawLimb(graphics, 30, 5, 1, 1, 17, 17, cap.getHeadPct());      // Head
-        drawLimb(graphics, 30, 22, 40, 1, 17, 25, cap.getTorsoPct());  // Torso
+        drawLimb(graphics, 30, 5, 1, 1, 17, 17, cap.getHeadPct());
+        drawLimb(graphics, 30, 22, 40, 1, 17, 25, cap.getTorsoPct());
 
         graphics.pose().popPose();
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
@@ -138,8 +153,18 @@ public class SportsWatchHUD {
         } else {
             RenderSystem.setShaderColor(1.0F, 0.0F, 0.0F, 1.0F);
         }
-
         graphics.blit(LIMBS_TEXTURE, x, y, u, v, width, height, 128, 128);
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+    }
+
+    private static int getSeasonColor(Season season) {
+        // Mapping colors to your specific Season enum
+        return switch (season) {
+            case SPRING -> 0xFF55FF55;
+            case SUMMER -> 0xFFFFFF55;
+            case AUTUMN -> 0xFFFFAA00;
+            case WINTER -> 0xFF55FFFF;
+            default -> 0xFFFFFFFF;
+        };
     }
 }

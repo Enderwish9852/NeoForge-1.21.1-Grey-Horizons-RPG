@@ -18,7 +18,10 @@ public enum Season implements StringRepresentable {
 
     public static final Codec<Season> CODEC = StringRepresentable.fromEnum(Season::values);
 
-    // This resolves the "Cannot resolve symbol 'STREAM_CODEC'" error in SeasonSyncPacket
+    /**
+     * Resolves the "Cannot resolve symbol 'STREAM_CODEC'" error in SeasonSyncPacket.
+     * Uses FriendlyByteBuf for compatibility with NeoForge 1.21.1 network systems.
+     */
     public static final StreamCodec<FriendlyByteBuf, Season> STREAM_CODEC = StreamCodec.of(
             (buf, season) -> buf.writeEnum(season),
             buf -> buf.readEnum(Season.class)

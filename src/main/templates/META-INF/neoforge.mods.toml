@@ -93,3 +93,5 @@ HUD and Visuals Subpack for Grey Horizons RPG
 # stop your mod loading on the server for example.
 #[features.${mod_id}]
 #openGLVersion="[3.2,)"
+[[mixins]]
+config = "hud_visuals.mixins.json"
