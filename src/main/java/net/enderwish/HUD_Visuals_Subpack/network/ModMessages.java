@@ -13,28 +13,34 @@ public class ModMessages {
      * Registers the networking channel and payloads.
      */
     public static void register(final RegisterPayloadHandlersEvent event) {
+        // We use the MOD_ID as the namespace for the registrar
         final PayloadRegistrar registrar = event.registrar(HUDVisualsSubpack.MOD_ID)
                 .versioned("1.0");
 
-        // Server -> Client (S2C)
+        // 1. Limb Sync (Server -> Client)
         registrar.playToClient(
-                net.enderwish.HUD_Visual_Subpack.network.LimbSyncPacket.TYPE,
-                net.enderwish.HUD_Visual_Subpack.network.LimbSyncPacket.STREAM_CODEC,
-                net.enderwish.HUD_Visual_Subpack.network.LimbSyncPacket::handle
+                LimbSyncPacket.TYPE,
+                LimbSyncPacket.STREAM_CODEC,
+                LimbSyncPacket::handle
         );
 
-
+        // 2. Wrist Sync (Server -> Client)
         registrar.playToClient(
                 WristSyncPacket.TYPE,
                 WristSyncPacket.STREAM_CODEC,
                 WristSyncPacket::handle
         );
 
+        // 3. Season Sync (Server -> Client) - ADDED THIS
+        registrar.playToClient(
+                SeasonSyncPacket.TYPE,
+                SeasonSyncPacket.STREAM_CODEC,
+                (payload, context) -> payload.handle(context)
+        );
     }
 
     /**
      * Helper to send a packet to a specific player.
-     * Uses the NeoForge static helper method to avoid resolution issues with nested PLAYER types.
      */
     public static void sendToPlayer(CustomPacketPayload packet, ServerPlayer player) {
         PacketDistributor.sendToPlayer(player, packet);

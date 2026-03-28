@@ -86,7 +86,7 @@ public class SportsWatchItem extends Item {
      * Updated: Now provides all 14 arguments required by the updated record.
      */
     private void syncToClient(ServerPlayer player, WristCapability cap) {
-        ModMessages.sendToPlayer(new net.enderwish.HUD_Visual_Subpack.network.LimbSyncPacket(
+        ModMessages.sendToPlayer(new net.enderwish.HUD_Visuals_Subpack.network.LimbSyncPacket(
                 cap.getBPM(),
                 cap.getEnergy(),
                 cap.getThirst(),

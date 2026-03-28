@@ -257,7 +257,7 @@ public class LimbDamageEventHandler {
     }
 
     private static void syncToClient(ServerPlayer player, WristCapability cap) {
-        ModMessages.sendToPlayer(new net.enderwish.HUD_Visual_Subpack.network.LimbSyncPacket(
+        ModMessages.sendToPlayer(new net.enderwish.HUD_Visuals_Subpack.network.LimbSyncPacket(
                 cap.getBPM(),
                 cap.getEnergy(),
                 cap.getThirst(),

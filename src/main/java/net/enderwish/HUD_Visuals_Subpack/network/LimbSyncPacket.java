@@ -1,4 +1,4 @@
-package net.enderwish.HUD_Visual_Subpack.network;
+package net.enderwish.HUD_Visuals_Subpack.network;
 
 import net.enderwish.HUD_Visuals_Subpack.HUDVisualsSubpack;
 import net.enderwish.HUD_Visuals_Subpack.core.ModAttachments;

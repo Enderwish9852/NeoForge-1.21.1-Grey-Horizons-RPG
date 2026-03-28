@@ -19,33 +19,33 @@ public class SeasonCommand {
         LiteralArgumentBuilder<CommandSourceStack> setNode = Commands.literal("set");
 
         for (Season season : Season.values()) {
-            setNode.then(Commands.literal(season.getSerializedName())
+            // Using toLowerCase() to ensure the command is easy to type
+            setNode.then(Commands.literal(season.name().toLowerCase())
                     .executes(context -> {
-                        // Make sure SeasonManager has a static setSeason(ServerLevel, Season) method
                         SeasonManager.setSeason(context.getSource().getLevel(), season);
                         context.getSource().sendSuccess(() ->
-                                Component.literal("Season set to: " + season.getSerializedName()), true);
+                                Component.literal("Season set to: " + season.name()), true);
                         return 1;
                     })
             );
         }
 
         // Subcommand: /season setday <number>
-        LiteralArgumentBuilder<CommandSourceStack> setDayNode = Commands.literal("setday")
+        // Note: I consolidated this to /season setday to match your logic
+        seasonCommand.then(Commands.literal("setday")
                 .then(Commands.argument("day", IntegerArgumentType.integer(1, 30))
                         .executes(context -> {
                             int day = IntegerArgumentType.getInteger(context, "day");
-                            // Make sure SeasonManager has a static setDay(ServerLevel, int) method
                             SeasonManager.setDay(context.getSource().getLevel(), day);
                             context.getSource().sendSuccess(() ->
                                     Component.literal("Season day set to: " + day), true);
                             return 1;
                         })
-                );
+                )
+        );
 
-        // Attach subcommands to the main builder
+        // Attach the 'set' node (/season set ...)
         seasonCommand.then(setNode);
-        seasonCommand.then(setDayNode);
 
         // Register everything
         dispatcher.register(seasonCommand);

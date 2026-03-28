@@ -33,13 +33,14 @@ import java.util.function.Supplier;
 
 @Mod(HUDVisualsSubpack.MOD_ID)
 public class HUDVisualsSubpack {
+    // IMPORTANT: Ensure this MOD_ID matches the namespace in your ResourceLocations
     public static final String MOD_ID = "gh_hud_visuals";
 
     public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(MOD_ID);
     public static final DeferredRegister<CreativeModeTab> CREATIVE_TABS = DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MOD_ID);
 
     public static final DeferredItem<Item> SPORTS_WATCH = ITEMS.register("sports_watch",
-            () -> new SportsWatchItem(new Item.Properties()));
+            () -> new SportsWatchItem(new Item.Properties().stacksTo(1)));
 
     public static final Supplier<CreativeModeTab> GREY_HORIZONS_TAB = CREATIVE_TABS.register("greyhorizons_tab",
             () -> CreativeModeTab.builder()
@@ -51,19 +52,20 @@ public class HUDVisualsSubpack {
                     .build());
 
     public HUDVisualsSubpack(IEventBus modEventBus) {
+        // Register Deferred Registers to the Mod Event Bus
         ITEMS.register(modEventBus);
         CREATIVE_TABS.register(modEventBus);
         ModAttachments.register(modEventBus);
 
-        // Networking registration
+        // Networking registration (Crucial for fixing "Payload may not be sent" error)
         modEventBus.addListener(this::registerNetworking);
 
-        // Register this class instance to the NeoForge Event Bus
-        NeoForge.EVENT_BUS.register(this);
-
-        // General Event Handlers
+        // General Event Handlers (Using the Global NeoForge Event Bus)
         NeoForge.EVENT_BUS.register(new HealthRegenEvents());
         NeoForge.EVENT_BUS.register(LimbDamageEventHandler.class);
+
+        // Register this class instance for the command event listener below
+        NeoForge.EVENT_BUS.register(this);
 
         // Client-only initialization
         if (FMLEnvironment.dist.isClient()) {
@@ -74,11 +76,13 @@ public class HUDVisualsSubpack {
     }
 
     private void registerNetworking(final RegisterPayloadHandlersEvent event) {
+        // This calls your ModMessages class to handle the specific packet registration
         ModMessages.register(event);
     }
 
     @SubscribeEvent
     public void onRegisterCommands(RegisterCommandsEvent event) {
+        // Registering your custom commands
         WeatherCommand.register(event.getDispatcher());
         SeasonCommand.register(event.getDispatcher());
     }
@@ -98,15 +102,14 @@ public class HUDVisualsSubpack {
                 (graphics, delta) -> WeatherHUDRenderer.render(graphics, delta)
         );
 
-        // 3. Weather Full-Screen Overlay Layer (Blizzard frost/Heatwave glow)
-        // Registered above camera overlays to ensure it covers everything including the vignette
+        // 3. Weather Full-Screen Overlay Layer
         event.registerAbove(
                 VanillaGuiLayers.CAMERA_OVERLAYS,
                 ResourceLocation.fromNamespaceAndPath(MOD_ID, "weather_screen_overlay"),
                 (graphics, delta) -> WeatherOverlayRenderer.render(graphics, delta)
         );
 
-        // Vanilla UI removals
+        // Vanilla UI removals (Ensure these are what you want hidden permanently)
         event.replaceLayer(VanillaGuiLayers.PLAYER_HEALTH, (gui, delta) -> {});
         event.replaceLayer(VanillaGuiLayers.FOOD_LEVEL, (gui, delta) -> {});
         event.replaceLayer(VanillaGuiLayers.ARMOR_LEVEL, (gui, delta) -> {});
