@@ -4,16 +4,17 @@ import com.mojang.serialization.Codec;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.util.StringRepresentable;
+import net.minecraft.util.Mth;
 
 /**
  * Defines the four seasons for the HUD & Visuals Subpack.
  * Includes color data for world rendering and temperature metadata for the Sports Watch.
- * Updated for 1.21.1 with StreamCodec for networking.
+ * Updated for 1.21.1 with StreamCodec for networking and dynamic temperature calculation.
  */
 public enum Season implements StringRepresentable {
-    SPRING("spring", 0x7DB232, 15.0f, 25.0f),
+    SPRING("spring", 0x7DB232, 10.0f, 20.0f),
     SUMMER("summer", 0x4B9E1E, 25.0f, 38.0f),
-    AUTUMN("autumn", 0xBF8D2C, 5.0f, 15.0f),
+    AUTUMN("autumn", 0xBF8D2C, 5.0f, 20.0f),
     WINTER("winter", 0x729990, -15.0f, 5.0f);
 
     public static final Codec<Season> CODEC = StringRepresentable.fromEnum(Season::values);
@@ -63,6 +64,25 @@ public enum Season implements StringRepresentable {
      */
     public float getMaxTemp() {
         return maxTemp;
+    }
+
+    /**
+     * Calculates the current temperature based on the time of day.
+     * Uses a sine wave to transition from minTemp (night) to maxTemp (day).
+     * * @param worldTime The current level.getDayTime()
+     * @return The calculated temperature in Celsius.
+     */
+    public float getCurrentTemp(long worldTime) {
+        // Minecraft day is 24000 ticks. 6000 is noon, 18000 is midnight.
+        // We shift by 6000 so the peak of the sine wave hits at noon.
+        float timeFactor = (float) Math.sin((worldTime - 6000) * (Math.PI * 2 / 24000.0));
+
+        // Map sine wave (-1 to 1) to the temperature range (minTemp to maxTemp)
+        // Midpoint is the average, amplitude is half the difference.
+        float mid = (minTemp + maxTemp) / 2.0f;
+        float range = (maxTemp - minTemp) / 2.0f;
+
+        return mid + (range * timeFactor);
     }
 
     /**

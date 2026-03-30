@@ -271,7 +271,8 @@ public class LimbDamageEventHandler {
                 cap.getRightLegHealth(),
                 cap.getLeftFootHealth(),
                 cap.getRightFootHealth(),
-                cap.getStarvationTimer()
+                cap.getStarvationTimer(),
+                cap.getPollenExposure()
         ), player);
     }
 }

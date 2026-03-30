@@ -47,9 +47,10 @@ public class ModMessages {
     }
 
     /**
-     * Helper to send a packet to everyone.
+     * Helper to send a packet to everyone on the server.
+     * Required by WeatherManager to sync environmental states.
      */
-    public static void sendToAll(CustomPacketPayload packet) {
+    public static void sendToAllPlayers(CustomPacketPayload packet) {
         PacketDistributor.sendToAllPlayers(packet);
     }
 }

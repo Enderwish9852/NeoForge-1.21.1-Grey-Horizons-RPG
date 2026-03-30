@@ -100,7 +100,8 @@ public class SportsWatchItem extends Item {
                 cap.getRightLegHealth(),
                 cap.getLeftFootHealth(),
                 cap.getRightFootHealth(),
-                cap.getStarvationTimer() // <--- 14th Argument
+                cap.getStarvationTimer(),
+                cap.getPollenExposure()
         ), player);
     }
 }

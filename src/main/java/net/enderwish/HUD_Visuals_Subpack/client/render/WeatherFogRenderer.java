@@ -37,7 +37,7 @@ public class WeatherFogRenderer {
                 targetNear = 2.0f;
                 targetFar = 20.0f;
             }
-            case THUNDERSTORM -> {
+            case THUNDER -> {
                 targetNear = 10.0f;
                 targetFar = 60.0f;
             }
@@ -76,7 +76,7 @@ public class WeatherFogRenderer {
 
         switch (type) {
             case BLIZZARD -> { tr = 0.9f; tg = 0.95f; tb = 1.0f; } // White/Blueish
-            case THUNDERSTORM -> { tr = 0.1f; tg = 0.1f; tb = 0.15f; } // Very Dark
+            case THUNDER -> { tr = 0.1f; tg = 0.1f; tb = 0.15f; } // Very Dark
             case HEATWAVE -> { tr = 0.8f; tg = 0.7f; tb = 0.5f; } // Hazy Yellow/Orange
             default -> {}
         }

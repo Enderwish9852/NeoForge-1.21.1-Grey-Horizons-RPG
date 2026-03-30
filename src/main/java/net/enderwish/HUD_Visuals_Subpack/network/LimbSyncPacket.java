@@ -12,13 +12,14 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 /**
  * Full Sync Packet for the HUD.
- * Updated: 14 Arguments (Includes Hunger/Fuel, Thirst, and Starvation Timer).
+ * Updated: 15 Arguments (Includes Hunger/Fuel, Thirst, and Starvation Timer).
  */
 public record LimbSyncPacket(
         int bpm, float energy, float thirst, float hunger, boolean watchEquipped,
         float head, float torso, float lArm, float rArm,
         float lLeg, float rLeg, float lFoot, float rFoot,
-        int starvationTimer
+        int starvationTimer,
+        int pollenExposure
 ) implements CustomPacketPayload {
 
     public static final Type<LimbSyncPacket> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(HUDVisualsSubpack.MOD_ID, "limb_sync"));
@@ -43,6 +44,7 @@ public record LimbSyncPacket(
                 buffer.writeFloat(packet.lFoot);
                 buffer.writeFloat(packet.rFoot);
                 buffer.writeInt(packet.starvationTimer);
+                buffer.writeInt(packet.pollenExposure);
             },
             (buffer) -> new LimbSyncPacket(
                     buffer.readInt(),
@@ -58,6 +60,7 @@ public record LimbSyncPacket(
                     buffer.readFloat(),
                     buffer.readFloat(),
                     buffer.readFloat(),
+                    buffer.readInt(),
                     buffer.readInt()
             )
     );
@@ -79,7 +82,8 @@ public record LimbSyncPacket(
                             this.bpm, this.energy, this.thirst, this.hunger, this.watchEquipped,
                             this.head, this.torso, this.lArm, this.rArm,
                             this.lLeg, this.rLeg, this.lFoot, this.rFoot,
-                            this.starvationTimer
+                            this.starvationTimer,
+                            this.pollenExposure
                     );
 
                     // Sync the client-side capability with the new server data

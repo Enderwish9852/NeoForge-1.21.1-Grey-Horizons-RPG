@@ -7,14 +7,16 @@ import net.minecraft.util.Mth;
 /**
  * Single source of truth for Player Stats: BPM, Energy, Thirst, Hunger, and Limb Health.
  * Updated: Added Hunger (Fuel Tank) logic and tick-based stat drainage/regeneration.
+ * Added: Pollen Exposure for Spring weather effects.
  */
 public class WristCapability {
     private int bpm = 70;
     private float energy = 100.0f;
-    private float thirst = 100.0f; // Hydration level (0 to 100)
-    private float hunger = 100.0f; // Fuel level (0 to 100) - Replaces vanilla food
+    private float thirst = 100.0f;
+    private float hunger = 100.0f;
     private boolean watchEquipped = false;
-    private int starvationTimer = 0; // Ticks elapsed since hunger hit zero (0 to 12000)
+    private int starvationTimer = 0;
+    private int pollenExposure = 0; // New: Tracks allergic reaction build-up
 
     // Current health of limbs
     private float headHealth;
@@ -39,12 +41,12 @@ public class WristCapability {
 
     /**
      * Full constructor used by Codec and Sync Packets.
-     * Updated to 14 arguments to include Hunger.
+     * Updated to 15 arguments to include Hunger and Pollen Exposure.
      */
     public WristCapability(int bpm, float energy, float thirst, float hunger, boolean watchEquipped,
                            float head, float torso, float lArm, float rArm,
                            float lLeg, float rLeg, float lFoot, float rFoot,
-                           int starvationTimer) {
+                           int starvationTimer, int pollenExposure) {
         this.bpm = bpm;
         this.energy = energy;
         this.thirst = thirst;
@@ -59,10 +61,12 @@ public class WristCapability {
         this.leftFootHealth = lFoot;
         this.rightFootHealth = rFoot;
         this.starvationTimer = starvationTimer;
+        this.pollenExposure = pollenExposure;
     }
 
     /**
      * Codec for saving/loading data to the player's NBT file.
+     * Updated with pollen_exposure field.
      */
     public static final Codec<WristCapability> CODEC = RecordCodecBuilder.create(inst -> inst.group(
             Codec.INT.fieldOf("bpm").forGetter(WristCapability::getBPM),
@@ -78,7 +82,8 @@ public class WristCapability {
             Codec.FLOAT.fieldOf("right_leg").forGetter(WristCapability::getRightLegHealth),
             Codec.FLOAT.fieldOf("left_foot").forGetter(WristCapability::getLeftFootHealth),
             Codec.FLOAT.fieldOf("right_foot").forGetter(WristCapability::getRightFootHealth),
-            Codec.INT.fieldOf("starvation_timer").forGetter(WristCapability::getStarvationTimer)
+            Codec.INT.fieldOf("starvation_timer").forGetter(WristCapability::getStarvationTimer),
+            Codec.INT.fieldOf("pollen_exposure").forGetter(WristCapability::getPollenExposure)
     ).apply(inst, WristCapability::new));
 
     /**
@@ -115,6 +120,7 @@ public class WristCapability {
     public float getHunger() { return hunger; }
     public boolean hasWatchEquipped() { return watchEquipped; }
     public int getStarvationTimer() { return starvationTimer; }
+    public int getPollenExposure() { return pollenExposure; }
 
     public float getHeadHealth() { return headHealth; }
     public float getTorsoHealth() { return torsoHealth; }
@@ -142,6 +148,7 @@ public class WristCapability {
     public void setHunger(float hunger) { this.hunger = Mth.clamp(hunger, 0, 100); }
     public void setWatchEquipped(boolean state) { this.watchEquipped = state; }
     public void setStarvationTimer(int ticks) { this.starvationTimer = Math.max(0, ticks); }
+    public void setPollenExposure(int val) { this.pollenExposure = Math.max(0, val); }
 
     public void setHeadHealth(float val) { this.headHealth = Mth.clamp(val, 0, getMaxHead()); }
     public void setTorsoHealth(float val) { this.torsoHealth = Mth.clamp(val, 0, getMaxTorso()); }
@@ -175,6 +182,7 @@ public class WristCapability {
         this.thirst = 100.0f;
         this.hunger = 100.0f;
         this.starvationTimer = 0;
+        this.pollenExposure = 0;
         this.bpm = 70;
     }
 
@@ -185,6 +193,7 @@ public class WristCapability {
         this.hunger = source.hunger;
         this.watchEquipped = source.watchEquipped;
         this.starvationTimer = source.starvationTimer;
+        this.pollenExposure = source.pollenExposure;
         this.headHealth = source.headHealth;
         this.torsoHealth = source.torsoHealth;
         this.leftArmHealth = source.leftArmHealth;

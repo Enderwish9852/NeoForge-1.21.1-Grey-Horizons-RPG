@@ -8,6 +8,7 @@ import net.enderwish.HUD_Visuals_Subpack.event.SeasonManager;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
 
 public class SeasonCommand {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
@@ -22,7 +23,7 @@ public class SeasonCommand {
             // Using toLowerCase() to ensure the command is easy to type
             setNode.then(Commands.literal(season.name().toLowerCase())
                     .executes(context -> {
-                        SeasonManager.setSeason(context.getSource().getLevel(), season);
+                        SeasonManager.setSeason((ServerLevel)context.getSource().getLevel(), season);
                         context.getSource().sendSuccess(() ->
                                 Component.literal("Season set to: " + season.name()), true);
                         return 1;

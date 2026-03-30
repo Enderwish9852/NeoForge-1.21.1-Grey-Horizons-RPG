@@ -11,8 +11,11 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.LayeredDraw;
 import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.biome.Biome;
 
 /**
  * SPORTS WATCH HUD
@@ -62,8 +65,12 @@ public class SportsWatchHUD {
 
         if (currentSeason == null) return;
 
-        // Create display text: e.g., "SPRING - DAY 5"
-        String seasonText = currentSeason.name() + " - DAY " + currentDay;
+        // Calculate Temperature
+        float currentTemp = getCalculatedTemperature(mc);
+        String tempText = String.format("%.1f°C", currentTemp);
+
+        // Create display text: e.g., "SPRING - DAY 5 | 22.5°C"
+        String seasonText = currentSeason.name() + " - DAY " + currentDay + " | " + tempText;
         int seasonColor = getSeasonColor(currentSeason);
 
         graphics.pose().pushPose();
@@ -166,5 +173,44 @@ public class SportsWatchHUD {
             case WINTER -> 0xFF55FFFF;
             default -> 0xFFFFFFFF;
         };
+    }
+
+    private static float getCalculatedTemperature(Minecraft mc) {
+        if (mc.level == null || mc.player == null) return 20.0f;
+
+        BlockPos pos = mc.player.blockPosition();
+        Biome biome = mc.level.getBiome(pos).value();
+
+        // Base Minecraft biome temperature (usually 0.0 to 2.0)
+        float baseTemp = biome.getBaseTemperature();
+
+        // Convert to Celsius: Base 20C, scaled by Minecraft's internal temp
+        float celsius = 20.0f + (baseTemp * 15.0f);
+
+        // Time of day adjustment (Colder at night)
+        long time = mc.level.getDayTime() % 24000;
+        if (time > 13000 && time < 23000) { // Night time
+            celsius -= 10.0f;
+        } else if (time > 23000 || time < 1000) { // Dawn
+            celsius -= 5.0f;
+        }
+
+        // Season adjustment
+        Season season = ClientSeasonHandler.getClientSeason();
+        if (season != null) {
+            celsius += switch (season) {
+                case SUMMER -> 10.0f;
+                case WINTER -> -15.0f;
+                case AUTUMN -> -5.0f;
+                default -> 0.0f;
+            };
+        }
+
+        // Altitude adjustment (Colder as you go up)
+        if (pos.getY() > 80) {
+            celsius -= (pos.getY() - 80) * 0.1f;
+        }
+
+        return celsius;
     }
 }
