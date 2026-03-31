@@ -4,6 +4,7 @@ import net.enderwish.HUD_Visuals_Subpack.client.ClientSeasonHandler;
 import net.enderwish.HUD_Visuals_Subpack.core.Season;
 import net.enderwish.HUD_Visuals_Subpack.core.SeasonData;
 import net.enderwish.HUD_Visuals_Subpack.network.SeasonSyncPacket;
+import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -15,7 +16,7 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 
-@EventBusSubscriber(modid = "hud_visuals_subpack")
+@EventBusSubscriber(modid = "gh_hud_visuals")
 public class SeasonManager {
 
     @SubscribeEvent
@@ -122,7 +123,34 @@ public class SeasonManager {
             ServerLevel level = player.serverLevel();
             SeasonData data = SeasonData.get(level);
             syncToPlayer(player, level, data);
+            if (data.getCurrentSeason() == Season.SPRING && data.getDisplayDay() <= 3) {
+                generateInstantMeltAesthetic(level, player.blockPosition(), 48);
+            }
         }
+    }
+
+    private static void generateInstantMeltAesthetic(ServerLevel level, BlockPos center, int radius) {
+        BlockPos.betweenClosedStream(center.offset(-radius, -10, -radius), center.offset(radius, 10, radius))
+                .forEach(pos -> {
+                    float roll = level.random.nextFloat();
+
+                    // 1. Patchy Ice on Water Surfaces
+                    if (level.getBlockState(pos).is(net.minecraft.world.level.block.Blocks.WATER) && level.getBlockState(pos.above()).isAir()) {
+                        if (roll < 0.25f) { // 25% chance for ice chunks
+                            level.setBlock(pos, net.minecraft.world.level.block.Blocks.ICE.defaultBlockState(), 3);
+                        }
+                    }
+
+                    // 2. Leftover Snow Layers on Solid Ground
+                    if (level.getBlockState(pos).isAir() && level.getBlockState(pos.below()).isSolidRender(level, pos.below())) {
+                        if (roll < 0.15f) { // 15% chance for scattered snow patches
+                            // Place a thin snow layer (1-2 layers high)
+                            int layers = level.random.nextInt(2) + 1;
+                            level.setBlock(pos, net.minecraft.world.level.block.Blocks.SNOW.defaultBlockState()
+                                    .setValue(net.minecraft.world.level.block.SnowLayerBlock.LAYERS, layers), 3);
+                        }
+                    }
+                });
     }
 
     private static String getCurrentWeatherString(ServerLevel level) {

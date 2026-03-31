@@ -7,7 +7,7 @@ import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraft.world.level.storage.DimensionDataStorage;
 
 public class SeasonData extends SavedData {
-    private static final String IDENTIFIER = "hud_visuals_seasons";
+    private static final String IDENTIFIER = "gh_hud_visuals_seasons";
     public static final int DAYS_PER_SEASON = 20;
 
     private Season currentSeason = Season.SPRING;

@@ -16,7 +16,7 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 public record SeasonSyncPacket(Season season, int day, String weather) implements CustomPacketPayload {
 
     public static final Type<SeasonSyncPacket> TYPE = new Type<>(
-            ResourceLocation.fromNamespaceAndPath("hud_visuals", "season_sync")
+            ResourceLocation.fromNamespaceAndPath("gh_hud_visuals", "season_sync")
     );
 
     /**
