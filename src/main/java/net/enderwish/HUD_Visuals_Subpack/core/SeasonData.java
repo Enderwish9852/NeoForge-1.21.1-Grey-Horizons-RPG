@@ -48,10 +48,10 @@ public class SeasonData extends SavedData {
         this.setDirty();
     }
 
-    public int getDisplayDay() { return daysPassed + 1; }
+    public int getDisplayDay() { return daysPassed;}
 
     public void setSeasonDay(int day) {
-        this.daysPassed = Math.max(0, Math.min(day - 1, DAYS_PER_SEASON - 1));
+        this.daysPassed = Math.max(0, Math.min(day, DAYS_PER_SEASON - 1));
         this.setDirty();
     }
 

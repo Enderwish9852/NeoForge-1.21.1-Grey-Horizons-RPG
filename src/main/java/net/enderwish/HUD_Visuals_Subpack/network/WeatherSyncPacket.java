@@ -1,29 +1,30 @@
 package net.enderwish.HUD_Visuals_Subpack.network;
 
+import io.netty.buffer.ByteBuf;
+import net.enderwish.HUD_Visuals_Subpack.HUDVisualsSubpack;
 import net.enderwish.HUD_Visuals_Subpack.client.ClientWeatherHandler;
 import net.enderwish.HUD_Visuals_Subpack.core.WeatherData;
-import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 /**
- * Packet to sync weather state from Server to Client.
- * Leverages the updated WeatherData record which now includes tempOffset.
+ * Modern NeoForge 1.21.1 Packet for syncing weather.
  */
 public record WeatherSyncPacket(WeatherData data) implements CustomPacketPayload {
 
+    // Use your MOD_ID constant to prevent "magic string" errors
     public static final Type<WeatherSyncPacket> TYPE = new Type<>(
-            ResourceLocation.fromNamespaceAndPath("hud_visuals", "weather_sync")
+            ResourceLocation.fromNamespaceAndPath(HUDVisualsSubpack.MOD_ID, "weather_sync")
     );
 
     /**
-     * Efficiently handles serialization by leveraging the existing
-     * WeatherData.STREAM_CODEC (which now handles type, ticks, intensity, and tempOffset).
+     * Using ByteBuf instead of FriendlyByteBuf is the modern standard for StreamCodecs
+     * unless you specifically need Vanilla-friendly buffer methods.
      */
-    public static final StreamCodec<FriendlyByteBuf, WeatherSyncPacket> STREAM_CODEC = StreamCodec.composite(
-            WeatherData.STREAM_CODEC.cast(), WeatherSyncPacket::data,
+    public static final StreamCodec<ByteBuf, WeatherSyncPacket> STREAM_CODEC = StreamCodec.composite(
+            WeatherData.STREAM_CODEC, WeatherSyncPacket::data,
             WeatherSyncPacket::new
     );
 
@@ -33,19 +34,17 @@ public record WeatherSyncPacket(WeatherData data) implements CustomPacketPayload
     }
 
     /**
-     * Logic executed on the client-side upon receiving the packet.
-     * Updated to pass all components including duration and temperature offset.
+     * Payload handling logic.
      */
-    public static void handle(final WeatherSyncPacket payload, final IPayloadContext context) {
+    public void handle(IPayloadContext context) {
+        // EnqueueWork is CRITICAL to ensure we are back on the Main Client Thread
+        // before touching things like Rendering or ClientHandlers.
         context.enqueueWork(() -> {
-            WeatherData weather = payload.data();
-
-            // Update the ClientWeatherHandler with the full set of received data
             ClientWeatherHandler.setWeatherFromServer(
-                    weather.type(),
-                    weather.ticksRemaining(),
-                    weather.intensity(),
-                    weather.tempOffset()
+                    data.type(),
+                    data.ticksRemaining(),
+                    data.intensity(),
+                    data.tempOffset()
             );
         });
     }

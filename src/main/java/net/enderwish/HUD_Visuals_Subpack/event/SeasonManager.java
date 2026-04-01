@@ -5,11 +5,15 @@ import net.enderwish.HUD_Visuals_Subpack.core.Season;
 import net.enderwish.HUD_Visuals_Subpack.core.SeasonData;
 import net.enderwish.HUD_Visuals_Subpack.network.SeasonSyncPacket;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.tags.BiomeTags;
+import net.minecraft.util.Mth;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.biome.Biome;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
@@ -27,16 +31,14 @@ public class SeasonManager {
             SeasonData data = SeasonData.get(serverLevel);
             long gameTime = serverLevel.getGameTime();
 
-            // 1. Advance Day Logic
-            if (gameTime % 24000 == 1) {
+            // 1. Advance Day Logic (At the very end of the day)
+            if (gameTime % 24000 == 23999) {
                 Season oldSeason = data.getCurrentSeason();
                 data.tick(serverLevel);
                 data.setDirty();
 
-                Season newSeason = data.getCurrentSeason();
-
-                if (oldSeason != newSeason) {
-                    triggerSeasonTransition(serverLevel, oldSeason, newSeason);
+                if (oldSeason != data.getCurrentSeason()) {
+                    triggerSeasonTransition(serverLevel, oldSeason, data.getCurrentSeason());
                 } else {
                     syncToAll(serverLevel, data);
                 }
@@ -50,24 +52,70 @@ public class SeasonManager {
     }
 
     /**
-     * Called by commands to manually force a season change.
+     * The "Hook": Calculates temperature based on Biome + Season Offset.
+     * Use this for HUD displays or weather logic.
      */
-    public static void setSeason(ServerLevel level, Season season) {
-        SeasonData data = SeasonData.get(level);
-        Season oldSeason = data.getCurrentSeason();
-        data.setCurrentSeason(season);
-        data.setDirty();
+    public static float getAdjustedTemperature(Level level, BlockPos pos) {
+        Holder<Biome> biomeHolder = level.getBiome(pos);
+        Biome biome = biomeHolder.value();
 
-        if (oldSeason != season) {
-            triggerSeasonTransition(level, oldSeason, season);
-        } else {
-            syncToAll(level, data);
-        }
+        // FIX: In 1.21.1, the public way to get the temp at a position is:
+        // biome.getTemperature(pos) is private.
+        // We use the base temperature and manually adjust for height (like Vanilla does)
+        // or use the specialized public accessor:
+        float baseTemp = biome.getBaseTemperature();
+
+        // Vanilla height logic: Temperature drops by 0.00125 for every block above sea level
+        float heightOffset = (float)(pos.getY() - level.getSeaLevel()) * 0.00125F;
+        float currentTemp = baseTemp - heightOffset;
+
+        // Don't adjust "Hot" biomes (Deserts, Savannas stay hot)
+        if (isHotBiome(biomeHolder)) return currentTemp;
+
+        Season season = getSeason(level);
+        float seasonOffset = switch (season) {
+            case WINTER -> -0.7f;
+            case AUTUMN -> -0.2f;
+            case SPRING -> -0.1f;
+            case SUMMER -> 0.2f;
+        };
+
+        return Mth.clamp(currentTemp + seasonOffset, -0.5f, 2.0f);
     }
 
-    /**
-     * Called by commands to manually set the specific day.
-     */
+    public static boolean isHotBiome(Holder<Biome> biome) {
+        return biome.is(BiomeTags.HAS_VILLAGE_DESERT) ||
+                biome.is(BiomeTags.IS_SAVANNA) ||
+                biome.is(BiomeTags.HAS_VILLAGE_SAVANNA);
+    }
+
+    private static String getCurrentWeatherString(Level level) {
+        if (!level.isRaining() && !level.isThundering()) return "clear";
+
+        Season season = getSeason(level);
+        if (season == Season.WINTER) {
+            return level.isThundering() ? "blizzard" : "snow";
+        }
+
+        return "rain";
+    }
+
+    public static String getSeasonPhase(Level level) {
+        int day = (level instanceof ServerLevel sl) ? SeasonData.get(sl).getDisplayDay() : 1;
+        if (day <= 6) return "Early";
+        if (day <= 14) return "Mid";
+        return "Late";
+    }
+
+    // --- Command / Event Helpers ---
+
+    public static void setSeason(ServerLevel level, Season season) {
+        SeasonData data = SeasonData.get(level);
+        data.setCurrentSeason(season);
+        data.setDirty();
+        triggerSeasonTransition(level, null, season);
+    }
+
     public static void setDay(ServerLevel level, int day) {
         SeasonData data = SeasonData.get(level);
         data.setSeasonDay(day);
@@ -75,42 +123,8 @@ public class SeasonManager {
         syncToAll(level, data);
     }
 
-    /**
-     * Returns a float where:
-     * Below 0.15 = Can Snow/Freeze
-     * Above 0.15 = Rain/Melt
-     */
-    public static float getSubTemperature(Level level) {
-        SeasonData data = (level instanceof ServerLevel sl) ? SeasonData.get(sl) : null;
-
-        // If data is null (client side), we try to get info from the client handler
-        Season season = (data != null) ? data.getCurrentSeason() : ClientSeasonHandler.getSeason();
-        int day = (data != null) ? data.getDisplayDay() : 1;
-
-        return switch (season) {
-            case SPRING -> (day <= 5) ? -0.1f : (day <= 15 ? 0.2f : 0.5f);
-            case SUMMER -> (day >= 8 && day <= 13) ? 1.2f : 0.8f;
-            case AUTUMN -> (day <= 10) ? 0.4f : (day <= 15 ? 0.14f : -0.1f);
-            case WINTER -> (day <= 5) ? -0.2f : -0.8f;
-        };
-    }
-
-    /**
-     * Determines the phase for HUD display (Early, Mid, Late).
-     */
-    public static String getSeasonPhase(Level level) {
-        SeasonData data = (level instanceof ServerLevel sl) ? SeasonData.get(sl) : null;
-        int day = (data != null) ? data.getDisplayDay() : 1;
-
-        if (day <= 6) return "Early";
-        if (day <= 14) return "Mid";
-        return "Late";
-    }
-
     public static void triggerSeasonTransition(ServerLevel level, Season from, Season to) {
-        SeasonData data = SeasonData.get(level);
-        syncToAll(level, data);
-
+        syncToAll(level, SeasonData.get(level));
         for (ServerPlayer player : level.players()) {
             level.playSound(null, player.getX(), player.getY(), player.getZ(),
                     SoundEvents.BEACON_ACTIVATE, SoundSource.AMBIENT, 1.0f, 1.0f);
@@ -120,66 +134,23 @@ public class SeasonManager {
     @SubscribeEvent
     public static void onPlayerJoin(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
-            ServerLevel level = player.serverLevel();
-            SeasonData data = SeasonData.get(level);
-            syncToPlayer(player, level, data);
-            if (data.getCurrentSeason() == Season.SPRING && data.getDisplayDay() <= 3) {
-                generateInstantMeltAesthetic(level, player.blockPosition(), 48);
-            }
+            syncToPlayer(player, player.serverLevel(), SeasonData.get(player.serverLevel()));
         }
-    }
-
-    private static void generateInstantMeltAesthetic(ServerLevel level, BlockPos center, int radius) {
-        BlockPos.betweenClosedStream(center.offset(-radius, -10, -radius), center.offset(radius, 10, radius))
-                .forEach(pos -> {
-                    float roll = level.random.nextFloat();
-
-                    // 1. Patchy Ice on Water Surfaces
-                    if (level.getBlockState(pos).is(net.minecraft.world.level.block.Blocks.WATER) && level.getBlockState(pos.above()).isAir()) {
-                        if (roll < 0.25f) { // 25% chance for ice chunks
-                            level.setBlock(pos, net.minecraft.world.level.block.Blocks.ICE.defaultBlockState(), 3);
-                        }
-                    }
-
-                    // 2. Leftover Snow Layers on Solid Ground
-                    if (level.getBlockState(pos).isAir() && level.getBlockState(pos.below()).isSolidRender(level, pos.below())) {
-                        if (roll < 0.15f) { // 15% chance for scattered snow patches
-                            // Place a thin snow layer (1-2 layers high)
-                            int layers = level.random.nextInt(2) + 1;
-                            level.setBlock(pos, net.minecraft.world.level.block.Blocks.SNOW.defaultBlockState()
-                                    .setValue(net.minecraft.world.level.block.SnowLayerBlock.LAYERS, layers), 3);
-                        }
-                    }
-                });
-    }
-
-    private static String getCurrentWeatherString(ServerLevel level) {
-        if (level.isThundering()) return "blizzard";
-        if (level.isRaining()) return "rain";
-        return "clear";
     }
 
     private static void syncToAll(ServerLevel level, SeasonData data) {
         PacketDistributor.sendToAllPlayers(new SeasonSyncPacket(
-                data.getCurrentSeason(),
-                data.getDisplayDay(),
-                getCurrentWeatherString(level)
+                data.getCurrentSeason(), data.getDisplayDay(), getCurrentWeatherString(level)
         ));
     }
 
     public static void syncToPlayer(ServerPlayer player, ServerLevel level, SeasonData data) {
         PacketDistributor.sendToPlayer(player, new SeasonSyncPacket(
-                data.getCurrentSeason(),
-                data.getDisplayDay(),
-                getCurrentWeatherString(level)
+                data.getCurrentSeason(), data.getDisplayDay(), getCurrentWeatherString(level)
         ));
     }
 
     public static Season getSeason(Level level) {
-        if (level instanceof ServerLevel serverLevel) {
-            return SeasonData.get(serverLevel).getCurrentSeason();
-        } else {
-            return ClientSeasonHandler.getSeason();
-        }
+        return (level instanceof ServerLevel sl) ? SeasonData.get(sl).getCurrentSeason() : ClientSeasonHandler.getSeason();
     }
 }

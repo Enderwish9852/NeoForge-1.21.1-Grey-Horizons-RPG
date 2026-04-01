@@ -6,6 +6,7 @@ import net.enderwish.HUD_Visuals_Subpack.client.ClientSeasonHandler;
 import net.enderwish.HUD_Visuals_Subpack.core.ModAttachments;
 import net.enderwish.HUD_Visuals_Subpack.core.Season;
 import net.enderwish.HUD_Visuals_Subpack.core.WristCapability;
+import net.enderwish.HUD_Visuals_Subpack.event.SeasonManager;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -14,16 +15,14 @@ import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.biome.Biome;
 
 /**
- * SPORTS WATCH HUD
- * Uses internal ClientSeasonHandler to display the custom season system.
+ * SPORTS WATCH HUD - Updated for NeoForge 1.21.1
  */
 public class SportsWatchHUD {
 
     private static final ResourceLocation LIMBS_TEXTURE = ResourceLocation.fromNamespaceAndPath(HUDVisualsSubpack.MOD_ID, "textures/gui/limbs.png");
+    private static final ResourceLocation FROST_OVERLAY = ResourceLocation.withDefaultNamespace("textures/misc/powder_snow_outline.png");
 
     private static final int WATCH_FACE_WIDTH = 80;
     private static final int WATCH_FACE_HEIGHT = 85;
@@ -40,8 +39,10 @@ public class SportsWatchHUD {
 
         if (player == null || player.isSpectator() || !player.isAlive()) return;
 
-        player.deathTime = 0;
-        player.hurtTime = 0;
+        // Ensure we draw the Frost Overlay FIRST if a blizzard is happening
+        if (ClientSeasonHandler.isBlizzard()) {
+            renderBlizzardOverlay(graphics, mc);
+        }
 
         WristCapability cap = player.getData(ModAttachments.WRIST_CAP);
         if (cap == null) return;
@@ -59,30 +60,62 @@ public class SportsWatchHUD {
     }
 
     private static void renderSeasonInfo(GuiGraphics graphics, Minecraft mc, int sw, int sh) {
-        // Using your project's ClientSeasonHandler (from image_e57d84.jpg)
-        Season currentSeason = ClientSeasonHandler.getClientSeason();
-        int currentDay = ClientSeasonHandler.getClientDay();
-
+        Season currentSeason = ClientSeasonHandler.getSeason();
         if (currentSeason == null) return;
 
-        // Calculate Temperature
-        float currentTemp = getCalculatedTemperature(mc);
-        String tempText = String.format("%.1f°C", currentTemp);
+        // NEW: Pull temperature from our Hook instead of manual math
+        float rawTemp = SeasonManager.getAdjustedTemperature(mc.level, mc.player.blockPosition());
 
-        // Create display text: e.g., "SPRING - DAY 5 | 22.5°C"
-        String seasonText = currentSeason.name() + " - DAY " + currentDay + " | " + tempText;
-        int seasonColor = getSeasonColor(currentSeason);
+        // Convert MC Temp to Celsius for display:
+        // 0.7 (Forest) -> ~20°C | -0.5 (Icy) -> ~-5°C
+        float displayCelsius = (rawTemp * 25.0f) + 2.5f;
+
+        String weatherLabel = ClientSeasonHandler.getWeather().toUpperCase();
+        String feelText = getFeelDescription(displayCelsius);
+        int tempColor = getTemperatureColor(displayCelsius);
+
+        // Format: "WINTER | SNOW | -4.2°C"
+        String displayLine = currentSeason.name() + " | " + weatherLabel + " | " + String.format("%.1f°C", displayCelsius);
 
         graphics.pose().pushPose();
         graphics.pose().scale(0.8f, 0.8f, 0.8f);
-
-        // Positioned slightly above the status bars
         int scaledX = (int) ((sw / 2) / 0.8f);
         int scaledY = (int) ((sh - 62) / 0.8f);
 
-        graphics.drawCenteredString(mc.font, seasonText, scaledX, scaledY, seasonColor);
+        graphics.drawCenteredString(mc.font, displayLine, scaledX, scaledY, tempColor);
         graphics.pose().popPose();
     }
+
+    private static void renderBlizzardOverlay(GuiGraphics graphics, Minecraft mc) {
+        RenderSystem.disableDepthTest();
+        RenderSystem.depthMask(false);
+        RenderSystem.enableBlend();
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 0.5F); // 50% opacity frost
+
+        graphics.blit(FROST_OVERLAY, 0, 0, -90, 0.0F, 0.0F, graphics.guiWidth(), graphics.guiHeight(), graphics.guiWidth(), graphics.guiHeight());
+
+        RenderSystem.depthMask(true);
+        RenderSystem.enableDepthTest();
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+    }
+
+    private static String getFeelDescription(float temp) {
+        if (temp <= 0.0f) return "FREEZING";
+        if (temp <= 12.0f) return "CHILLY";
+        if (temp <= 24.0f) return "PLEASANT";
+        if (temp <= 32.0f) return "WARM";
+        return "HOT";
+    }
+
+    private static int getTemperatureColor(float temp) {
+        if (temp <= 0.0f) return 0xFF55FFFF; // Aqua
+        if (temp <= 12.0f) return 0xFF5555FF; // Blue
+        if (temp <= 24.0f) return 0xFF55FF55; // Green
+        if (temp <= 32.0f) return 0xFFFFAA00; // Orange
+        return 0xFFFF5555; // Red
+    }
+
+    // ... [Rest of your Starvation, StatusBars, and LimbDisplay code remains the same] ...
 
     private static void renderStarvationTimer(GuiGraphics graphics, Minecraft mc, WristCapability cap, int sw, int sh) {
         if (cap.getStarvationTimer() > 0) {
@@ -162,55 +195,5 @@ public class SportsWatchHUD {
         }
         graphics.blit(LIMBS_TEXTURE, x, y, u, v, width, height, 128, 128);
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-    }
-
-    private static int getSeasonColor(Season season) {
-        // Mapping colors to your specific Season enum
-        return switch (season) {
-            case SPRING -> 0xFF55FF55;
-            case SUMMER -> 0xFFFFFF55;
-            case AUTUMN -> 0xFFFFAA00;
-            case WINTER -> 0xFF55FFFF;
-            default -> 0xFFFFFFFF;
-        };
-    }
-
-    private static float getCalculatedTemperature(Minecraft mc) {
-        if (mc.level == null || mc.player == null) return 20.0f;
-
-        BlockPos pos = mc.player.blockPosition();
-        Biome biome = mc.level.getBiome(pos).value();
-
-        // Base Minecraft biome temperature (usually 0.0 to 2.0)
-        float baseTemp = biome.getBaseTemperature();
-
-        // Convert to Celsius: Base 20C, scaled by Minecraft's internal temp
-        float celsius = 20.0f + (baseTemp * 15.0f);
-
-        // Time of day adjustment (Colder at night)
-        long time = mc.level.getDayTime() % 24000;
-        if (time > 13000 && time < 23000) { // Night time
-            celsius -= 10.0f;
-        } else if (time > 23000 || time < 1000) { // Dawn
-            celsius -= 5.0f;
-        }
-
-        // Season adjustment
-        Season season = ClientSeasonHandler.getClientSeason();
-        if (season != null) {
-            celsius += switch (season) {
-                case SUMMER -> 10.0f;
-                case WINTER -> -15.0f;
-                case AUTUMN -> -5.0f;
-                default -> 0.0f;
-            };
-        }
-
-        // Altitude adjustment (Colder as you go up)
-        if (pos.getY() > 80) {
-            celsius -= (pos.getY() - 80) * 0.1f;
-        }
-
-        return celsius;
     }
 }

@@ -1,7 +1,6 @@
 package net.enderwish.HUD_Visuals_Subpack;
 
 import net.enderwish.HUD_Visuals_Subpack.client.gui.SportsWatchHUD;
-import net.enderwish.HUD_Visuals_Subpack.client.render.WeatherFogRenderer;
 import net.enderwish.HUD_Visuals_Subpack.client.render.WeatherHUDRenderer;
 import net.enderwish.HUD_Visuals_Subpack.client.render.WeatherOverlayRenderer;
 import net.enderwish.HUD_Visuals_Subpack.command.SeasonCommand;
@@ -67,12 +66,6 @@ public class HUDVisualsSubpack {
         // Register this class instance for the command event listener below
         NeoForge.EVENT_BUS.register(this);
 
-        // Client-only initialization
-        if (FMLEnvironment.dist.isClient()) {
-            modEventBus.addListener(this::onRegisterGuiLayers);
-            // Weather Fog Renderer handles its own fog events via @SubscribeEvent
-            NeoForge.EVENT_BUS.register(new WeatherFogRenderer());
-        }
     }
 
     private void registerNetworking(final RegisterPayloadHandlersEvent event) {

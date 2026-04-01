@@ -2,6 +2,7 @@ package net.enderwish.HUD_Visuals_Subpack.client.render;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
+import net.enderwish.HUD_Visuals_Subpack.HUDVisualsSubpack;
 import net.enderwish.HUD_Visuals_Subpack.client.ClientWeatherHandler;
 import net.enderwish.HUD_Visuals_Subpack.core.WeatherType;
 import net.minecraft.client.Minecraft;
@@ -13,59 +14,52 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import org.joml.Matrix4f;
 
-import static net.enderwish.HUD_Visuals_Subpack.client.ClientWeatherHandler.getIntensity;
-
 /**
- * Modern NeoForge renderer for custom weather overlays.
- * Fixed for 1.21.1: Corrected event method calls and vertex builder sequence.
+ * Optimized NeoForge 1.21.1 Weather Renderer.
+ * Fixed for merged WeatherTypes and modern Vertex Building.
  */
-@EventBusSubscriber(modid = "hud_visuals_subpack", value = Dist.CLIENT)
+@EventBusSubscriber(modid = HUDVisualsSubpack.MOD_ID, value = Dist.CLIENT)
 public class WeatherEffectsRenderer {
 
-    private static final ResourceLocation BLIZZARD_TEXTURE = ResourceLocation.fromNamespaceAndPath("hud_visuals_subpack", "textures/environment/blizzard.png");
-    private static final ResourceLocation HEATWAVE_TEXTURE = ResourceLocation.fromNamespaceAndPath("hud_visuals_subpack", "textures/environment/heatwave.png");
-    private static final ResourceLocation POLLEN_TEXTURE = ResourceLocation.fromNamespaceAndPath("hud_visuals_subpack", "textures/environment/pollen_haze.png");
-    private static final ResourceLocation DIAMOND_TEXTURE = ResourceLocation.fromNamespaceAndPath("hud_visuals_subpack", "textures/environment/diamond_dust.png");
+    private static final ResourceLocation BLIZZARD_TEX = ResourceLocation.fromNamespaceAndPath(HUDVisualsSubpack.MOD_ID, "textures/environment/blizzard.png");
+    private static final ResourceLocation HEATWAVE_TEX = ResourceLocation.fromNamespaceAndPath(HUDVisualsSubpack.MOD_ID, "textures/environment/heatwave.png");
+    private static final ResourceLocation POLLEN_TEX = ResourceLocation.fromNamespaceAndPath(HUDVisualsSubpack.MOD_ID, "textures/environment/pollen_haze.png");
+    private static final ResourceLocation DIAMOND_TEX = ResourceLocation.fromNamespaceAndPath(HUDVisualsSubpack.MOD_ID, "textures/environment/diamond_dust.png");
+    private static final ResourceLocation WIND_TEX = ResourceLocation.fromNamespaceAndPath(HUDVisualsSubpack.MOD_ID, "textures/environment/wind_streaks.png");
 
     @SubscribeEvent
     public static void onRenderLevelStage(RenderLevelStageEvent event) {
-        // Only render during the weather stage
-        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_WEATHER) {
-            return;
-        }
+        // We render at AFTER_WEATHER to overlay on top of vanilla rain/snow
+        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_WEATHER) return;
 
-        // NeoForge 1.21.1: Pass the PoseStack from the event
-        renderCustomWeather(event.getPoseStack());
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null || mc.player == null) return;
+
+        WeatherType type = ClientWeatherHandler.getType();
+        float intensity = ClientWeatherHandler.getIntensity();
+
+        if (intensity <= 0.0f) return;
+
+        // Use the PoseStack from the event
+        PoseStack poseStack = event.getPoseStack();
+        poseStack.pushPose();
+
+        // Face the player so the overlay covers the view
+        renderCustomWeather(poseStack, type, intensity);
+
+        poseStack.popPose();
     }
 
-    private static void renderCustomWeather(PoseStack poseStack) {
-        // Fetch current state from ClientWeatherHandler [cite: 6]
-        WeatherType currentType = ClientWeatherHandler.getCurrentType();
-        float alpha = ClientWeatherHandler.getVisualAlpha();
-
-        if (alpha <= 0.0f || Minecraft.getInstance().level == null) {
-            return;
-        }
-
-        // Apply rendering based on the mod's specific weather types [cite: 6, 17]
-        switch (currentType) {
-            case BLIZZARD -> {
-                renderOverlay(poseStack, BLIZZARD_TEXTURE, alpha * getIntensity(), 1.0f, 1.0f, 1.0f);
-            }
-            case HEATWAVE -> {
-                renderOverlay(poseStack, HEATWAVE_TEXTURE, alpha * 0.7f, 1.0f, 0.6f, 0.2f);
-            }
-            case POLLEN_HAZE -> {
-                // Soft yellow/green tint with the pollen particle texture
-                renderOverlay(poseStack, POLLEN_TEXTURE, alpha * 0.5f, 0.9f, 1.0f, 0.4f);
-            }
-            case DIAMOND_DUST -> {
-                // Bright, sparkling blue-white tint
-                renderOverlay(poseStack, DIAMOND_TEXTURE, alpha * 0.8f, 0.7f, 0.9f, 1.0f);
-            }
-            case STRONG_WIND -> {
-                // For strong wind, we can use a very subtle gray sweep or just the alpha transition
-                renderOverlay(poseStack, null, alpha * 0.2f, 0.9f, 0.9f, 0.9f);
+    private static void renderCustomWeather(PoseStack poseStack, WeatherType type, float intensity) {
+        switch (type) {
+            case BLIZZARD -> renderOverlay(poseStack, BLIZZARD_TEX, intensity, 0.9f, 0.95f, 1.0f);
+            case HEATWAVE -> renderOverlay(poseStack, HEATWAVE_TEX, intensity * 0.5f, 1.0f, 0.7f, 0.3f);
+            case POLLEN_HAZE -> renderOverlay(poseStack, POLLEN_TEX, intensity * 0.4f, 0.8f, 1.0f, 0.2f);
+            case DIAMOND_DUST -> renderOverlay(poseStack, DIAMOND_TEX, intensity * 0.6f, 1.0f, 1.0f, 1.0f);
+            case WIND -> renderOverlay(poseStack, WIND_TEX, intensity * 0.3f, 1.0f, 1.0f, 1.0f);
+            case RAIN -> {
+                // If rain is very intense, add a grey "mist" overlay
+                if (intensity > 0.7f) renderOverlay(poseStack, null, (intensity - 0.7f), 0.5f, 0.5f, 0.6f);
             }
         }
     }
@@ -75,26 +69,27 @@ public class WeatherEffectsRenderer {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         RenderSystem.depthMask(false);
-
         RenderSystem.setShader(GameRenderer::getPositionTexColorShader);
-        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f); // Use 1.0 if colors are passed per-vertex
 
-        RenderSystem.setShaderTexture(0, texture);
+        if (texture != null) {
+            RenderSystem.setShaderTexture(0, texture);
+        }
 
         Tesselator tesselator = Tesselator.getInstance();
-        // 1.21.1 Vertex building: Position -> Tex -> Color
-        BufferBuilder bufferBuilder = tesselator.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
+        // 1.21.1: Vertex format uses POSITION_TEX_COLOR
+        BufferBuilder builder = tesselator.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
 
         Matrix4f matrix = poseStack.last().pose();
-        float size = 150.0f;
+        float size = 100.0f; // Large enough to cover view distance planes
+        float z = 0.01f;     // Slight offset to prevent z-fighting
 
-        // Correct sequence for POSITION_TEX_COLOR
-        bufferBuilder.addVertex(matrix, -size, -size, 0).setUv(0, 0).setColor(r, g, b, alpha);
-        bufferBuilder.addVertex(matrix, -size, size, 0).setUv(0, 1).setColor(r, g, b, alpha);
-        bufferBuilder.addVertex(matrix, size, size, 0).setUv(1, 1).setColor(r, g, b, alpha);
-        bufferBuilder.addVertex(matrix, size, -size, 0).setUv(1, 0).setColor(r, g, b, alpha);
+        // Build vertices: Position -> UV -> Color
+        builder.addVertex(matrix, -size, -size, z).setUv(0, 0).setColor(r, g, b, alpha);
+        builder.addVertex(matrix, -size, size, z).setUv(0, 1).setColor(r, g, b, alpha);
+        builder.addVertex(matrix, size, size, z).setUv(1, 1).setColor(r, g, b, alpha);
+        builder.addVertex(matrix, size, -size, z).setUv(1, 0).setColor(r, g, b, alpha);
 
-        MeshData meshData = bufferBuilder.build();
+        MeshData meshData = builder.build();
         if (meshData != null) {
             BufferUploader.drawWithShader(meshData);
         }

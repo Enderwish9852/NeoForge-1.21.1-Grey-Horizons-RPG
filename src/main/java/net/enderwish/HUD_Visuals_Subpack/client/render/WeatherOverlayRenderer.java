@@ -33,7 +33,7 @@ public class WeatherOverlayRenderer {
         if (mc.player == null || mc.options.hideGui) return;
 
         // Determine if we should be showing a weather effect
-        WeatherType currentType = ClientWeatherHandler.getCurrentType();
+        WeatherType currentType = ClientWeatherHandler.getType();
         boolean isActiveWeather = (currentType == WeatherType.BLIZZARD || currentType == WeatherType.HEATWAVE);
 
         // Update the alpha transparency for smooth transitions

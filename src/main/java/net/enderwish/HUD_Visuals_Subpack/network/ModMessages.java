@@ -13,7 +13,6 @@ public class ModMessages {
      * Registers the networking channel and payloads.
      */
     public static void register(final RegisterPayloadHandlersEvent event) {
-        // We use the MOD_ID as the namespace for the registrar
         final PayloadRegistrar registrar = event.registrar(HUDVisualsSubpack.MOD_ID)
                 .versioned("1.0");
 
@@ -31,25 +30,26 @@ public class ModMessages {
                 WristSyncPacket::handle
         );
 
-        // 3. Season Sync (Server -> Client) - ADDED THIS
+        // 3. Season Sync (Server -> Client)
         registrar.playToClient(
                 SeasonSyncPacket.TYPE,
                 SeasonSyncPacket.STREAM_CODEC,
+                SeasonSyncPacket::handle
+        );
+
+        // 4. Weather Sync (Server -> Client)
+        // Standardized to use the same handle pattern as the others
+        registrar.playToClient(
+                WeatherSyncPacket.TYPE,
+                WeatherSyncPacket.STREAM_CODEC,
                 (payload, context) -> payload.handle(context)
         );
     }
 
-    /**
-     * Helper to send a packet to a specific player.
-     */
     public static void sendToPlayer(CustomPacketPayload packet, ServerPlayer player) {
         PacketDistributor.sendToPlayer(player, packet);
     }
 
-    /**
-     * Helper to send a packet to everyone on the server.
-     * Required by WeatherManager to sync environmental states.
-     */
     public static void sendToAllPlayers(CustomPacketPayload packet) {
         PacketDistributor.sendToAllPlayers(packet);
     }

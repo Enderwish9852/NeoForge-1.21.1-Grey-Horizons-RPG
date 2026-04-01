@@ -3,12 +3,10 @@ package net.enderwish.HUD_Visuals_Subpack.client;
 import net.enderwish.HUD_Visuals_Subpack.core.Season;
 import net.enderwish.HUD_Visuals_Subpack.network.SeasonSyncPacket;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.renderer.LevelRenderer;
 
 /**
- * Manages seasonal state on the client and forces visual updates.
+ * PURE DATA HANDLER: Manages seasonal state on the client.
+ * Visual refreshes and color shifts are handled by ClientColorHandler.
  */
 public class ClientSeasonHandler {
 
@@ -17,66 +15,43 @@ public class ClientSeasonHandler {
     private static String clientWeather = "clear";
 
     /**
-     * Handles incoming data and triggers a hard refresh if the season or day changes.
+     * Updates the client data from the server packet.
      */
     public static void handleData(final SeasonSyncPacket data, final IPayloadContext context) {
         context.enqueueWork(() -> {
-            Season newSeason = data.season();
-            int newDay = data.day();
+            boolean stateChanged = (data.season() != clientSeason || data.day() != clientDay);
 
-            // Check if a visual refresh is required (Season change or Day change)
-            if (newSeason != clientSeason || newDay != clientDay) {
-                clientSeason = newSeason;
-                clientDay = newDay;
-                clientWeather = data.weather();
+            // Update pure data
+            clientSeason = data.season();
+            clientDay = data.day();
+            clientWeather = data.weather().toLowerCase();
 
-                // Perform the hard refresh of all chunks
-                hardRefresh();
-            } else {
-                // Just update weather if no visual rebuild is needed
-                setWeather(data.weather());
+            // If the season or day changed, we notify your Color Handler
+            if (stateChanged) {
+                // Call your specific color handler here to trigger the refresh
+                // ClientColorHandler.refreshVisuals();
             }
         });
     }
 
-    /**
-     * The "Nuclear Option" for client-side visuals.
-     * Clears all color caches and forces every loaded chunk to rebuild its mesh.
-     */
-    public static void hardRefresh() {
-        Minecraft mc = Minecraft.getInstance();
-        ClientLevel level = mc.level;
-        LevelRenderer renderer = mc.levelRenderer;
-
-        if (level != null) {
-            // 1. Clear Tint Caches: Minecraft caches grass/foliage colors internally.
-            // If we don't clear this, the rebuild might pull the old colors again.
-            level.clearTintCaches();
-        }
-
-        if (renderer != null) {
-            // 2. allChanged(): This marks every single loaded chunk as "dirty".
-            // It effectively re-runs the geometry building for the entire world,
-            // which will trigger your BiomeMixin to fetch the new seasonal colors.
-            renderer.allChanged();
-        }
-    }
-
-    // --- Standard Getters ---
+    // --- Getters ---
 
     public static Season getSeason() { return clientSeason; }
-    public static Season getClientSeason() { return clientSeason; }
     public static int getDay() { return clientDay; }
-    public static int getClientDay() { return clientDay; }
     public static String getWeather() { return clientWeather; }
 
-    // --- Manual Setters (triggering refresh) ---
+    public static boolean isBlizzard() {
+        return "blizzard".equals(clientWeather);
+    }
+
+    public static boolean isSnowing() {
+        return "snow".equals(clientWeather) || "blizzard".equals(clientWeather);
+    }
+
+    // --- Manual Setters (Debug only) ---
 
     public static void setSeason(Season season) {
-        if (clientSeason != season) {
-            clientSeason = season;
-            hardRefresh();
-        }
+        clientSeason = season;
     }
 
     public static void setDay(int day) {
@@ -84,8 +59,6 @@ public class ClientSeasonHandler {
     }
 
     public static void setWeather(String weather) {
-        if (weather != null) {
-            clientWeather = weather.toLowerCase();
-        }
+        if (weather != null) clientWeather = weather.toLowerCase();
     }
 }

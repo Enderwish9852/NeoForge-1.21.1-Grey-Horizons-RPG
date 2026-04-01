@@ -4,14 +4,13 @@ import net.enderwish.HUD_Visuals_Subpack.network.ModMessages;
 import net.enderwish.HUD_Visuals_Subpack.network.WeatherSyncPacket;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.Level;
+import net.minecraft.util.Mth;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
 /**
- * Manages weighted weather selection and temperature offsets.
- * Logic based on "Hud & visuals subpack (alpha test).docx".
+ * Redefined Weather Manager: Handles Dynamic Intensity and Redefined Types.
  */
 public class WeatherManager {
     private static final Random RANDOM = new Random();
@@ -21,7 +20,6 @@ public class WeatherManager {
     private int ticksRemaining = 0;
     private float currentIntensity = 0.0f;
     private float currentTempOffset = 0.0f;
-    private float targetTempOffset = 0.0f;
 
     private WeatherManager() {}
 
@@ -32,38 +30,46 @@ public class WeatherManager {
     }
 
     /**
-     * Main logic loop called by WeatherEventHandler.
+     * Main logic loop called by Server tick.
      */
     public void tick(ServerLevel level, Season currentSeason) {
         if (ticksRemaining > 0) {
             ticksRemaining--;
 
-            // Smoothly move current temp toward the target (0.02 degrees per tick)
-            if (Math.abs(currentTempOffset - targetTempOffset) > 0.1f) {
-                currentTempOffset += (targetTempOffset > currentTempOffset) ? 0.02f : -0.02f;
-            }
+            // Calculate dynamic temperature offset based on Type and current Intensity
+            // (MaxModifier * Intensity) = current effect
+            float target = currentType.getMaxTempModifier() * currentIntensity;
+
+            // Smoothly lerp the offset (approx 0.01 per tick)
+            currentTempOffset = Mth.lerp(0.05f, currentTempOffset, target);
         } else {
-            // Weather has ended, roll for new weather
             selectNewWeather(level, currentSeason);
         }
     }
 
     private void selectNewWeather(ServerLevel level, Season season) {
         List<WeatherType> pool = new ArrayList<>();
-
-        // Build weighted pool based on the current season
         for (WeatherType type : WeatherType.values()) {
             int weight = type.getWeight(season);
-            for (int i = 0; i < weight; i++) {
-                pool.add(type);
-            }
+            for (int i = 0; i < weight; i++) pool.add(type);
         }
 
         WeatherType nextType = pool.isEmpty() ? WeatherType.CLEAR : pool.get(RANDOM.nextInt(pool.size()));
 
-        // Special weather lasts 1 full day (24000 ticks) as per doc, others 6000-12000
-        int duration = isSpecial(nextType) ? 24000 : 6000 + RANDOM.nextInt(6000);
-        float intensity = 0.5f + RANDOM.nextFloat() * 0.5f;
+        // Logic: Specials last 24k ticks at max intensity. Others are random.
+        int duration;
+        float intensity;
+
+        if (nextType.isSpecial()) {
+            duration = 24000;
+            intensity = 1.0f;
+        } else if (nextType == WeatherType.CLEAR) {
+            duration = 12000 + RANDOM.nextInt(12000);
+            intensity = 0.0f;
+        } else {
+            duration = 6000 + RANDOM.nextInt(12000);
+            intensity = 0.1f + RANDOM.nextFloat() * 0.9f; // Randomly light or heavy
+        }
 
         setWeather(level, nextType, duration, intensity);
     }
@@ -71,32 +77,38 @@ public class WeatherManager {
     public void setWeather(ServerLevel level, WeatherType type, int duration, float intensity) {
         this.currentType = type;
         this.ticksRemaining = duration;
-        this.currentIntensity = (type == WeatherType.CLEAR) ? 0.0f : intensity;
-        this.targetTempOffset = type.getTempModifier();
+        this.currentIntensity = intensity;
 
-        // Sync vanilla sky/rain states
+        // Sync vanilla sky states
         updateVanillaWeather(level, type, duration);
 
         // Broadcast to all players
         ModMessages.sendToAllPlayers(new WeatherSyncPacket(getCurrentWeatherData()));
 
-        // Optional: Log to server console
+        // Log to console (useful for Alpha testing)
         level.getServer().getPlayerList().broadcastSystemMessage(
-                Component.literal("Weather changed to: " + type.name() + " for " + (duration/20) + "s"), false
+                Component.literal("§6[Weather]§r " + type.name() + " (Int: " + String.format("%.2f", intensity) + ") for " + (duration/20) + "s"), false
         );
     }
 
     private void updateVanillaWeather(ServerLevel level, WeatherType type, int duration) {
-        boolean rain = switch(type) {
-            case LIGHT_RAIN, HEAVY_RAIN, THUNDER, SNOW, SNOW_STORM, BLIZZARD, HAIL -> true;
+        // Map our custom types back to vanilla sky/particle logic
+        boolean isRainy = switch(type) {
+            case RAIN, THUNDER, SNOW, BLIZZARD, HAIL -> true;
             default -> false;
         };
-        boolean thunder = (type == WeatherType.THUNDER || type == WeatherType.BLIZZARD);
+        boolean isThundering = (type == WeatherType.THUNDER || type == WeatherType.BLIZZARD);
 
-        level.setWeatherParameters(0, duration, rain, thunder);
+        // Vanilla intensity (sky darkening) matches our custom intensity
+        level.setWeatherParameters(0, duration, isRainy, isThundering);
+
+        if (isRainy) {
+            level.setRainLevel(currentIntensity);
+            level.setThunderLevel(isThundering ? currentIntensity : 0.0f);
+        }
     }
 
-    private boolean isSpecial(WeatherType type) {
-        return type == WeatherType.POLLEN_HAZE || type == WeatherType.DIAMOND_DUST || type == WeatherType.THAW;
-    }
+    public float getCurrentTempOffset() { return currentTempOffset; }
+    public float getCurrentIntensity() { return currentIntensity; }
+    public WeatherType getCurrentType() { return currentType; }
 }

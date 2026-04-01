@@ -2,88 +2,75 @@ package net.enderwish.HUD_Visuals_Subpack.client;
 
 import net.enderwish.HUD_Visuals_Subpack.core.WeatherData;
 import net.enderwish.HUD_Visuals_Subpack.core.WeatherType;
-import net.enderwish.HUD_Visuals_Subpack.network.WeatherSyncPacket;
 
 /**
- * Handles weather data on the client side.
- * Manages local state and provides smoothed data for rendering (fog/HUD).
+ * Client-side Weather Controller.
+ * Manages visual smoothing for HUD rings and environmental effects.
  */
 public class ClientWeatherHandler {
 
-    // Updated: Now passing 4 arguments (Type, Ticks, Intensity, TempOffset) to match the Record
-    private static WeatherData currentWeatherData = new WeatherData(WeatherType.CLEAR, 0, 0.0f, 0.0f);
+    private static WeatherData data = new WeatherData(WeatherType.CLEAR, 0, 0.0f, 0.0f);
 
-    // Used for smooth transitions in rendering (0.0 to 1.0)
-    private static float transitionAlpha = 0.0f;
+    // Smoothed values for rendering to prevent "snapping" visuals
+    private static float smoothedIntensity = 0.0f;
+    private static float smoothedTempOffset = 0.0f;
 
-    /**
-     * Updates the client-side weather data when a packet is received.
-     */
-    public static void handleWeatherSync(WeatherSyncPacket packet) {
-        currentWeatherData = packet.data();
-    }
-
-    /**
-     * Sets the weather from the server.
-     * Updated to include the new temperature offset and duration fields.
-     */
     public static void setWeatherFromServer(WeatherType type, int ticks, float intensity, float tempOffset) {
-        currentWeatherData = new WeatherData(type, ticks, intensity, tempOffset);
+        data = new WeatherData(type, ticks, intensity, tempOffset);
     }
 
     /**
-     * Legacy/Simplified setter for cases where ticks and temp might be default.
-     */
-    public static void setWeatherFromServer(WeatherType type, float intensity) {
-        currentWeatherData = new WeatherData(type, 0, intensity, 0.0f);
-    }
-
-    public static WeatherType getCurrentType() {
-        return currentWeatherData.type();
-    }
-
-    public static float getIntensity() {
-        return currentWeatherData.intensity();
-    }
-
-    public static float getTempOffset() {
-        return currentWeatherData.tempOffset();
-    }
-
-    public static int getTicksRemaining() {
-        return currentWeatherData.ticksRemaining();
-    }
-
-    /**
-     * Logic to handle visual transitions on the client.
+     * Called every client tick to smooth out transitions.
      */
     public static void tick() {
-        // Smooth transition logic
-        // If weather is active (not CLEAR), fade in. If CLEAR, fade out.
-        if (currentWeatherData.type() != WeatherType.CLEAR) {
-            transitionAlpha = Math.min(1.0f, transitionAlpha + 0.02f); // Fades in over 50 ticks
-        } else {
-            transitionAlpha = Math.max(0.0f, transitionAlpha - 0.02f); // Fades out over 50 ticks
+        // 1. Smooth Intensity (Fades in/out over ~2 seconds)
+        float targetIntensity = data.intensity();
+        if (Math.abs(smoothedIntensity - targetIntensity) > 0.001f) {
+            smoothedIntensity += (targetIntensity > smoothedIntensity) ? 0.01f : -0.01f;
         }
 
-        // Optional: Local countdown of ticks if you want to predict end-of-weather
-        /*
-        if (currentWeatherData.ticksRemaining() > 0) {
-            // Note: currentWeatherData is a record (immutable),
-            // so you'd need to re-instantiate if you want to track ticks locally.
+        // 2. Smooth Temp Offset (Used for HUD color bleeding)
+        float targetTemp = data.tempOffset();
+        if (Math.abs(smoothedTempOffset - targetTemp) > 0.01f) {
+            smoothedTempOffset += (targetTemp > smoothedTempOffset) ? 0.05f : -0.05f;
         }
-        */
+
+        // 3. Local tick countdown (Optional but helpful for UI bars)
+        if (data.ticksRemaining() > 0) {
+            // Since records are immutable, we just decrement the local reference if needed,
+            // but usually, we just wait for the next server sync.
+        }
     }
 
-    public static float getVisualAlpha() {
-        return transitionAlpha;
+    // --- Getters for Rendering ---
+
+    public static WeatherType getType() { return data.type(); }
+
+    public static float getIntensity() { return smoothedIntensity; }
+
+    public static float getTempOffset() { return smoothedTempOffset; }
+
+    /**
+     * Returns true if the sky should currently be showing precipitation.
+     */
+    public static boolean isRaining() {
+        return switch (data.type()) {
+            case RAIN, THUNDER, SNOW, BLIZZARD, HAIL -> true;
+            default -> false;
+        };
     }
 
-    public static float getBlizzardIntensity() {
-        return (getCurrentType() == WeatherType.BLIZZARD) ? (transitionAlpha * getIntensity()) : 0.0f;
+    /**
+     * Special check for the "Freezing" Grade HUD overlay.
+     */
+    public static boolean isBlizzard() {
+        return data.type() == WeatherType.BLIZZARD && smoothedIntensity > 0.5f;
     }
 
-    public static float getHeatwaveIntensity() {
-        return (getCurrentType() == WeatherType.HEATWAVE) ? (transitionAlpha * getIntensity()) : 0.0f;
+    /**
+     * Returns a string for the Sports Watch display.
+     */
+    public static String getWeatherLabel() {
+        return data.type().name().replace("_", " ");
     }
 }
