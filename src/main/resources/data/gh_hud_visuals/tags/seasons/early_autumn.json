@@ -1,0 +1,10 @@
+{
+  "temp_offset": 0.3,
+  "wetness_multiplier": 1.1,
+  "description": "The first crisp air arrives. Leaves begin to turn.",
+  "weather_weights": {
+    "gh:cloudy": 50,
+    "gh:rain": 40,
+    "gh:clear": 10
+  }
+}

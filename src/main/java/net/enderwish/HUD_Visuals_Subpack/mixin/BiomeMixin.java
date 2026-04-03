@@ -1,104 +1,97 @@
 package net.enderwish.HUD_Visuals_Subpack.mixin;
 
+import net.enderwish.HUD_Visuals_Subpack.api.ClimateHooks;
 import net.enderwish.HUD_Visuals_Subpack.client.ClientColorHandler;
-import net.enderwish.HUD_Visuals_Subpack.client.ClientSeasonHandler;
-import net.enderwish.HUD_Visuals_Subpack.event.SeasonManager;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.core.Holder;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.biome.Biome;
-import net.minecraft.world.level.block.Blocks;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(Biome.class)
 public abstract class BiomeMixin {
 
-    @Inject(method = "shouldSnow", at = @At("HEAD"), cancellable = true)
-    private void onShouldSnow(LevelReader levelReader, BlockPos pos, CallbackInfoReturnable<Boolean> cir) {
-        if (levelReader instanceof Level level && level.dimension() == Level.OVERWORLD) {
-            // Use our new "Serene-Style" Hook
-            float temp = SeasonManager.getAdjustedTemperature(level, pos);
+    /**
+     * GRASS COLORS: Uses your existing modifyGrassColor method.
+     */
+    @Inject(method = "getGrassColor", at = @At("RETURN"), cancellable = true)
+    private void gh_onGetGrass(double x, double z, CallbackInfoReturnable<Integer> cir) {
+        if (net.neoforged.fml.loading.FMLEnvironment.dist.isClient()) {
+            // We cast "this" to a Holder so your modifyGrassColor method is happy
+            Holder<Biome> holder = Holder.direct((Biome) (Object) this);
+            int originalColor = cir.getReturnValue();
 
-            // If temperature is below freezing (0.15f), force snow
-            if (temp < 0.15f) {
-                cir.setReturnValue(true);
-            }
+            // Calls your existing method: public static int modifyGrassColor(Holder<Biome> biome, int originalColor)
+            int seasonalColor = ClientColorHandler.modifyGrassColor(holder, originalColor);
+            cir.setReturnValue(seasonalColor);
         }
     }
 
-    @Inject(method = "shouldFreeze(Lnet/minecraft/world/level/LevelReader;Lnet/minecraft/core/BlockPos;Z)Z", at = @At("HEAD"), cancellable = true)
-    private void onShouldFreeze(LevelReader levelReader, BlockPos pos, boolean mustBeAtEdge, CallbackInfoReturnable<Boolean> cir) {
-        if (levelReader instanceof Level level && level.dimension() == Level.OVERWORLD) {
-            if (!level.getBlockState(pos).is(Blocks.WATER)) return;
+    /**
+     * FOLIAGE COLORS: Uses your existing modifyFoliageColor method.
+     */
+    @Inject(method = "getFoliageColor", at = @At("RETURN"), cancellable = true)
+    private void gh_onGetFoliage(CallbackInfoReturnable<Integer> cir) {
+        if (net.neoforged.fml.loading.FMLEnvironment.dist.isClient()) {
+            Holder<Biome> holder = Holder.direct((Biome) (Object) this);
+            int originalColor = cir.getReturnValue();
 
-            float temp = SeasonManager.getAdjustedTemperature(level, pos);
+            // Calls your existing method: public static int modifyFoliageColor(Holder<Biome> biome, int originalColor)
+            int seasonalColor = ClientColorHandler.modifyFoliageColor(holder, originalColor);
+            cir.setReturnValue(seasonalColor);
+        }
+    }
 
-            // 1. DEEP FREEZE: Hard freeze everything
-            if (temp <= -0.5f) {
-                cir.setReturnValue(true);
-            }
-            // 2. CREEPING ICE: Only freeze near banks
-            else if (temp < 0.15f) {
-                if (gh_isNearSolidBlock(level, pos)) {
+    /* --- Your Existing Snow/Ice/Precipitation Logic Below --- */
+
+    @Inject(method = "shouldSnow", at = @At("HEAD"), cancellable = true)
+    private void gh_onShouldSnow(LevelReader levelReader, BlockPos pos, CallbackInfoReturnable<Boolean> cir) {
+        Level level = gh_getLevel(levelReader);
+        if (level != null && level.dimension() == Level.OVERWORLD) {
+            if (ClimateHooks.isColdToFreeze(level)) {
+                if (pos.getY() >= 0 && levelReader.canSeeSky(pos)) {
                     cir.setReturnValue(true);
-                } else {
-                    cir.setReturnValue(false);
                 }
             }
-            // 3. THAW: Force melt in warm weather
-            else if (temp > 0.2f) {
-                cir.setReturnValue(false);
-            }
         }
     }
-    @Inject(method = "getPrecipitationAt", at = @At("HEAD"), cancellable = true)
-    private void onGetPrecipitationAt(BlockPos pos, int seaLevel, CallbackInfoReturnable<Biome.Precipitation> cir) {
-        // We need to check the level, but Biome doesn't have a direct reference to it.
-        // We use a workaround or check if we are on the client/server through a helper.
 
-        // This is a simplified check - if the biome HAS precipitation at all...
-        if (((Biome)(Object)this).hasPrecipitation()) {
-            // We use our SeasonManager logic to see if it's cold enough right now
-            // Note: Since Mixins in Biome don't have 'Level', we usually check the
-            // ClientSeasonHandler on the client side or a ThreadLocal on the server.
-
-            if (ClientSeasonHandler.isSnowing()) {
-                cir.setReturnValue(Biome.Precipitation.SNOW);
-            }
+    @Redirect(
+            method = "shouldFreeze(Lnet/minecraft/world/level/LevelReader;Lnet/minecraft/core/BlockPos;Z)Z",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/biome/Biome;warmEnoughToRain(Lnet/minecraft/core/BlockPos;)Z")
+    )
+    private boolean gh_redirectWarmCheck(Biome instance, BlockPos pos, LevelReader levelReader) {
+        Level level = gh_getLevel(levelReader);
+        if (level != null && level.dimension() == Level.OVERWORLD) {
+            return !ClimateHooks.isColdToFreeze(level);
         }
+        return instance.warmEnoughToRain(pos);
+    }
+
+    @Redirect(
+            method = "getPrecipitationAt",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/biome/Biome;coldEnoughToSnow(Lnet/minecraft/core/BlockPos;)Z")
+    )
+    private boolean gh_redirectColdCheck(Biome instance, BlockPos pos, BlockPos posAgain) {
+        Level level = gh_getLevel(null);
+        if (level != null && level.dimension() == Level.OVERWORLD) {
+            return ClimateHooks.isColdToFreeze(level);
+        }
+        return instance.coldEnoughToSnow(pos);
     }
 
     @Unique
-    private boolean gh_isNearSolidBlock(Level level, BlockPos pos) {
-        for (Direction direction : Direction.Plane.HORIZONTAL) {
-            BlockPos neighbor = pos.relative(direction);
-            if (level.getBlockState(neighbor).isSolidRender(level, neighbor)) {
-                return true;
-            }
+    private Level gh_getLevel(LevelReader reader) {
+        if (reader instanceof Level level) return level;
+        if (net.neoforged.fml.loading.FMLEnvironment.dist.isClient()) {
+            return net.minecraft.client.Minecraft.getInstance().level;
         }
-        return false;
-    }
-
-    @Inject(method = "getGrassColor", at = @At("RETURN"), cancellable = true)
-    private void onGetGrassColor(double x, double z, CallbackInfoReturnable<Integer> cir) {
-        // We cast 'this' to Biome and get its holder to check for Hot Biomes
-        Biome biome = (Biome) (Object) this;
-        Holder<Biome> holder = Holder.direct(biome);
-
-        cir.setReturnValue(ClientColorHandler.modifyGrassColor(holder, cir.getReturnValue()));
-    }
-
-    @Inject(method = "getFoliageColor", at = @At("RETURN"), cancellable = true)
-    private void onGetFoliageColor(CallbackInfoReturnable<Integer> cir) {
-        Biome biome = (Biome) (Object) this;
-        Holder<Biome> holder = Holder.direct(biome);
-
-        cir.setReturnValue(ClientColorHandler.modifyFoliageColor(holder, cir.getReturnValue()));
+        return null;
     }
 }

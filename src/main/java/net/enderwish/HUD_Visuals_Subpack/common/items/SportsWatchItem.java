@@ -1,7 +1,7 @@
 package net.enderwish.HUD_Visuals_Subpack.common.items;
 
 import net.enderwish.HUD_Visuals_Subpack.core.ModAttachments;
-import net.enderwish.HUD_Visuals_Subpack.core.WristCapability;
+import net.enderwish.HUD_Visuals_Subpack.core.PlayerCapability;
 import net.enderwish.HUD_Visuals_Subpack.network.ModMessages;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
@@ -35,7 +35,7 @@ public class SportsWatchItem extends Item {
             // Perform sync and check once a second (20 ticks) to optimize performance
             if (level.getGameTime() % 20 != 0) return;
 
-            WristCapability cap = player.getData(ModAttachments.WRIST_CAP);
+            PlayerCapability cap = player.getData(ModAttachments.PLAYER_CAP);
             if (cap == null) return;
 
             // Curios check to see if the watch is actually equipped in the wrist slot
@@ -85,7 +85,7 @@ public class SportsWatchItem extends Item {
      * Synchronizes all capability data to the client via LimbSyncPacket.
      * Updated: Now provides all 14 arguments required by the updated record.
      */
-    private void syncToClient(ServerPlayer player, WristCapability cap) {
+    private void syncToClient(ServerPlayer player, PlayerCapability cap) {
         ModMessages.sendToPlayer(new net.enderwish.HUD_Visuals_Subpack.network.LimbSyncPacket(
                 cap.getBPM(),
                 cap.getEnergy(),
@@ -101,7 +101,9 @@ public class SportsWatchItem extends Item {
                 cap.getLeftFootHealth(),
                 cap.getRightFootHealth(),
                 cap.getStarvationTimer(),
-                cap.getPollenExposure()
+                cap.getPollenExposure(),
+                cap.getCoreTemp(),
+                cap.getWetness()
         ), player);
     }
 }

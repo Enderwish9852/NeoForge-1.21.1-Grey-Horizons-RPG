@@ -35,7 +35,7 @@ public record WristSyncPacket(int bpm, float energy, boolean hasWatch) implement
             var player = Minecraft.getInstance().player;
             if (player != null) {
                 // Get the attachment data on the client side and update it with server data
-                var cap = player.getData(ModAttachments.WRIST_CAP);
+                var cap = player.getData(ModAttachments.PLAYER_CAP);
                 if (cap != null) {
                     cap.setBPM(this.bpm);
                     cap.setEnergy(this.energy);

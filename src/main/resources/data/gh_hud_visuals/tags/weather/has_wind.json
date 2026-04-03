@@ -1,0 +1,8 @@
+{
+  "values": [
+    "gh_hud_visuals:wind",
+    "gh_hud_visuals:rain",
+    "gh_hud_visuals:blizzard",
+    "gh_hud_visuals:pollen_haze"
+  ]
+}

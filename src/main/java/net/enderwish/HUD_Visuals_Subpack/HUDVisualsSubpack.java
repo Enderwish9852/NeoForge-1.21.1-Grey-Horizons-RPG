@@ -1,7 +1,6 @@
 package net.enderwish.HUD_Visuals_Subpack;
 
 import net.enderwish.HUD_Visuals_Subpack.client.gui.SportsWatchHUD;
-import net.enderwish.HUD_Visuals_Subpack.client.render.WeatherHUDRenderer;
 import net.enderwish.HUD_Visuals_Subpack.client.render.WeatherOverlayRenderer;
 import net.enderwish.HUD_Visuals_Subpack.command.SeasonCommand;
 import net.enderwish.HUD_Visuals_Subpack.command.WeatherCommand;
@@ -19,7 +18,6 @@ import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.Mod;
-import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 import net.neoforged.neoforge.common.NeoForge;
@@ -86,13 +84,6 @@ public class HUDVisualsSubpack {
                 VanillaGuiLayers.HOTBAR,
                 ResourceLocation.fromNamespaceAndPath(MOD_ID, "sports_watch"),
                 (graphics, delta) -> SportsWatchHUD.SPORTS_WATCH_ELEMENT.render(graphics, delta)
-        );
-
-        // 2. Weather UI Icons Layer (Humidity, Temp, etc)
-        event.registerAbove(
-                VanillaGuiLayers.CAMERA_OVERLAYS,
-                ResourceLocation.fromNamespaceAndPath(MOD_ID, "weather_effects"),
-                (graphics, delta) -> WeatherHUDRenderer.render(graphics, delta)
         );
 
         // 3. Weather Full-Screen Overlay Layer

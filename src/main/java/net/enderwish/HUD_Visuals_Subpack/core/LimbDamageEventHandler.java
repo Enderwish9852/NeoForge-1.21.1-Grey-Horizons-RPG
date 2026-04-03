@@ -36,7 +36,7 @@ public class LimbDamageEventHandler {
     @SubscribeEvent
     public static void onPlayerRespawn(PlayerEvent.Clone event) {
         if (event.getEntity() instanceof ServerPlayer newPlayer) {
-            WristCapability newCap = newPlayer.getData(ModAttachments.WRIST_CAP);
+            PlayerCapability newCap = newPlayer.getData(ModAttachments.PLAYER_CAP);
             if (newCap != null) {
                 newCap.healAll();
                 newCap.setEnergy(100.0f);
@@ -55,7 +55,7 @@ public class LimbDamageEventHandler {
         if (event.getEntity() instanceof ServerPlayer player) {
             if (!player.isAlive()) return;
 
-            WristCapability cap = player.getData(ModAttachments.WRIST_CAP);
+            PlayerCapability cap = player.getData(ModAttachments.PLAYER_CAP);
             if (cap == null) return;
 
             // --- 1. CREATIVE MODE OVERRIDE ---
@@ -98,7 +98,7 @@ public class LimbDamageEventHandler {
     /**
      * Starvation timer logic with "Tug-of-War" mechanics.
      */
-    private static void handleStarvationLogic(ServerPlayer player, WristCapability cap) {
+    private static void handleStarvationLogic(ServerPlayer player, PlayerCapability cap) {
         FoodData foodData = player.getFoodData();
         int hunger = foodData.getFoodLevel();
         int timer = cap.getStarvationTimer();
@@ -143,7 +143,7 @@ public class LimbDamageEventHandler {
     /**
      * Logic for Thirst drainage and dehydration effects.
      */
-    private static void handleThirstLogic(ServerPlayer player, WristCapability cap) {
+    private static void handleThirstLogic(ServerPlayer player, PlayerCapability cap) {
         float currentThirst = cap.getThirst();
         float drain = 0.005f;
 
@@ -171,7 +171,7 @@ public class LimbDamageEventHandler {
     /**
      * Manages energy recovery and exhaustion effects.
      */
-    private static void handleEnergyLogic(ServerPlayer player, WristCapability cap) {
+    private static void handleEnergyLogic(ServerPlayer player, PlayerCapability cap) {
         float currentEnergy = cap.getEnergy();
         float hungerPct = player.getFoodData().getFoodLevel() / 20.0f;
 
@@ -201,7 +201,7 @@ public class LimbDamageEventHandler {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         if (player.isCreative()) return;
 
-        WristCapability cap = player.getData(ModAttachments.WRIST_CAP);
+        PlayerCapability cap = player.getData(ModAttachments.PLAYER_CAP);
         if (cap == null) return;
 
         float amount = event.getNewDamage();
@@ -209,14 +209,14 @@ public class LimbDamageEventHandler {
         if (event.getSource().is(DamageTypes.FALL)) {
             float remainingDamage = amount;
             float footHealthBefore = cap.getLeftFootHealth();
-            cap.damageLeftFoot(remainingDamage);
-            cap.damageRightFoot(remainingDamage);
+            cap.damageLFoot(remainingDamage);
+            cap.damageRFoot(remainingDamage);
             remainingDamage = Math.max(0, remainingDamage - footHealthBefore);
 
             if (remainingDamage > 0) {
                 float legHealthBefore = cap.getLeftLegHealth();
-                cap.damageLeftLeg(remainingDamage);
-                cap.damageRightLeg(remainingDamage);
+                cap.damageLLeg(remainingDamage);
+                cap.damageRLeg(remainingDamage);
                 remainingDamage = Math.max(0, remainingDamage - legHealthBefore);
             }
 
@@ -226,8 +226,8 @@ public class LimbDamageEventHandler {
 
         } else if (event.getSource().is(DamageTypes.EXPLOSION)) {
             damageCriticalPart(player, cap, "torso", amount * 0.7f);
-            cap.damageLeftLeg(amount * 0.15f);
-            cap.damageRightLeg(amount * 0.15f);
+            cap.damageLLeg(amount * 0.15f);
+            cap.damageRLeg(amount * 0.15f);
         } else {
             double hitY = RANDOM.nextDouble();
             if (hitY > 0.85) {
@@ -235,18 +235,18 @@ public class LimbDamageEventHandler {
             } else if (hitY > 0.45) {
                 damageCriticalPart(player, cap, "torso", amount);
             } else if (hitY > 0.25) {
-                if (RANDOM.nextBoolean()) cap.damageLeftArm(amount); else cap.damageRightArm(amount);
+                if (RANDOM.nextBoolean()) cap.damageLArm(amount); else cap.damageRArm(amount);
             } else if (hitY > 0.10) {
-                if (RANDOM.nextBoolean()) cap.damageLeftLeg(amount); else cap.damageRightLeg(amount);
+                if (RANDOM.nextBoolean()) cap.damageLLeg(amount); else cap.damageRLeg(amount);
             } else {
-                if (RANDOM.nextBoolean()) cap.damageLeftFoot(amount); else cap.damageRightFoot(amount);
+                if (RANDOM.nextBoolean()) cap.damageLFoot(amount); else cap.damageRFoot(amount);
             }
         }
 
         syncToClient(player, cap);
     }
 
-    private static void damageCriticalPart(ServerPlayer player, WristCapability cap, String part, float amount) {
+    private static void damageCriticalPart(ServerPlayer player, PlayerCapability cap, String part, float amount) {
         if (part.equals("head")) {
             cap.damageHead(amount);
             if (cap.getHeadHealth() <= 0) player.kill();
@@ -256,7 +256,7 @@ public class LimbDamageEventHandler {
         }
     }
 
-    private static void syncToClient(ServerPlayer player, WristCapability cap) {
+    private static void syncToClient(ServerPlayer player, PlayerCapability cap) {
         ModMessages.sendToPlayer(new net.enderwish.HUD_Visuals_Subpack.network.LimbSyncPacket(
                 cap.getBPM(),
                 cap.getEnergy(),
@@ -272,7 +272,9 @@ public class LimbDamageEventHandler {
                 cap.getLeftFootHealth(),
                 cap.getRightFootHealth(),
                 cap.getStarvationTimer(),
-                cap.getPollenExposure()
+                cap.getPollenExposure(),
+                cap.getCoreTemp(),
+                cap.getWetness()
         ), player);
     }
 }

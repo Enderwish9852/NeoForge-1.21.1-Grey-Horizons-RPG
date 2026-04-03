@@ -30,19 +30,11 @@ public class ModMessages {
                 WristSyncPacket::handle
         );
 
-        // 3. Season Sync (Server -> Client)
+        // 3. Climate Sync (Server -> Client) - REQUIRED for Weather/Seasons
         registrar.playToClient(
-                SeasonSyncPacket.TYPE,
-                SeasonSyncPacket.STREAM_CODEC,
-                SeasonSyncPacket::handle
-        );
-
-        // 4. Weather Sync (Server -> Client)
-        // Standardized to use the same handle pattern as the others
-        registrar.playToClient(
-                WeatherSyncPacket.TYPE,
-                WeatherSyncPacket.STREAM_CODEC,
-                (payload, context) -> payload.handle(context)
+                ClimateSyncPacket.TYPE,
+                ClimateSyncPacket.STREAM_CODEC,
+                ClimateSyncPacket::handle
         );
     }
 
