@@ -16,7 +16,6 @@ import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.IEventBus;
-import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
@@ -30,7 +29,6 @@ import java.util.function.Supplier;
 
 @Mod(HUDVisualsSubpack.MOD_ID)
 public class HUDVisualsSubpack {
-    // IMPORTANT: Ensure this MOD_ID matches the namespace in your ResourceLocations
     public static final String MOD_ID = "gh_hud_visuals";
 
     public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(MOD_ID);
@@ -49,35 +47,36 @@ public class HUDVisualsSubpack {
                     .build());
 
     public HUDVisualsSubpack(IEventBus modEventBus) {
-        // Register Deferred Registers to the Mod Event Bus
+        // Register Deferred Registers
         ITEMS.register(modEventBus);
         CREATIVE_TABS.register(modEventBus);
         ModAttachments.register(modEventBus);
 
-        // Networking registration (Crucial for fixing "Payload may not be sent" error)
+        // Mod Bus Listeners (Lifecycle & Setup)
         modEventBus.addListener(this::registerNetworking);
+        modEventBus.addListener(this::onRegisterGuiLayers);
 
-        // General Event Handlers (Using the Global NeoForge Event Bus)
+        // Global Bus Listeners (Gameplay & Commands)
         NeoForge.EVENT_BUS.register(new HealthRegenEvents());
         NeoForge.EVENT_BUS.register(LimbDamageEventHandler.class);
-
-        // Register this class instance for the command event listener below
-        NeoForge.EVENT_BUS.register(this);
-
+        NeoForge.EVENT_BUS.addListener(this::onRegisterCommands);
     }
 
     private void registerNetworking(final RegisterPayloadHandlersEvent event) {
-        // This calls your ModMessages class to handle the specific packet registration
         ModMessages.register(event);
     }
 
-    @SubscribeEvent
-    public void onRegisterCommands(RegisterCommandsEvent event) {
-        // Registering your custom commands
+    /**
+     * Commands are registered on the NeoForge EVENT_BUS.
+     */
+    private void onRegisterCommands(RegisterCommandsEvent event) {
         WeatherCommand.register(event.getDispatcher());
         SeasonCommand.register(event.getDispatcher());
     }
 
+    /**
+     * GUI Layers are registered on the MOD EVENT_BUS.
+     */
     private void onRegisterGuiLayers(RegisterGuiLayersEvent event) {
         // 1. Sports Watch Layer
         event.registerAbove(
@@ -86,18 +85,19 @@ public class HUDVisualsSubpack {
                 (graphics, delta) -> SportsWatchHUD.SPORTS_WATCH_ELEMENT.render(graphics, delta)
         );
 
-        // 3. Weather Full-Screen Overlay Layer
+        // 2. Weather Full-Screen Overlay Layer
         event.registerAbove(
                 VanillaGuiLayers.CAMERA_OVERLAYS,
                 ResourceLocation.fromNamespaceAndPath(MOD_ID, "weather_screen_overlay"),
                 (graphics, delta) -> WeatherOverlayRenderer.render(graphics, delta)
         );
 
-        // Vanilla UI removals (Ensure these are what you want hidden permanently)
-        event.replaceLayer(VanillaGuiLayers.PLAYER_HEALTH, (gui, delta) -> {});
-        event.replaceLayer(VanillaGuiLayers.FOOD_LEVEL, (gui, delta) -> {});
-        event.replaceLayer(VanillaGuiLayers.ARMOR_LEVEL, (gui, delta) -> {});
-        event.replaceLayer(VanillaGuiLayers.EXPERIENCE_BAR, (gui, delta) -> {});
-        event.replaceLayer(VanillaGuiLayers.AIR_LEVEL, (gui, delta) -> {});
+        // Vanilla UI Overrides
+        // Note: Using replaceLayer with a null/empty consumer hides them
+        event.replaceLayer(VanillaGuiLayers.PLAYER_HEALTH, (graphics, delta) -> {});
+        event.replaceLayer(VanillaGuiLayers.FOOD_LEVEL, (graphics, delta) -> {});
+        event.replaceLayer(VanillaGuiLayers.ARMOR_LEVEL, (graphics, delta) -> {});
+        event.replaceLayer(VanillaGuiLayers.EXPERIENCE_BAR, (graphics, delta) -> {});
+        event.replaceLayer(VanillaGuiLayers.AIR_LEVEL, (graphics, delta) -> {});
     }
 }

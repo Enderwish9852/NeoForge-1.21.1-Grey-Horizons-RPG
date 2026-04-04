@@ -13,29 +13,35 @@ import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 
+import java.util.stream.Collectors;
+
 /**
  * Command to manually trigger GH Weather effects.
- * Usage: /weather <type> [duration] [intensity]
+ * Renamed to 'ghweather' to avoid collision with vanilla '/weather'.
  */
 public class WeatherCommand {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
-        dispatcher.register(Commands.literal("weather")
+        // Changed "weather" to "ghweather" to prevent the "trailing data" error
+        dispatcher.register(Commands.literal("ghweather")
                 .requires(source -> source.hasPermission(2))
                 .then(Commands.argument("type", StringArgumentType.word())
-                        // Suggests weather IDs from our custom registry
+                        // Suggests IDs from our registry (e.g., "blizzard", "heatwave")
                         .suggests((context, builder) -> SharedSuggestionProvider.suggest(
-                                WeatherRegistry.getAll().stream().map(WeatherType::getIdString),
+                                WeatherRegistry.getAll().stream()
+                                        .map(w -> w.id().getPath())
+                                        .collect(Collectors.toList()),
                                 builder
                         ))
                         .executes(context -> setWeather(context.getSource(),
-                                StringArgumentType.getString(context, "type"), 6000, 0.5f))
+                                StringArgumentType.getString(context, "type"), 6000, 1.0f))
 
-                        .then(Commands.argument("duration", IntegerArgumentType.integer(0))
+                        .then(Commands.argument("intensity", FloatArgumentType.floatArg(0.0f, 1.0f))
                                 .executes(context -> setWeather(context.getSource(),
                                         StringArgumentType.getString(context, "type"),
-                                        IntegerArgumentType.getInteger(context, "duration"), 0.5f))
+                                        6000,
+                                        FloatArgumentType.getFloat(context, "intensity")))
 
-                                .then(Commands.argument("intensity", FloatArgumentType.floatArg(0.0f, 1.0f))
+                                .then(Commands.argument("duration", IntegerArgumentType.integer(0))
                                         .executes(context -> setWeather(context.getSource(),
                                                 StringArgumentType.getString(context, "type"),
                                                 IntegerArgumentType.getInteger(context, "duration"),
@@ -48,21 +54,23 @@ public class WeatherCommand {
 
     private static int setWeather(CommandSourceStack source, String typeId, int duration, float intensity) {
         ServerLevel level = source.getLevel();
+
+        // Use our registry to find the weather
         WeatherType type = WeatherRegistry.getById(typeId);
 
-        // Validation: If it's not clear and we can't find it, it's invalid
+        // Validation
         if (type == WeatherRegistry.CLEAR && !typeId.equalsIgnoreCase("clear")) {
-            source.sendFailure(Component.literal("§cUnknown GH Weather type: " + typeId));
+            source.sendFailure(Component.literal("§c[GH] Unknown weather type: " + typeId));
             return 0;
         }
 
-        // IMPORTANT: We now pass the WeatherType object to match the updated WeatherManager
+        // Force the WeatherManager to update the world and sync to clients
         WeatherManager.getInstance().setWeather(level, type, intensity);
 
-        // Feedback for the admin
-        String name = type.id().getPath().toUpperCase();
-        source.sendSuccess(() -> Component.literal("§6[GH]§f Set weather to §b" + name +
-                " §ffor §e" + (duration / 20) + "s §fat §a" + (int)(intensity * 100) + "%"), true);
+        // Format feedback message
+        String name = type.id().getPath().toUpperCase().replace("_", " ");
+        source.sendSuccess(() -> Component.literal("§6[GH]§f Atmospheric shift: §b" + name +
+                " §f(§a" + (int)(intensity * 100) + "% §fintensity)"), true);
 
         return 1;
     }

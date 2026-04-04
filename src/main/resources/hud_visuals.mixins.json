@@ -6,7 +6,9 @@
   "mixins": [
     "BiomeMixin"
   ],
-  "client": [],
+  "client": [
+    "FogRendererMixin"
+  ],
   "injectors": {
     "defaultRequire": 1
   }

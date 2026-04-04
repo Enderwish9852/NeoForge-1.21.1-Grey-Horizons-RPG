@@ -2,8 +2,8 @@
   "values": [
     "gh_hud_visuals:snow",
     "gh_hud_visuals:snow_storm",
-    "gh_hud_visuals:blizzard",
     "gh_hud_visuals:hail",
+    "gh_hud_visuals:blizzard",
     "gh_hud_visuals:diamond_dust"
   ]
 }

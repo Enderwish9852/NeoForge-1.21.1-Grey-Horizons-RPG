@@ -1,14 +1,12 @@
 {
   "values": [
-    "gh_hud_visuals:wind",
     "gh_hud_visuals:rain",
-    "gh_hud_visuals:thaw",
-    "gh_hud_visuals:hail",
     "gh_hud_visuals:thunder",
     "gh_hud_visuals:snow",
     "gh_hud_visuals:snow_storm",
     "gh_hud_visuals:blizzard",
-    "gh_hud_visuals:pollen_haze",
-    "gh_hud_visuals:diamond_dust"
+    "gh_hud_visuals:hail",
+    "gh_hud_visuals:diamond_dust",
+    "gh_hud_visuals:thaw"
   ]
 }
