@@ -1,0 +1,10 @@
+{
+  "temp_offset": -0.3,
+  "wetness_multiplier": 1.5,
+  "description": "Ice is melting into dangerous slush. High wetness risk.",
+  "weather_weights": {
+    "gh:sleet": 50,
+    "gh:rain": 30,
+    "gh:snow": 20
+  }
+}

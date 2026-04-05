@@ -1,0 +1,10 @@
+{
+  "temp_offset": -0.3,
+  "wetness_multiplier": 1.0,
+  "description": "The ground begins to harden. Morning frost is common.",
+  "weather_weights": {
+    "gh:fog": 40,
+    "gh:sleet": 30,
+    "gh:cloudy": 30
+  }
+}

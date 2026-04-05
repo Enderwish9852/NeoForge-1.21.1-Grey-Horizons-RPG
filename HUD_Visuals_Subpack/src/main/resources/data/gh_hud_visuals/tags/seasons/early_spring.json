@@ -1,0 +1,10 @@
+{
+  "temp_offset": -0.1,
+  "wetness_multiplier": 1.2,
+  "description": "Snow begins to melt, ground is muddy.",
+  "weather_weights": {
+    "gh:sleet": 40,
+    "gh:rain": 40,
+    "gh:clear": 20
+  }
+}
