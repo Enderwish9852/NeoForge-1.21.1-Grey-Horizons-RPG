@@ -17,31 +17,23 @@ public class WeatherManager {
 
     private static final WeatherManager INSTANCE = new WeatherManager();
 
-    // This is now moved to the Attachment or a saved variable to ensure persistence
     private int weatherTicksLeft = 0;
 
     public static WeatherManager getInstance() {
         return INSTANCE;
     }
 
-    /**
-     * Called when the world loads. Restores the weather timer and checks for fresh starts.
-     */
     public void onWorldLoad(ServerLevel level) {
         if (level.dimension() != ServerLevel.OVERWORLD) return;
 
         ClimateData data = level.getData(ModAttachments.CLIMATE);
 
-        // 1. Initial Cold Start Logic (for Day 1 Spring)
         if (data.day() == 1 && data.season() == Season.SPRING && data.tempOffset() == 0.0f) {
             setData(level, new ClimateData(
                     Season.SPRING, 1, "clear", 0.5f, -0.4f
             ));
         }
 
-        // 2. RESTORE PERSISTENCE:
-        // Note: In a full implementation, weatherTicksLeft should be in ClimateData
-        // so it saves automatically. For now, we set a default if it's 0.
         if (weatherTicksLeft <= 0) {
             weatherTicksLeft = 6000;
         }
@@ -55,19 +47,16 @@ public class WeatherManager {
         ClimateData data = level.getData(ModAttachments.CLIMATE);
         long gameTime = level.getGameTime();
 
-        // Advance Day every 24000 ticks
         if (gameTime % 24000 == 0) {
             advanceDay(level, data);
         }
 
-        // Handle Weather Transitions
         if (weatherTicksLeft <= 0) {
             rollNewWeather(level, data);
         } else {
             weatherTicksLeft--;
         }
 
-        // Periodic Sync (Every 5 seconds)
         if (gameTime % 100 == 0) {
             syncToAll(level);
         }
@@ -83,17 +72,16 @@ public class WeatherManager {
 
         if (roll <= 60) {
             rarity = WeatherType.WeatherRarity.COMMON;
-            durationTicks = 6000 + RANDOM.nextInt(6001); // 5-10 mins
+            durationTicks = 6000 + RANDOM.nextInt(6001);
         } else if (roll <= 94) {
             rarity = WeatherType.WeatherRarity.UNCOMMON;
-            durationTicks = 12000 + RANDOM.nextInt(6001); // 10-15 mins
+            durationTicks = 12000 + RANDOM.nextInt(6001);
         } else {
             rarity = WeatherType.WeatherRarity.RARE;
-            durationTicks = 24000; // Full day
+            durationTicks = 24000;
             intensity = 1.0f;
         }
 
-        // Fixed selection logic to ensure custom weathers are picked
         WeatherType selected = switch (season) {
             case SPRING -> (rarity == WeatherType.WeatherRarity.RARE) ?
                     WeatherRegistry.POLLEN_HAZE : WeatherRegistry.getRandomWeatherForSeason(season, rarity);
@@ -133,22 +121,16 @@ public class WeatherManager {
         ));
     }
 
-    /**
-     * FORCED WEATHER CHANGE: Call this from commands or internally.
-     */
     public void setWeather(ServerLevel level, WeatherType type, float intensity) {
         ClimateData current = level.getData(ModAttachments.CLIMATE);
 
-        // 1. Update Mod Data and Save to NBT
         setData(level, new ClimateData(
                 current.season(), current.day(), type.id().toString(), intensity, current.tempOffset()
         ));
 
-        // 2. Sync Vanilla Rendering
         boolean isStormy = WeatherRegistry.is(type, WeatherRegistry.IS_STORM);
         boolean isThunder = WeatherRegistry.is(type, WeatherRegistry.IS_THUNDER);
 
-        // This is the core method for vanilla persistence
         level.setWeatherParameters(0, weatherTicksLeft, isStormy, isThunder);
 
         if (isStormy) {
@@ -162,9 +144,6 @@ public class WeatherManager {
         syncToAll(level);
     }
 
-    /**
-     * Helper to update data and ensure it's saved to the world.
-     */
     private void setData(ServerLevel level, ClimateData data) {
         level.setData(ModAttachments.CLIMATE, data);
     }
@@ -174,5 +153,12 @@ public class WeatherManager {
         if (data != null) {
             PacketDistributor.sendToAllPlayers(new ClimateSyncPacket(data));
         }
+    }
+    /**
+     * Grabs the current data stored in the level's attachments.
+     * Required by ClimateEventHandler to sync players on join.
+     */
+    public ClimateData getCurrentData(ServerLevel level) {
+        return level.getData(ModAttachments.CLIMATE);
     }
 }
