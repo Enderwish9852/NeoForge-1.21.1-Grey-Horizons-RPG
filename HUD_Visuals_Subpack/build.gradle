@@ -17,7 +17,7 @@ repositories {
 
 base {
     // Manually setting the ID for this subpack
-    archivesName = "gh_visuals"
+    archivesName = "gh_hud_visuals"
 }
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
@@ -33,19 +33,18 @@ neoForge {
     runs {
         client {
             client()
-            // Updated to gh_visuals
-            systemProperty 'neoforge.enabledGameTestNamespaces', 'gh_visuals'
+            systemProperty 'neoforge.enabledGameTestNamespaces', 'gh_hud_visuals'
         }
 
         server {
             server()
             programArgument '--nogui'
-            systemProperty 'neoforge.enabledGameTestNamespaces', 'gh_visuals'
+            systemProperty 'neoforge.enabledGameTestNamespaces', 'gh_hud_visuals'
         }
 
         data {
             data()
-            programArguments.addAll '--mod', 'gh_visuals', '--all', '--output', file('src/generated/resources/').getAbsolutePath(), '--existing', file('src/main/resources/').getAbsolutePath()
+            programArguments.addAll '--mod', 'gh_hud_visuals', '--all', '--output', file('src/generated/resources/').getAbsolutePath(), '--existing', file('src/main/resources/').getAbsolutePath()
         }
 
         configureEach {
@@ -55,8 +54,7 @@ neoForge {
     }
 
     mods {
-        // Tells NeoForge that 'gh_visuals' uses the code in this folder
-        gh_visuals {
+        gh_hud_visuals {
             sourceSet(sourceSets.main)
         }
     }
@@ -81,8 +79,8 @@ var generateModMetadata = tasks.register("generateModMetadata", ProcessResources
             minecraft_version_range: minecraft_version_range,
             neo_version            : neo_version,
             loader_version_range   : loader_version_range,
-            mod_id                 : 'gh_visuals', // Forced ID
-            mod_name               : 'Grey Horizons: Visuals',
+            mod_id                 : 'gh_hud_visuals',
+            mod_name               : 'HUD_Visuals_Subpack',
             mod_license            : mod_license,
             mod_version            : mod_version,
     ]

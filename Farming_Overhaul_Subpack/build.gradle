@@ -17,7 +17,7 @@ repositories {
 
 base {
     // Manually setting the ID for this subpack
-    archivesName = "gh_farming"
+    archivesName = "gh_farming_overhaul"
 }
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
@@ -33,19 +33,18 @@ neoForge {
     runs {
         client {
             client()
-            // Updated to gh_farming
-            systemProperty 'neoforge.enabledGameTestNamespaces', 'gh_farming'
+            systemProperty 'neoforge.enabledGameTestNamespaces', 'gh_farming_overhaul'
         }
 
         server {
             server()
             programArgument '--nogui'
-            systemProperty 'neoforge.enabledGameTestNamespaces', 'gh_farming'
+            systemProperty 'neoforge.enabledGameTestNamespaces', 'gh_farming_overhaul'
         }
 
         data {
             data()
-            programArguments.addAll '--mod', 'gh_farming', '--all', '--output', file('src/generated/resources/').getAbsolutePath(), '--existing', file('src/main/resources/').getAbsolutePath()
+            programArguments.addAll '--mod', 'gh_farming_overhaul', '--all', '--output', file('src/generated/resources/').getAbsolutePath(), '--existing', file('src/main/resources/').getAbsolutePath()
         }
 
         configureEach {
@@ -84,8 +83,8 @@ var generateModMetadata = tasks.register("generateModMetadata", ProcessResources
             minecraft_version_range: minecraft_version_range,
             neo_version            : neo_version,
             loader_version_range   : loader_version_range,
-            mod_id                 : 'gh_farming', // Forced ID for metadata
-            mod_name               : 'Grey Horizons: Farming Overhaul',
+            mod_id                 : 'gh_farming_overhaul',
+            mod_name               : 'Farming_Overhaul_Subpack',
             mod_license            : mod_license,
             mod_version            : mod_version,
     ]
