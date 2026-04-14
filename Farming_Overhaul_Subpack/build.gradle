@@ -16,7 +16,6 @@ repositories {
 }
 
 base {
-    // Manually setting the ID for this subpack
     archivesName = "gh_farming_overhaul"
 }
 
@@ -30,32 +29,12 @@ neoForge {
         minecraftVersion = project.parchment_minecraft_version
     }
 
-    runs {
-        client {
-            client()
-            systemProperty 'neoforge.enabledGameTestNamespaces', 'gh_farming_overhaul'
-        }
-
-        server {
-            server()
-            programArgument '--nogui'
-            systemProperty 'neoforge.enabledGameTestNamespaces', 'gh_farming_overhaul'
-        }
-
-        data {
-            data()
-            programArguments.addAll '--mod', 'gh_farming_overhaul', '--all', '--output', file('src/generated/resources/').getAbsolutePath(), '--existing', file('src/main/resources/').getAbsolutePath()
-        }
-
-        configureEach {
-            systemProperty 'forge.logging.markers', 'REGISTRIES'
-            logLevel = org.slf4j.event.Level.DEBUG
-        }
-    }
+    // We removed the 'runs' block from here because HUD_Visuals
+    // is the leader and provides the unified 'runClient' task.
 
     mods {
-        // Tells NeoForge that 'gh_farming' uses the code in this folder
-        gh_farming {
+        // This must match the name used in your mods.toml and the Lead build.gradle
+        gh_farming_overhaul {
             sourceSet(sourceSets.main)
         }
     }
@@ -68,15 +47,13 @@ configurations {
 }
 
 dependencies {
-    // --- THE BRIDGE ---
-    // This allows Farming to "see" and use the code inside HUD_Visuals
-    implementation project(':HUD_Visuals_Subpack')
-
+    implementation project(":HUD_Visuals_Subpack")
     // Curios API
     compileOnly "top.theillusivec4.curios:curios-neoforge:${curios_version}:api"
     runtimeOnly "top.theillusivec4.curios:curios-neoforge:${curios_version}"
 }
 
+// Logic for replacing variables in mods.toml
 var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {
     var replaceProperties = [
             minecraft_version      : minecraft_version,

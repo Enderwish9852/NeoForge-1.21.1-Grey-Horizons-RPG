@@ -1,0 +1,5 @@
+{
+  "type": "gh_farming_overhaul:tree_removal",
+  "biomes": "#minecraft:is_overworld",
+  "features": "#gh_farming_overhaul:all_vanilla_trees"
+}

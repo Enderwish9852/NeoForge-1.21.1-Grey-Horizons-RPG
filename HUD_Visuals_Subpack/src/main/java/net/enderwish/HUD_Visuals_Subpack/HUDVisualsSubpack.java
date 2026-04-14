@@ -37,9 +37,9 @@ public class HUDVisualsSubpack {
     public static final DeferredItem<Item> SPORTS_WATCH = ITEMS.register("sports_watch",
             () -> new SportsWatchItem(new Item.Properties().stacksTo(1)));
 
-    public static final Supplier<CreativeModeTab> GREY_HORIZONS_TAB = CREATIVE_TABS.register("greyhorizons_tab",
+    public static final Supplier<CreativeModeTab> GREY_HORIZONS_TAB = CREATIVE_TABS.register("hud_visuals_tab",
             () -> CreativeModeTab.builder()
-                    .title(Component.translatable("creativetab.grey_horizons"))
+                    .title(Component.translatable("creativetab.hud_visuals"))
                     .icon(() -> new ItemStack(SPORTS_WATCH.get()))
                     .displayItems((parameters, output) -> {
                         output.accept(SPORTS_WATCH.get());

@@ -16,7 +16,6 @@ repositories {
 }
 
 base {
-    // Manually setting the ID for this subpack
     archivesName = "gh_hud_visuals"
 }
 
@@ -30,16 +29,32 @@ neoForge {
         minecraftVersion = project.parchment_minecraft_version
     }
 
+    // 1. DEFINE MODS FIRST (So the runs can see them)
+    mods {
+        gh_hud_visuals {
+            sourceSet(sourceSets.main)
+        }
+
+        gh_farming_overhaul {
+            sourceSet project(":Farming_Overhaul_Subpack").sourceSets.main
+        }
+    }
+
+    // 2. DEFINE RUNS SECOND
     runs {
         client {
             client()
             systemProperty 'neoforge.enabledGameTestNamespaces', 'gh_hud_visuals'
+
+            // This now works because the mods are defined above!
+            loadedMods = [mods.gh_hud_visuals, mods.gh_farming_overhaul]
         }
 
         server {
             server()
             programArgument '--nogui'
             systemProperty 'neoforge.enabledGameTestNamespaces', 'gh_hud_visuals'
+            loadedMods = [mods.gh_hud_visuals, mods.gh_farming_overhaul]
         }
 
         data {
@@ -52,12 +67,6 @@ neoForge {
             logLevel = org.slf4j.event.Level.DEBUG
         }
     }
-
-    mods {
-        gh_hud_visuals {
-            sourceSet(sourceSets.main)
-        }
-    }
 }
 
 sourceSets.main.resources { srcDir 'src/generated/resources' }
@@ -67,7 +76,7 @@ configurations {
 }
 
 dependencies {
-    // Curios API
+
     compileOnly "top.theillusivec4.curios:curios-neoforge:${curios_version}:api"
     runtimeOnly "top.theillusivec4.curios:curios-neoforge:${curios_version}"
 }

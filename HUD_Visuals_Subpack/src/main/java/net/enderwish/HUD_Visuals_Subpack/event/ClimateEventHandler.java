@@ -22,20 +22,28 @@ public class ClimateEventHandler {
 
     /**
      * Heartbeat: Ticks the WeatherManager on the server side.
-     * This manages the 24,000 tick day cycle and d100 weather rolls.
+     * Manages the 24,000 tick day cycle and seasonal growth leaps.
      */
     @SubscribeEvent
     public static void onLevelTick(LevelTickEvent.Post event) {
-        // Filter for Server-side Overworld only to prevent logic duplication
         if (event.getLevel() instanceof ServerLevel level && level.dimension() == Level.OVERWORLD) {
             WeatherManager.getInstance().tick(level);
+
+            if (level.getDayTime() % 24000 == 0) {
+                long totalDays = level.getDayTime() / 24000;
+
+                if (totalDays > 0 && totalDays % 20 == 0) {
+                    // FIRE THE EVENT: This sends a message to any mod listening
+                    net.neoforged.neoforge.common.NeoForge.EVENT_BUS.post(
+                            new net.enderwish.HUD_Visuals_Subpack.event.SeasonChangeEvent(level)
+                    );
+                }
+            }
         }
     }
 
     /**
      * Sync on Join: Ensures new players receive the current ClimateData immediately.
-     * Fixed: Now sends a direct packet to the joining player to ensure snow, ice,
-     * and seasonal colors render correctly from the very first frame.
      */
     @SubscribeEvent
     public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
@@ -44,7 +52,6 @@ public class ClimateEventHandler {
             ClimateData currentData = WeatherManager.getInstance().getCurrentData(player.serverLevel());
 
             // 2. Send direct packet to the joining player
-            // This forces the client cache to update before the world renders.
             ModMessages.sendToPlayer(new ClimateSyncPacket(currentData), player);
 
             // 3. Maintenance sync for the rest of the server
