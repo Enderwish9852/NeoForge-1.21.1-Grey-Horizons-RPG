@@ -20,9 +20,9 @@ public class ModMessages {
 
         // 3. Climate Sync (Server -> Client) - REQUIRED for Weather/Seasons
         registrar.playToClient(
-                ClimateSyncPacket.TYPE,
-                ClimateSyncPacket.STREAM_CODEC,
-                ClimateSyncPacket::handle
+                SeasonSyncPacket.TYPE,
+                SeasonSyncPacket.STREAM_CODEC,
+                SeasonSyncPacket::handle
         );
     }
 

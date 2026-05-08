@@ -1,0 +1,13 @@
+{
+  "has_rain": false,
+  "has_thunder": false,
+  "is_special": false,
+  "duration": { "min": 3000, "max": 12000 },
+  "intensity": { "min": 0.0, "max": 0.0 },
+  "season_weights": {
+    "SPRING": { "EARLY": 40,  "MID": 50,  "LATE": 70  },
+    "SUMMER": { "EARLY": 90,  "MID": 100, "LATE": 80  },
+    "AUTUMN": { "EARLY": 40,  "MID": 30,  "LATE": 20  },
+    "WINTER": { "EARLY": 10,  "MID": 5,   "LATE": 15  }
+  }
+}

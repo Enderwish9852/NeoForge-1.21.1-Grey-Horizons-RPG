@@ -6,7 +6,7 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.enderwish.HUD_Visuals_Subpack.api.ClimateData;
 import net.enderwish.HUD_Visuals_Subpack.core.ModAttachments;
 import net.enderwish.HUD_Visuals_Subpack.core.season.Season;
-import net.enderwish.HUD_Visuals_Subpack.network.ClimateSyncPacket;
+import net.enderwish.HUD_Visuals_Subpack.network.SeasonSyncPacket;
 import net.enderwish.HUD_Visuals_Subpack.network.ModMessages;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -44,7 +44,7 @@ public class SeasonCommand {
 
                         // 3. Save to Level and Sync to Clients
                         level.setData(ModAttachments.CLIMATE, newData);
-                        ModMessages.sendToAllPlayers(new ClimateSyncPacket(newData));
+                        ModMessages.sendToAllPlayers(new SeasonSyncPacket(newData));
 
                         context.getSource().sendSuccess(() ->
                                 Component.literal("§6[GH]§r Season set to: §b" + season.name()), true);
@@ -74,7 +74,7 @@ public class SeasonCommand {
 
                             // 3. Save to Level and Sync to Clients
                             level.setData(ModAttachments.CLIMATE, newData);
-                            ModMessages.sendToAllPlayers(new ClimateSyncPacket(newData));
+                            ModMessages.sendToAllPlayers(new SeasonSyncPacket(newData));
 
                             context.getSource().sendSuccess(() ->
                                     Component.literal("§6[GH]§r Season day set to: §e" + day), true);

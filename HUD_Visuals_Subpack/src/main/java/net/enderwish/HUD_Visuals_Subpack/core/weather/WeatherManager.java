@@ -4,7 +4,7 @@ import net.enderwish.HUD_Visuals_Subpack.api.ClimateData;
 import net.enderwish.HUD_Visuals_Subpack.api.WeatherType;
 import net.enderwish.HUD_Visuals_Subpack.core.ModAttachments;
 import net.enderwish.HUD_Visuals_Subpack.core.season.Season;
-import net.enderwish.HUD_Visuals_Subpack.network.ClimateSyncPacket;
+import net.enderwish.HUD_Visuals_Subpack.network.SeasonSyncPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.neoforged.neoforge.network.PacketDistributor;
 
@@ -150,7 +150,7 @@ public class WeatherManager {
     public void syncToAll(ServerLevel level) {
         ClimateData data = level.getData(ModAttachments.CLIMATE);
         if (data != null) {
-            PacketDistributor.sendToAllPlayers(new ClimateSyncPacket(data));
+            PacketDistributor.sendToAllPlayers(new SeasonSyncPacket(data));
         }
     }
     /**
