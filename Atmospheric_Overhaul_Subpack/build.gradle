@@ -16,7 +16,7 @@ repositories {
 }
 
 base {
-    archivesName = "gh_farming_overhaul"
+    archivesName = "gh_atmospheric"
 }
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
@@ -29,13 +29,40 @@ neoForge {
         minecraftVersion = project.parchment_minecraft_version
     }
 
-    // We removed the 'runs' block from here because HUD_Visuals
-    // is the leader and provides the unified 'runClient' task.
-
+    // 1. DEFINE MODS FIRST
     mods {
-        // This must match the name used in your mods.toml and the Lead build.gradle
-        gh_farming_overhaul {
+        gh_atmospheric {
             sourceSet(sourceSets.main)
+        }
+
+        gh_farming_overhaul {
+            sourceSet project(":Farming_Overhaul_Subpack").sourceSets.main
+        }
+    }
+
+    // 2. DEFINE RUNS SECOND
+    runs {
+        client {
+            client()
+            systemProperty 'neoforge.enabledGameTestNamespaces', 'gh_atmospheric'
+            loadedMods = [mods.gh_atmospheric, mods.gh_farming_overhaul]
+        }
+
+        server {
+            server()
+            programArgument '--nogui'
+            systemProperty 'neoforge.enabledGameTestNamespaces', 'gh_atmospheric'
+            loadedMods = [mods.gh_atmospheric, mods.gh_farming_overhaul]
+        }
+
+        data {
+            data()
+            programArguments.addAll '--mod', 'gh_atmospheric', '--all', '--output', file('src/generated/resources/').getAbsolutePath(), '--existing', file('src/main/resources/').getAbsolutePath()
+        }
+
+        configureEach {
+            systemProperty 'forge.logging.markers', 'REGISTRIES'
+            logLevel = org.slf4j.event.Level.DEBUG
         }
     }
 }
@@ -47,8 +74,6 @@ configurations {
 }
 
 dependencies {
-    implementation project(":Atmospheric_Overhaul_Subpack")
-    // Curios API
     compileOnly "top.theillusivec4.curios:curios-neoforge:${curios_version}:api"
     runtimeOnly "top.theillusivec4.curios:curios-neoforge:${curios_version}"
 }
@@ -60,8 +85,8 @@ var generateModMetadata = tasks.register("generateModMetadata", ProcessResources
             minecraft_version_range: minecraft_version_range,
             neo_version            : neo_version,
             loader_version_range   : loader_version_range,
-            mod_id                 : 'gh_farming_overhaul',
-            mod_name               : 'Farming_Overhaul_Subpack',
+            mod_id                 : 'gh_atmospheric',
+            mod_name               : 'Atmospheric_Overhaul_Subpack',
             mod_license            : mod_license,
             mod_version            : mod_version,
     ]

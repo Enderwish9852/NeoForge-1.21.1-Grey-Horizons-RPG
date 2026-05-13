@@ -10,5 +10,5 @@ plugins {
 
 rootProject.name = 'NeoForge-1.21.1-Grey-Horizons RPG'
 
-include 'HUD_Visuals_Subpack'
+include 'Atmospheric_Overhaul_Subpack'
 include 'Farming_Overhaul_Subpack'

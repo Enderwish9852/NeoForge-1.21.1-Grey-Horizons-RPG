@@ -1,0 +1,15 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "net.enderwish.Atmospheric_Overhaul_Subpack.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "BiomeMixin",
+    "WeatherTickMixin"
+  ],
+  "client": [
+    "FogRendererMixin",
+    "WeatherParticleMixin"
+  ],
+  "injectionPoints": {}
+}

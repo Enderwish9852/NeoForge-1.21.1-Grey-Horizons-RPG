@@ -1,0 +1,29 @@
+modLoader="javafml"
+loaderVersion="[2,)"
+license="All rights reserved"
+
+[[mods]]
+modId="gh_atmospheric"
+version="0.0.1"
+displayName="Atmospheric Overhaul Subpack"
+description='''
+Atmospheric Overhaul Subpack for Grey Horizons RPG.
+Handles seasons, weather, temperature and environmental changes.
+    '''
+
+[[mixins]]
+config="atmospheric.mixins.json"
+
+[[dependencies.gh_atmospheric]]
+modId="neoforge"
+type="required"
+versionRange="[21,)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.gh_atmospheric]]
+modId="minecraft"
+type="required"
+versionRange="[1.21.1]"
+ordering="NONE"
+side="BOTH"
