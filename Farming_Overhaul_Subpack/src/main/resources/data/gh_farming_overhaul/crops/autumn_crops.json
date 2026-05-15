@@ -1,0 +1,68 @@
+{
+  "potato": {
+    "growth_type": "ROOT",
+    "growth_days": 12,
+    "spoil_days": 20,
+    "weight_kg": 0.20,
+    "stack_size": 64,
+    "nutrition": 3,
+    "hydration": 0,
+    "year_round": false,
+    "seasons": ["AUTUMN", "SPRING"]
+  },
+  "pumpkin": {
+    "growth_type": "VINE",
+    "growth_days": 20,
+    "spoil_days": 45,
+    "weight_kg": 5.00,
+    "stack_size": 1,
+    "nutrition": 2,
+    "hydration": 2,
+    "year_round": false,
+    "seasons": ["AUTUMN"]
+  },
+  "squash": {
+    "growth_type": "VINE",
+    "growth_days": 18,
+    "spoil_days": 40,
+    "weight_kg": 1.50,
+    "stack_size": 1,
+    "nutrition": 2,
+    "hydration": 3,
+    "year_round": false,
+    "seasons": ["AUTUMN"]
+  },
+  "cabbage": {
+    "growth_type": "GROUND",
+    "growth_days": 12,
+    "spoil_days": 14,
+    "weight_kg": 0.80,
+    "stack_size": 1,
+    "nutrition": 2,
+    "hydration": 4,
+    "year_round": false,
+    "seasons": ["AUTUMN", "SPRING"]
+  },
+  "broccoli": {
+    "growth_type": "GROUND",
+    "growth_days": 15,
+    "spoil_days": 7,
+    "weight_kg": 0.30,
+    "stack_size": 16,
+    "nutrition": 2,
+    "hydration": 2,
+    "year_round": false,
+    "seasons": ["AUTUMN"]
+  },
+  "sweet_potato": {
+    "growth_type": "ROOT",
+    "growth_days": 14,
+    "spoil_days": 20,
+    "weight_kg": 0.35,
+    "stack_size": 16,
+    "nutrition": 3,
+    "hydration": 0,
+    "year_round": false,
+    "seasons": ["AUTUMN"]
+  }
+}

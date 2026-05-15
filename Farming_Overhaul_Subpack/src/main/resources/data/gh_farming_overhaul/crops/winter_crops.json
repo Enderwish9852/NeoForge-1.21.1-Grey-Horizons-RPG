@@ -1,0 +1,46 @@
+{
+  "garlic": {
+    "growth_type": "ROOT",
+    "growth_days": 20,
+    "spoil_days": 60,
+    "weight_kg": 0.05,
+    "stack_size": 64,
+    "nutrition": 1,
+    "hydration": 0,
+    "year_round": false,
+    "seasons": ["WINTER", "AUTUMN"]
+  },
+  "onion": {
+    "growth_type": "ROOT",
+    "growth_days": 10,
+    "spoil_days": 30,
+    "weight_kg": 0.15,
+    "stack_size": 64,
+    "nutrition": 1,
+    "hydration": 1,
+    "year_round": false,
+    "seasons": ["WINTER", "SPRING"]
+  },
+  "cauliflower": {
+    "growth_type": "GROUND",
+    "growth_days": 16,
+    "spoil_days": 10,
+    "weight_kg": 0.70,
+    "stack_size": 1,
+    "nutrition": 2,
+    "hydration": 3,
+    "year_round": false,
+    "seasons": ["WINTER"]
+  },
+  "rye": {
+    "growth_type": "GROUND",
+    "growth_days": 15,
+    "spoil_days": 45,
+    "weight_kg": 0.10,
+    "stack_size": 64,
+    "nutrition": 2,
+    "hydration": 0,
+    "year_round": false,
+    "seasons": ["WINTER", "SPRING"]
+  }
+}

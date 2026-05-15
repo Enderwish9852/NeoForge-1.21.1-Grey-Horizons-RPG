@@ -1,0 +1,174 @@
+{
+  "apple": {
+    "spoil_days": 7,
+    "weight_kg": 0.20
+  },
+  "bread": {
+    "spoil_days": 5,
+    "weight_kg": 0.30
+  },
+  "carrot": {
+    "spoil_days": 25,
+    "weight_kg": 0.10
+  },
+  "potato": {
+    "spoil_days": 20,
+    "weight_kg": 0.20
+  },
+  "baked_potato": {
+    "spoil_days": 4,
+    "weight_kg": 0.20
+  },
+  "beetroot": {
+    "spoil_days": 10,
+    "weight_kg": 0.15
+  },
+  "beetroot_soup": {
+    "spoil_days": 2,
+    "weight_kg": 0.40
+  },
+  "mushroom_stew": {
+    "spoil_days": 2,
+    "weight_kg": 0.40
+  },
+  "rabbit_stew": {
+    "spoil_days": 2,
+    "weight_kg": 0.50
+  },
+  "suspicious_stew": {
+    "spoil_days": 1,
+    "weight_kg": 0.40
+  },
+  "raw_beef": {
+    "spoil_days": 3,
+    "weight_kg": 0.30
+  },
+  "cooked_beef": {
+    "spoil_days": 5,
+    "weight_kg": 0.25
+  },
+  "raw_porkchop": {
+    "spoil_days": 3,
+    "weight_kg": 0.25
+  },
+  "cooked_porkchop": {
+    "spoil_days": 5,
+    "weight_kg": 0.20
+  },
+  "raw_chicken": {
+    "spoil_days": 2,
+    "weight_kg": 0.20
+  },
+  "cooked_chicken": {
+    "spoil_days": 4,
+    "weight_kg": 0.18
+  },
+  "raw_mutton": {
+    "spoil_days": 3,
+    "weight_kg": 0.25
+  },
+  "cooked_mutton": {
+    "spoil_days": 5,
+    "weight_kg": 0.20
+  },
+  "raw_rabbit": {
+    "spoil_days": 2,
+    "weight_kg": 0.15
+  },
+  "cooked_rabbit": {
+    "spoil_days": 4,
+    "weight_kg": 0.12
+  },
+  "raw_cod": {
+    "spoil_days": 2,
+    "weight_kg": 0.20
+  },
+  "cooked_cod": {
+    "spoil_days": 3,
+    "weight_kg": 0.18
+  },
+  "raw_salmon": {
+    "spoil_days": 2,
+    "weight_kg": 0.25
+  },
+  "cooked_salmon": {
+    "spoil_days": 3,
+    "weight_kg": 0.22
+  },
+  "tropical_fish": {
+    "spoil_days": 1,
+    "weight_kg": 0.10
+  },
+  "pufferfish": {
+    "spoil_days": 1,
+    "weight_kg": 0.15
+  },
+  "melon_slice": {
+    "spoil_days": 2,
+    "weight_kg": 0.15
+  },
+  "sweet_berries": {
+    "spoil_days": 3,
+    "weight_kg": 0.02
+  },
+  "glow_berries": {
+    "spoil_days": 3,
+    "weight_kg": 0.02
+  },
+  "honey_bottle": {
+    "spoil_days": 60,
+    "weight_kg": 0.35
+  },
+  "egg": {
+    "spoil_days": 14,
+    "weight_kg": 0.06
+  },
+  "milk_bucket": {
+    "spoil_days": 3,
+    "weight_kg": 1.00
+  },
+  "pumpkin_pie": {
+    "spoil_days": 4,
+    "weight_kg": 0.35
+  },
+  "cookie": {
+    "spoil_days": 10,
+    "weight_kg": 0.05
+  },
+  "cake": {
+    "spoil_days": 3,
+    "weight_kg": 1.20
+  },
+  "dried_kelp": {
+    "spoil_days": 30,
+    "weight_kg": 0.05
+  },
+  "kelp": {
+    "spoil_days": 2,
+    "weight_kg": 0.05
+  },
+  "chorus_fruit": {
+    "spoil_days": 5,
+    "weight_kg": 0.08
+  },
+  "golden_apple": {
+    "spoil_days": 30,
+    "weight_kg": 0.25
+  },
+  "enchanted_golden_apple": {
+    "spoil_days": 999,
+    "weight_kg": 0.25
+  },
+  "golden_carrot": {
+    "spoil_days": 20,
+    "weight_kg": 0.15
+  },
+  "spider_eye": {
+    "spoil_days": 2,
+    "weight_kg": 0.05
+  },
+  "rotten_flesh": {
+    "spoil_days": 1,
+    "weight_kg": 0.10
+  }
+}

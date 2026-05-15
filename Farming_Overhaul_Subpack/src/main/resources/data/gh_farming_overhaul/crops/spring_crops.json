@@ -1,0 +1,68 @@
+{
+  "wheat": {
+    "growth_type": "GROUND",
+    "growth_days": 12,
+    "spoil_days": 30,
+    "weight_kg": 0.10,
+    "stack_size": 64,
+    "nutrition": 2,
+    "hydration": 0,
+    "year_round": false,
+    "seasons": ["SPRING", "SUMMER"]
+  },
+  "carrot": {
+    "growth_type": "ROOT",
+    "growth_days": 10,
+    "spoil_days": 25,
+    "weight_kg": 0.10,
+    "stack_size": 64,
+    "nutrition": 2,
+    "hydration": 2,
+    "year_round": false,
+    "seasons": ["SPRING", "AUTUMN"]
+  },
+  "lettuce": {
+    "growth_type": "GROUND",
+    "growth_days": 8,
+    "spoil_days": 5,
+    "weight_kg": 0.40,
+    "stack_size": 1,
+    "nutrition": 1,
+    "hydration": 7,
+    "year_round": false,
+    "seasons": ["SPRING"]
+  },
+  "radish": {
+    "growth_type": "ROOT",
+    "growth_days": 5,
+    "spoil_days": 12,
+    "weight_kg": 0.05,
+    "stack_size": 64,
+    "nutrition": 1,
+    "hydration": 4,
+    "year_round": false,
+    "seasons": ["SPRING", "AUTUMN"]
+  },
+  "spinach": {
+    "growth_type": "GROUND",
+    "growth_days": 6,
+    "spoil_days": 2,
+    "weight_kg": 0.02,
+    "stack_size": 64,
+    "nutrition": 1,
+    "hydration": 4,
+    "year_round": false,
+    "seasons": ["SPRING"]
+  },
+  "pea": {
+    "growth_type": "VINE",
+    "growth_days": 10,
+    "spoil_days": 5,
+    "weight_kg": 0.02,
+    "stack_size": 64,
+    "nutrition": 2,
+    "hydration": 3,
+    "year_round": false,
+    "seasons": ["SPRING"]
+  }
+}

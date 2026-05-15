@@ -30,7 +30,7 @@ public class WeatherRegistry implements ResourceManagerReloadListener {
         definitions.clear();
         Map<ResourceLocation, Resource> resources = manager.listResources(
                 FOLDER,
-                path -> path.getNamespace().equals("gh_hud_visuals")
+                path -> path.getNamespace().equals("gh_atmospheric")
                         && path.getPath().endsWith(".json")
         );
 

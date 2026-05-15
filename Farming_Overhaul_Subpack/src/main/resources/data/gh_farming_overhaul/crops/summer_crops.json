@@ -1,0 +1,90 @@
+{
+  "tomato": {
+    "growth_type": "VINE",
+    "growth_days": 10,
+    "spoil_days": 5,
+    "weight_kg": 0.12,
+    "stack_size": 64,
+    "nutrition": 1,
+    "hydration": 6,
+    "year_round": false,
+    "seasons": ["SUMMER"]
+  },
+  "corn": {
+    "growth_type": "STALK",
+    "growth_days": 14,
+    "spoil_days": 10,
+    "weight_kg": 0.25,
+    "stack_size": 16,
+    "nutrition": 2,
+    "hydration": 1,
+    "year_round": false,
+    "seasons": ["SUMMER"]
+  },
+  "cucumber": {
+    "growth_type": "VINE",
+    "growth_days": 9,
+    "spoil_days": 6,
+    "weight_kg": 0.30,
+    "stack_size": 16,
+    "nutrition": 1,
+    "hydration": 9,
+    "year_round": false,
+    "seasons": ["SUMMER"]
+  },
+  "watermelon": {
+    "growth_type": "VINE",
+    "growth_days": 12,
+    "spoil_days": 2,
+    "weight_kg": 0.50,
+    "stack_size": 16,
+    "nutrition": 2,
+    "hydration": 8,
+    "year_round": false,
+    "seasons": ["SUMMER"]
+  },
+  "bell_pepper": {
+    "growth_type": "BUSH",
+    "growth_days": 12,
+    "spoil_days": 10,
+    "weight_kg": 0.15,
+    "stack_size": 16,
+    "nutrition": 1,
+    "hydration": 5,
+    "year_round": false,
+    "seasons": ["SUMMER"]
+  },
+  "courgette": {
+    "growth_type": "GROUND",
+    "growth_days": 10,
+    "spoil_days": 7,
+    "weight_kg": 0.40,
+    "stack_size": 16,
+    "nutrition": 1,
+    "hydration": 5,
+    "year_round": false,
+    "seasons": ["SUMMER"]
+  },
+  "eggplant": {
+    "growth_type": "BUSH",
+    "growth_days": 15,
+    "spoil_days": 8,
+    "weight_kg": 0.45,
+    "stack_size": 16,
+    "nutrition": 2,
+    "hydration": 3,
+    "year_round": false,
+    "seasons": ["SUMMER"]
+  },
+  "sunflower_seeds": {
+    "growth_type": "GROUND",
+    "growth_days": 12,
+    "spoil_days": 120,
+    "weight_kg": 0.005,
+    "stack_size": 64,
+    "nutrition": 1,
+    "hydration": 0,
+    "year_round": false,
+    "seasons": ["SUMMER"]
+  }
+}
