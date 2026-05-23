@@ -1,0 +1,15 @@
+{
+  "shaped": false,
+  "requires_water": true,
+  "cook_time_ticks": 400,
+  "spoil_reduction": 0.15,
+  "ingredients": [
+    "minecraft:beef",
+    "minecraft:carrot",
+    "minecraft:potato"
+  ],
+  "result": {
+    "item": "minecraft:mushroom_stew",
+    "count": 1
+  }
+}

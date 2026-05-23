@@ -1,4 +1,10 @@
 {
+  "item.gh_farming_overhaul.rotten_scrap": "Rotten Scrap",
+
+  "block.gh_farming_overhaul.wet_clay_pot": "Wet Clay Pot",
+  "block.gh_farming_overhaul.clay_pot": "Clay Pot",
+
   "creativetab.gh_farming_overhaul.tab": "Farming Overhaul",
-  "item.gh_farming_overhaul.rotten_scrap": "Rotten Scrap"
+
+  "container.gh_farming_overhaul.clay_pot": "Clay Pot"
 }

@@ -39,7 +39,7 @@
     "spoil_days": 1,
     "weight_kg": 0.40
   },
-  "raw_beef": {
+  "beef": {
     "spoil_days": 3,
     "weight_kg": 0.30
   },
@@ -47,7 +47,7 @@
     "spoil_days": 5,
     "weight_kg": 0.25
   },
-  "raw_porkchop": {
+  "porkchop": {
     "spoil_days": 3,
     "weight_kg": 0.25
   },
@@ -55,7 +55,7 @@
     "spoil_days": 5,
     "weight_kg": 0.20
   },
-  "raw_chicken": {
+  "chicken": {
     "spoil_days": 2,
     "weight_kg": 0.20
   },
@@ -63,7 +63,7 @@
     "spoil_days": 4,
     "weight_kg": 0.18
   },
-  "raw_mutton": {
+  "mutton": {
     "spoil_days": 3,
     "weight_kg": 0.25
   },
@@ -71,7 +71,7 @@
     "spoil_days": 5,
     "weight_kg": 0.20
   },
-  "raw_rabbit": {
+  "rabbit": {
     "spoil_days": 2,
     "weight_kg": 0.15
   },
@@ -79,7 +79,7 @@
     "spoil_days": 4,
     "weight_kg": 0.12
   },
-  "raw_cod": {
+  "cod": {
     "spoil_days": 2,
     "weight_kg": 0.20
   },
@@ -87,7 +87,7 @@
     "spoil_days": 3,
     "weight_kg": 0.18
   },
-  "raw_salmon": {
+  "salmon": {
     "spoil_days": 2,
     "weight_kg": 0.25
   },

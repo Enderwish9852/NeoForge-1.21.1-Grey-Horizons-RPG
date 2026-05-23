@@ -2,6 +2,7 @@ package net.enderwish.Farming_Overhaul_Subpack.api;
 
 import net.enderwish.Farming_Overhaul_Subpack.core.crop.CropDefinition;
 import net.enderwish.Farming_Overhaul_Subpack.core.crop.CropRegistry;
+import net.enderwish.Farming_Overhaul_Subpack.core.food.FoodRegistry;
 import net.enderwish.Farming_Overhaul_Subpack.core.spoilage.ModDataComponents;
 import net.enderwish.Farming_Overhaul_Subpack.core.spoilage.SpoilageComponent;
 import net.minecraft.world.item.ItemStack;
@@ -165,5 +166,59 @@ public final class FarmingAPI {
     public static int getHydration(String cropId) {
         if (!CropRegistry.INSTANCE.isRegistered(cropId)) return 0;
         return CropRegistry.INSTANCE.getByName(cropId).hydration();
+    }
+
+    // ── Food queries ──────────────────────────────────────────────────────────
+
+    /**
+     * Returns true if the given item ID is registered as a spoilable food.
+     * Checks both FoodRegistry and CropRegistry.
+     * Use this before calling any food query method.
+     */
+    public static boolean isFoodRegistered(String itemId) {
+        return FoodRegistry.INSTANCE.isRegistered(itemId)
+                || CropRegistry.INSTANCE.isRegistered(itemId);
+    }
+
+    /**
+     * Returns the spoil days for a food item.
+     * Checks FoodRegistry first then CropRegistry.
+     * Returns 0 if not registered in either.
+     */
+    public static int getSpoilDays(String itemId) {
+        if (FoodRegistry.INSTANCE.isRegistered(itemId)) {
+            return FoodRegistry.INSTANCE.getByName(itemId).spoilDays();
+        }
+        if (CropRegistry.INSTANCE.isRegistered(itemId)) {
+            return CropRegistry.INSTANCE.getByName(itemId).spoilDays();
+        }
+        return 0;
+    }
+
+    /**
+     * Returns the weight in kg for a food item.
+     * Checks FoodRegistry first then CropRegistry.
+     * Returns 0.0 if not registered in either.
+     */
+    public static float getFoodWeightKg(String itemId) {
+        if (FoodRegistry.INSTANCE.isRegistered(itemId)) {
+            return FoodRegistry.INSTANCE.getByName(itemId).weightKg();
+        }
+        if (CropRegistry.INSTANCE.isRegistered(itemId)) {
+            return CropRegistry.INSTANCE.getByName(itemId).weightKg();
+        }
+        return 0.0f;
+    }
+
+    /**
+     * Returns the total stack weight in kg for any food item stack.
+     * Accounts for stack size.
+     * Returns 0.0 if not registered in either registry.
+     */
+    public static float getFoodStackWeightKg(ItemStack stack) {
+        String itemId = stack.getItem()
+                .builtInRegistryHolder()
+                .key().location().getPath();
+        return getFoodWeightKg(itemId) * stack.getCount();
     }
 }

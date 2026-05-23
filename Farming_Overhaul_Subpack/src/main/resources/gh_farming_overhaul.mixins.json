@@ -1,0 +1,15 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "net.enderwish.Farming_Overhaul_Subpack.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "CropBlockMixin"
+  ],
+  "client": [
+    "ItemInHandRendererMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "dry_stage=0": { "model": "gh_farming_overhaul:block/wet_clay_pot" },
+    "dry_stage=1": { "model": "gh_farming_overhaul:block/wet_clay_pot" },
+    "dry_stage=2": { "model": "gh_farming_overhaul:block/wet_clay_pot" },
+    "dry_stage=3": { "model": "gh_farming_overhaul:block/wet_clay_pot" },
+    "dry_stage=4": { "model": "gh_farming_overhaul:block/wet_clay_pot" },
+    "dry_stage=5": { "model": "gh_farming_overhaul:block/wet_clay_pot" },
+    "dry_stage=6": { "model": "gh_farming_overhaul:block/wet_clay_pot" },
+    "dry_stage=7": { "model": "gh_farming_overhaul:block/wet_clay_pot" }
+  }
+}

@@ -29,11 +29,7 @@ neoForge {
         minecraftVersion = project.parchment_minecraft_version
     }
 
-    // We removed the 'runs' block from here because HUD_Visuals
-    // is the leader and provides the unified 'runClient' task.
-
     mods {
-        // This must match the name used in your mods.toml and the Lead build.gradle
         gh_farming_overhaul {
             sourceSet(sourceSets.main)
         }
@@ -51,6 +47,8 @@ dependencies {
     // Curios API
     compileOnly "top.theillusivec4.curios:curios-neoforge:${curios_version}:api"
     runtimeOnly "top.theillusivec4.curios:curios-neoforge:${curios_version}"
+    // Mixin annotation processor
+    annotationProcessor "org.spongepowered:mixin:0.8.5:processor"
 }
 
 // Logic for replacing variables in mods.toml
