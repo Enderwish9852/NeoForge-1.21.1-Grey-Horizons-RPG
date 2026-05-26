@@ -5,10 +5,8 @@ import net.enderwish.Farming_Overhaul_Subpack.block.ModBlocks;
 import net.enderwish.Farming_Overhaul_Subpack.gui.ClayPotMenu;
 import net.enderwish.Farming_Overhaul_Subpack.init.ModBlockEntities;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.ItemInteractionResult;
-import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.SimpleContainerData;
 import net.minecraft.world.item.ItemStack;
@@ -23,7 +21,6 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
-import net.neoforged.neoforge.network.IContainerFactory;
 import org.jetbrains.annotations.Nullable;
 
 public class ClayPotBlock extends BaseEntityBlock {
@@ -82,14 +79,6 @@ public class ClayPotBlock extends BaseEntityBlock {
 
         ClayPotBlockEntity entity = (ClayPotBlockEntity) level.getBlockEntity(pos);
         if (entity == null) return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
-
-        // Right click with water bucket — fill water
-        if (stack.is(Items.WATER_BUCKET)) {
-            if (entity.fillWater()) {
-                player.setItemInHand(hand, new ItemStack(Items.BUCKET));
-                return ItemInteractionResult.SUCCESS;
-            }
-        }
 
         // Right click with empty bowl — collect output
         if (stack.is(Items.BOWL) && entity.getBowlsRemaining() > 0) {

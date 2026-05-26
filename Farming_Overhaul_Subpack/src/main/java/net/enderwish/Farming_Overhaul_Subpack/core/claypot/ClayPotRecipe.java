@@ -3,50 +3,23 @@ package net.enderwish.Farming_Overhaul_Subpack.core.claypot;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 
 import java.util.List;
 import java.util.Map;
 
-/**
- * ClayPotRecipe
- *
- * Defines a single clay pot recipe loaded from JSON.
- *
- * Shaped example:
- * {
- *   "shaped": true,
- *   "requires_water": true,
- *   "cook_time_ticks": 400,
- *   "spoil_reduction": 0.15,
- *   "pattern": ["A B", "   ", "   "],
- *   "keys": { "A": "minecraft:beef", "B": "minecraft:carrot" },
- *   "result": { "item": "minecraft:mushroom_stew", "count": 1 }
- * }
- *
- * Shapeless example:
- * {
- *   "shaped": false,
- *   "requires_water": false,
- *   "cook_time_ticks": 200,
- *   "spoil_reduction": 0.10,
- *   "ingredients": ["minecraft:beef", "minecraft:beef"],
- *   "result": { "item": "minecraft:cooked_beef", "count": 2 }
- * }
- */
 public record ClayPotRecipe(
         boolean shaped,
         boolean requiresWater,
         int cookTimeTicks,
         float spoilReduction,
-        List<String> pattern,       // 3 strings of length 3 for shaped, empty for shapeless
-        Map<String, String> keys,   // char → item id mapping for shaped
-        List<String> ingredients,   // item ids for shapeless
+        List<String> pattern,
+        Map<String, String> keys,
+        List<String> ingredients,
         RecipeResult result
 ) {
-
-    // ── Codec ─────────────────────────────────────────────────────────────────
 
     public static final Codec<ClayPotRecipe> CODEC = RecordCodecBuilder.create(instance ->
             instance.group(
@@ -65,14 +38,13 @@ public record ClayPotRecipe(
             ).apply(instance, ClayPotRecipe::new)
     );
 
-    // ── Matching ──────────────────────────────────────────────────────────────
-
     /**
      * Checks if the given 9-slot ingredient grid matches this recipe.
-     * grid[0] = top-left, grid[8] = bottom-right.
+     * waterSlot is the ItemStack in the water input slot.
      */
-    public boolean matches(List<ItemStack> grid, int waterLevel) {
-        if (requiresWater && waterLevel <= 0) return false;
+    public boolean matches(List<ItemStack> grid, ItemStack waterSlot) {
+        // Check water requirement
+        if (requiresWater && !waterSlot.is(Items.WATER_BUCKET)) return false;
 
         if (shaped) {
             return matchesShaped(grid);
@@ -86,7 +58,6 @@ public record ClayPotRecipe(
 
         for (int row = 0; row < 3; row++) {
             String patternRow = row < pattern.size() ? pattern.get(row) : "   ";
-            // Pad to length 3
             while (patternRow.length() < 3) patternRow = patternRow + " ";
 
             for (int col = 0; col < 3; col++) {
@@ -95,10 +66,8 @@ public record ClayPotRecipe(
                 ItemStack stack = grid.get(slotIndex);
 
                 if (key == ' ') {
-                    // Slot must be empty
                     if (!stack.isEmpty()) return false;
                 } else {
-                    // Slot must have the correct item
                     String expectedId = keys.get(String.valueOf(key));
                     if (expectedId == null) return false;
                     if (stack.isEmpty()) return false;
@@ -114,29 +83,21 @@ public record ClayPotRecipe(
     private boolean matchesShapeless(List<ItemStack> grid) {
         if (ingredients.isEmpty()) return false;
 
-        // Count required ingredients
         List<String> required = new java.util.ArrayList<>(ingredients);
 
         for (ItemStack stack : grid) {
             if (stack.isEmpty()) continue;
             String id = BuiltInRegistries.ITEM
                     .getKey(stack.getItem()).toString();
-            if (!required.remove(id)) return false; // unexpected item
+            if (!required.remove(id)) return false;
         }
 
-        return required.isEmpty(); // all required items matched
+        return required.isEmpty();
     }
 
-    // ── Result ────────────────────────────────────────────────────────────────
-
-    /**
-     * Returns the output ItemStack for this recipe.
-     */
     public ItemStack getOutput() {
         return result.toItemStack();
     }
-
-    // ── RecipeResult record ───────────────────────────────────────────────────
 
     public record RecipeResult(String item, int count) {
 
@@ -149,10 +110,7 @@ public record ClayPotRecipe(
 
         public ItemStack toItemStack() {
             ResourceLocation id = ResourceLocation.parse(item);
-            return new ItemStack(
-                    BuiltInRegistries.ITEM.get(id),
-                    count
-            );
+            return new ItemStack(BuiltInRegistries.ITEM.get(id), count);
         }
     }
 }

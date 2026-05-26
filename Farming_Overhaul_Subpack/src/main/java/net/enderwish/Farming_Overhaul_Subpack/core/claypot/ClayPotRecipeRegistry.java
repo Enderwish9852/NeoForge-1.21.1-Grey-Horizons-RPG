@@ -17,15 +17,6 @@ import java.io.IOException;
 import java.io.Reader;
 import java.util.*;
 
-/**
- * ClayPotRecipeRegistry
- *
- * Loads all clay pot recipes from JSON at resource reload.
- * Files live at:
- *   data/gh_farming_overhaul/clay_pot_recipes/*.json
- *
- * Each file is one recipe.
- */
 public class ClayPotRecipeRegistry implements ResourceManagerReloadListener {
 
     public static final ClayPotRecipeRegistry INSTANCE = new ClayPotRecipeRegistry();
@@ -71,12 +62,12 @@ public class ClayPotRecipeRegistry implements ResourceManagerReloadListener {
     }
 
     /**
-     * Finds a matching recipe for the given ingredient grid and water level.
-     * Returns empty if no match found.
+     * Finds a matching recipe for the given ingredient grid and water slot.
+     * waterSlot is the ItemStack in the water input slot.
      */
-    public Optional<ClayPotRecipe> findMatch(List<ItemStack> grid, int waterLevel) {
+    public Optional<ClayPotRecipe> findMatch(List<ItemStack> grid, ItemStack waterSlot) {
         for (ClayPotRecipe recipe : recipes) {
-            if (recipe.matches(grid, waterLevel)) return Optional.of(recipe);
+            if (recipe.matches(grid, waterSlot)) return Optional.of(recipe);
         }
         return Optional.empty();
     }

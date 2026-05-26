@@ -12,6 +12,7 @@ import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.ContainerHelper;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.CampfireBlock;
@@ -20,35 +21,20 @@ import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.List;
 
-/**
- * ClayPotBlockEntity
- *
- * Stores all state for the clay pot block:
- *   - 9 ingredient slots (3x3 grid)
- *   - 1 water slot (bucket input)
- *   - Cook progress and total cook time
- *   - Water level (0 = empty, 1 = full)
- *   - Output item and remaining bowl count
- *   - Campfire lit state
- *   - Current recipe spoil reduction and water requirement
- */
 public class ClayPotBlockEntity extends BlockEntity {
 
     // ── Constants ─────────────────────────────────────────────────────────────
-
     public static final int INGREDIENT_SLOTS = 9;
     public static final int WATER_SLOT       = 9;
     public static final int TOTAL_SLOTS      = 10;
     public static final int BOWLS_PER_BATCH  = 9;
 
     // ── State ─────────────────────────────────────────────────────────────────
-
     private final NonNullList<ItemStack> items =
             NonNullList.withSize(TOTAL_SLOTS, ItemStack.EMPTY);
 
     private int cookProgress   = 0;
     private int cookTotalTime  = 0;
-    private int waterLevel     = 0;
     private int bowlsRemaining = 0;
     private ItemStack outputItem = ItemStack.EMPTY;
 
@@ -56,27 +42,23 @@ public class ClayPotBlockEntity extends BlockEntity {
     private boolean currentRecipeRequiresWater = false;
 
     // ── Constructor ───────────────────────────────────────────────────────────
-
     public ClayPotBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.CLAY_POT.get(), pos, state);
     }
 
     // ── Tick ──────────────────────────────────────────────────────────────────
-
     public static void tick(Level level, BlockPos pos, BlockState state,
                             ClayPotBlockEntity entity) {
         if (level.isClientSide()) return;
 
-        // If output is ready — wait for player to collect with bowl
         if (entity.bowlsRemaining > 0) return;
 
-        // Check if campfire below is lit
         if (!isCampfireLit(level, pos)) return;
 
-        // If no active cook time — check for a matching recipe
         if (entity.cookTotalTime <= 0) {
             List<ItemStack> grid = entity.items.subList(0, INGREDIENT_SLOTS);
-            ClayPotRecipeRegistry.INSTANCE.findMatch(grid, entity.waterLevel)
+            ItemStack waterSlot = entity.items.get(WATER_SLOT);
+            ClayPotRecipeRegistry.INSTANCE.findMatch(grid, waterSlot)
                     .ifPresent(recipe -> {
                         entity.cookTotalTime               = recipe.cookTimeTicks();
                         entity.cookProgress                = 0;
@@ -88,26 +70,23 @@ public class ClayPotBlockEntity extends BlockEntity {
             return;
         }
 
-        // Advance cook progress
         entity.cookProgress++;
         entity.setChanged();
 
         if (entity.cookProgress >= entity.cookTotalTime) {
-            // Cooking done — calculate spoilage for output
             float worstSpoilProgress = getWorstSpoilProgress(entity);
             float finalProgress = Math.max(0.0f,
                     worstSpoilProgress - entity.currentRecipeSpoilReduction);
 
-            // Attach spoilage to output item
             attachSpoilage(entity.outputItem, finalProgress);
 
             entity.cookProgress   = 0;
             entity.cookTotalTime  = 0;
             entity.bowlsRemaining = BOWLS_PER_BATCH;
 
-            // Consume water if recipe required it
+            // Convert water bucket to empty bucket
             if (entity.currentRecipeRequiresWater) {
-                entity.waterLevel = 0;
+                entity.items.set(WATER_SLOT, new ItemStack(Items.BUCKET));
             }
 
             entity.setChanged();
@@ -115,7 +94,6 @@ public class ClayPotBlockEntity extends BlockEntity {
     }
 
     // ── Campfire check ────────────────────────────────────────────────────────
-
     public static boolean isCampfireLit(Level level, BlockPos pos) {
         BlockState below = level.getBlockState(pos.below());
         if (!below.is(Blocks.CAMPFIRE) && !below.is(Blocks.SOUL_CAMPFIRE)) return false;
@@ -123,7 +101,6 @@ public class ClayPotBlockEntity extends BlockEntity {
     }
 
     // ── Bowl collection ───────────────────────────────────────────────────────
-
     public ItemStack collectBowl() {
         if (bowlsRemaining <= 0 || outputItem.isEmpty()) return ItemStack.EMPTY;
 
@@ -141,17 +118,7 @@ public class ClayPotBlockEntity extends BlockEntity {
         return bowl;
     }
 
-    // ── Water ─────────────────────────────────────────────────────────────────
-
-    public boolean fillWater() {
-        if (waterLevel >= 1) return false;
-        waterLevel = 1;
-        setChanged();
-        return true;
-    }
-
     // ── Spoilage helpers ──────────────────────────────────────────────────────
-
     private static float getWorstSpoilProgress(ClayPotBlockEntity entity) {
         float worst = 0.0f;
         for (int i = 0; i < INGREDIENT_SLOTS; i++) {
@@ -188,11 +155,9 @@ public class ClayPotBlockEntity extends BlockEntity {
     }
 
     // ── Getters ───────────────────────────────────────────────────────────────
-
     public NonNullList<ItemStack> getItems()    { return items; }
     public int getCookProgress()                { return cookProgress; }
     public int getCookTotalTime()               { return cookTotalTime; }
-    public int getWaterLevel()                  { return waterLevel; }
     public int getBowlsRemaining()              { return bowlsRemaining; }
     public ItemStack getOutputItem()            { return outputItem; }
     public ItemStack getItem(int slot)          { return items.get(slot); }
@@ -210,14 +175,12 @@ public class ClayPotBlockEntity extends BlockEntity {
     }
 
     // ── Save / Load ───────────────────────────────────────────────────────────
-
     @Override
     protected void saveAdditional(CompoundTag tag, HolderLookup.Provider provider) {
         super.saveAdditional(tag, provider);
         ContainerHelper.saveAllItems(tag, items, provider);
         tag.putInt("CookProgress",    cookProgress);
         tag.putInt("CookTotalTime",   cookTotalTime);
-        tag.putInt("WaterLevel",      waterLevel);
         tag.putInt("BowlsRemaining",  bowlsRemaining);
         tag.putFloat("SpoilReduction", currentRecipeSpoilReduction);
         tag.putBoolean("RequiresWater", currentRecipeRequiresWater);
@@ -232,7 +195,6 @@ public class ClayPotBlockEntity extends BlockEntity {
         ContainerHelper.loadAllItems(tag, items, provider);
         cookProgress                = tag.getInt("CookProgress");
         cookTotalTime               = tag.getInt("CookTotalTime");
-        waterLevel                  = tag.getInt("WaterLevel");
         bowlsRemaining              = tag.getInt("BowlsRemaining");
         currentRecipeSpoilReduction = tag.getFloat("SpoilReduction");
         currentRecipeRequiresWater  = tag.getBoolean("RequiresWater");
