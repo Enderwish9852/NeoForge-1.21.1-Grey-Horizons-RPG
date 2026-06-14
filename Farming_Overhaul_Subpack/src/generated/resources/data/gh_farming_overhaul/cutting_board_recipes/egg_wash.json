@@ -1,0 +1,16 @@
+{
+  "category": "MEAT",
+  "chop_time_ticks": 30,
+  "container_type": "bowl",
+  "ingredients": [
+    "minecraft:egg",
+    "minecraft:egg"
+  ],
+  "result": {
+    "count": 1,
+    "item": "gh_farming_overhaul:egg_wash"
+  },
+  "shaped": false,
+  "spoil_reduction": 0.0,
+  "tool_type": "knife"
+}

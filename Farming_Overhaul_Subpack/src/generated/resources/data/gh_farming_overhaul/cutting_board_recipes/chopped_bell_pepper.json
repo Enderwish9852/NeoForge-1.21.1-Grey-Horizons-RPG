@@ -1,0 +1,15 @@
+{
+  "category": "CHOP",
+  "chop_time_ticks": 40,
+  "container_type": "none",
+  "ingredients": [
+    "gh_farming_overhaul:bell_pepper"
+  ],
+  "result": {
+    "count": 2,
+    "item": "gh_farming_overhaul:chopped_bell_pepper"
+  },
+  "shaped": false,
+  "spoil_reduction": 0.0,
+  "tool_type": "knife"
+}

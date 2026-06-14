@@ -1,0 +1,15 @@
+{
+  "category": "STEW",
+  "cook_time_ticks": 700,
+  "ingredients": [
+    "gh_farming_overhaul:diced_chicken",
+    "gh_farming_overhaul:diced_potato"
+  ],
+  "requires_water": true,
+  "result": {
+    "count": 1,
+    "item": "gh_farming_overhaul:chicken_stew"
+  },
+  "shaped": false,
+  "spoil_reduction": 0.1
+}

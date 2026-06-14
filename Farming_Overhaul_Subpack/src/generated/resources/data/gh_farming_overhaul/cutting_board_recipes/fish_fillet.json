@@ -1,0 +1,15 @@
+{
+  "category": "MEAT",
+  "chop_time_ticks": 60,
+  "container_type": "none",
+  "ingredients": [
+    "minecraft:cod"
+  ],
+  "result": {
+    "count": 1,
+    "item": "gh_farming_overhaul:fish_fillet"
+  },
+  "shaped": false,
+  "spoil_reduction": 0.0,
+  "tool_type": "knife"
+}

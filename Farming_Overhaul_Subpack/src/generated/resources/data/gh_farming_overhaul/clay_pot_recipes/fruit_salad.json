@@ -1,0 +1,16 @@
+{
+  "category": "OTHER",
+  "cook_time_ticks": 200,
+  "ingredients": [
+    "gh_farming_overhaul:apple_slices",
+    "gh_farming_overhaul:sliced_pear",
+    "gh_farming_overhaul:melon_chunks"
+  ],
+  "requires_water": false,
+  "result": {
+    "count": 1,
+    "item": "gh_farming_overhaul:fruit_salad"
+  },
+  "shaped": false,
+  "spoil_reduction": 0.05
+}

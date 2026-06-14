@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/crop",
+  "render_type": "minecraft:cutout",
+  "textures": {
+    "crop": "gh_farming_overhaul:block/crop/sweet_potato_stage7"
+  }
+}

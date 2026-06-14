@@ -1,0 +1,15 @@
+{
+  "category": "OTHER",
+  "cook_time_ticks": 400,
+  "ingredients": [
+    "minecraft:brown_mushroom",
+    "minecraft:red_mushroom"
+  ],
+  "requires_water": false,
+  "result": {
+    "count": 1,
+    "item": "gh_farming_overhaul:mushroom_medley"
+  },
+  "shaped": false,
+  "spoil_reduction": 0.08
+}

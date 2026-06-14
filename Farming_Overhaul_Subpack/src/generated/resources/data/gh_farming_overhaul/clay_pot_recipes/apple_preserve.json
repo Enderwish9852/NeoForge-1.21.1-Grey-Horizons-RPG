@@ -1,0 +1,16 @@
+{
+  "category": "PRESERVE",
+  "cook_time_ticks": 900,
+  "ingredients": [
+    "gh_farming_overhaul:apple_slices",
+    "gh_farming_overhaul:apple_slices",
+    "minecraft:honey_bottle"
+  ],
+  "requires_water": false,
+  "result": {
+    "count": 1,
+    "item": "gh_farming_overhaul:apple_preserve"
+  },
+  "shaped": false,
+  "spoil_reduction": 0.45
+}

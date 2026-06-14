@@ -1,0 +1,14 @@
+{
+  "category": "PRESERVE",
+  "cook_time_ticks": 500,
+  "ingredients": [
+    "gh_farming_overhaul:fish_fillet"
+  ],
+  "requires_water": false,
+  "result": {
+    "count": 1,
+    "item": "gh_farming_overhaul:salted_fish"
+  },
+  "shaped": false,
+  "spoil_reduction": 0.45
+}

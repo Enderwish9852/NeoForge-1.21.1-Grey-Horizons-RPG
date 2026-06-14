@@ -1,0 +1,15 @@
+{
+  "category": "PRESERVE",
+  "cook_time_ticks": 600,
+  "ingredients": [
+    "gh_farming_overhaul:shredded_cabbage",
+    "gh_farming_overhaul:shredded_cabbage"
+  ],
+  "requires_water": false,
+  "result": {
+    "count": 2,
+    "item": "gh_farming_overhaul:sauerkraut"
+  },
+  "shaped": false,
+  "spoil_reduction": 0.45
+}

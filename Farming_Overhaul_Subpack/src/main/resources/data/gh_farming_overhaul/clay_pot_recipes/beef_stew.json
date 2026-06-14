@@ -3,6 +3,7 @@
   "requires_water": true,
   "cook_time_ticks": 400,
   "spoil_reduction": 0.15,
+  "category": "STEW",
   "ingredients": [
     "minecraft:beef",
     "minecraft:carrot",

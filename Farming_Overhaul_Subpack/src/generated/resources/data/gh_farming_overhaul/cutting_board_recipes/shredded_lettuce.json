@@ -1,0 +1,15 @@
+{
+  "category": "CHOP",
+  "chop_time_ticks": 30,
+  "container_type": "none",
+  "ingredients": [
+    "gh_farming_overhaul:lettuce"
+  ],
+  "result": {
+    "count": 2,
+    "item": "gh_farming_overhaul:shredded_lettuce"
+  },
+  "shaped": false,
+  "spoil_reduction": 0.0,
+  "tool_type": "knife"
+}

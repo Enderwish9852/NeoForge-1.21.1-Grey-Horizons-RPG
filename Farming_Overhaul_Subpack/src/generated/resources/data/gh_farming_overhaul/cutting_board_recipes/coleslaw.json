@@ -1,0 +1,16 @@
+{
+  "category": "SALAD",
+  "chop_time_ticks": 60,
+  "container_type": "bowl",
+  "ingredients": [
+    "gh_farming_overhaul:shredded_cabbage",
+    "gh_farming_overhaul:chopped_carrot"
+  ],
+  "result": {
+    "count": 1,
+    "item": "gh_farming_overhaul:coleslaw"
+  },
+  "shaped": false,
+  "spoil_reduction": 0.0,
+  "tool_type": "knife"
+}

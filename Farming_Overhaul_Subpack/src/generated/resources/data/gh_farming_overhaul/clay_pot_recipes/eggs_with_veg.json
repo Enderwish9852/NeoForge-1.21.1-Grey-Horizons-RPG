@@ -1,0 +1,16 @@
+{
+  "category": "OTHER",
+  "cook_time_ticks": 500,
+  "ingredients": [
+    "minecraft:egg",
+    "gh_farming_overhaul:diced_onion",
+    "gh_farming_overhaul:chopped_tomato"
+  ],
+  "requires_water": false,
+  "result": {
+    "count": 1,
+    "item": "gh_farming_overhaul:eggs_with_veg"
+  },
+  "shaped": false,
+  "spoil_reduction": 0.08
+}

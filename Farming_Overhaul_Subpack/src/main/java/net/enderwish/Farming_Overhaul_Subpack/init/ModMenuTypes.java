@@ -2,6 +2,7 @@ package net.enderwish.Farming_Overhaul_Subpack.init;
 
 import net.enderwish.Farming_Overhaul_Subpack.FarmingOverhaulSubpack;
 import net.enderwish.Farming_Overhaul_Subpack.gui.ClayPotMenu;
+import net.enderwish.Farming_Overhaul_Subpack.gui.CuttingBoardMenu;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.inventory.MenuType;
 import net.neoforged.bus.api.IEventBus;
@@ -19,6 +20,12 @@ public class ModMenuTypes {
                     IMenuTypeExtension.create(
                             (windowId, inv, buf) -> new ClayPotMenu(windowId, inv, buf)
                     ));
+
+    public static final DeferredHolder<MenuType<?>, MenuType<CuttingBoardMenu>> CUTTING_BOARD =
+            MENUS.register("cutting_board", () ->
+                    IMenuTypeExtension.create(
+                            (windowId, inv, buf) ->
+                                    new CuttingBoardMenu(windowId, inv, buf)));
 
     public static void register(IEventBus eventBus) {
         MENUS.register(eventBus);

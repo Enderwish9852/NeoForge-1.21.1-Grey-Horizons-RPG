@@ -1,0 +1,15 @@
+{
+  "category": "MEAT",
+  "chop_time_ticks": 50,
+  "container_type": "none",
+  "ingredients": [
+    "minecraft:cod"
+  ],
+  "result": {
+    "count": 2,
+    "item": "gh_farming_overhaul:fish_chunks"
+  },
+  "shaped": false,
+  "spoil_reduction": 0.0,
+  "tool_type": "knife"
+}

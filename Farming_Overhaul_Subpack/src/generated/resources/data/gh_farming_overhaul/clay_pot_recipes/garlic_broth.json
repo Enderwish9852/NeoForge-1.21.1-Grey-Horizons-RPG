@@ -1,0 +1,14 @@
+{
+  "category": "SOUP",
+  "cook_time_ticks": 300,
+  "ingredients": [
+    "gh_farming_overhaul:minced_garlic"
+  ],
+  "requires_water": true,
+  "result": {
+    "count": 1,
+    "item": "gh_farming_overhaul:garlic_broth"
+  },
+  "shaped": false,
+  "spoil_reduction": 0.08
+}

@@ -1,0 +1,16 @@
+{
+  "category": "PRESERVE",
+  "cook_time_ticks": 600,
+  "ingredients": [
+    "gh_farming_overhaul:tomato_paste",
+    "gh_farming_overhaul:tomato_paste",
+    "gh_farming_overhaul:tomato_paste"
+  ],
+  "requires_water": false,
+  "result": {
+    "count": 1,
+    "item": "gh_farming_overhaul:tomato_concentrate"
+  },
+  "shaped": false,
+  "spoil_reduction": 0.4
+}

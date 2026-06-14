@@ -1,0 +1,15 @@
+{
+  "category": "OTHER",
+  "cook_time_ticks": 300,
+  "ingredients": [
+    "minecraft:egg",
+    "minecraft:egg"
+  ],
+  "requires_water": false,
+  "result": {
+    "count": 1,
+    "item": "gh_farming_overhaul:scrambled_eggs"
+  },
+  "shaped": false,
+  "spoil_reduction": 0.05
+}

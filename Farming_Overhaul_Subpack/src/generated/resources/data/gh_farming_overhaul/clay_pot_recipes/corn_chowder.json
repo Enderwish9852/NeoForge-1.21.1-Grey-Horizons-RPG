@@ -1,0 +1,15 @@
+{
+  "category": "SOUP",
+  "cook_time_ticks": 700,
+  "ingredients": [
+    "gh_farming_overhaul:corn_kernels",
+    "gh_farming_overhaul:diced_potato"
+  ],
+  "requires_water": true,
+  "result": {
+    "count": 1,
+    "item": "gh_farming_overhaul:corn_chowder"
+  },
+  "shaped": false,
+  "spoil_reduction": 0.1
+}

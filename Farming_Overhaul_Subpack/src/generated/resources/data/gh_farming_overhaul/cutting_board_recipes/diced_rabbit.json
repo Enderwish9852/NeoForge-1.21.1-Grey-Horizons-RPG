@@ -1,0 +1,15 @@
+{
+  "category": "MEAT",
+  "chop_time_ticks": 60,
+  "container_type": "none",
+  "ingredients": [
+    "minecraft:rabbit"
+  ],
+  "result": {
+    "count": 2,
+    "item": "gh_farming_overhaul:diced_rabbit"
+  },
+  "shaped": false,
+  "spoil_reduction": 0.0,
+  "tool_type": "knife"
+}

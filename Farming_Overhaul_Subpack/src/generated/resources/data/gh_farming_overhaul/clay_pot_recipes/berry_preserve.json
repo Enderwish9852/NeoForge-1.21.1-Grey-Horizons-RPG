@@ -1,0 +1,16 @@
+{
+  "category": "PRESERVE",
+  "cook_time_ticks": 900,
+  "ingredients": [
+    "minecraft:sweet_berries",
+    "minecraft:sweet_berries",
+    "minecraft:honey_bottle"
+  ],
+  "requires_water": false,
+  "result": {
+    "count": 1,
+    "item": "gh_farming_overhaul:berry_preserve"
+  },
+  "shaped": false,
+  "spoil_reduction": 0.45
+}

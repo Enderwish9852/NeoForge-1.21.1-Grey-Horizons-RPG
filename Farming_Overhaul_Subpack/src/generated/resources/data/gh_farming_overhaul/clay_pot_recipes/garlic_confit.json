@@ -1,0 +1,16 @@
+{
+  "category": "PRESERVE",
+  "cook_time_ticks": 800,
+  "ingredients": [
+    "gh_farming_overhaul:garlic",
+    "gh_farming_overhaul:garlic",
+    "gh_farming_overhaul:minced_garlic"
+  ],
+  "requires_water": false,
+  "result": {
+    "count": 1,
+    "item": "gh_farming_overhaul:garlic_confit"
+  },
+  "shaped": false,
+  "spoil_reduction": 0.45
+}

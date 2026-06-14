@@ -198,4 +198,65 @@ public final class SeasonsAPI {
     public static float getClientIntensity() {
         return ClientSeasonState.getIntensity();
     }
+
+    // ── Local chunk temperature (server-side) ─────────────────────────────────
+
+    /**
+     * Returns the local "feels like" temperature at a position.
+     * Accounts for seasonal base temperature PLUS nearby hot/cold blocks.
+     *
+     * Scan area: full 16×16 chunk surface + 5 blocks underground.
+     *
+     * Use this for:
+     *   - Composter speed boost calculations
+     *   - Player body temperature system (future)
+     *   - Crop frost damage (future)
+     *
+     * Examples:
+     *   Plains, winter, standing 1 block from a lit campfire:
+     *     seasonal = -0.55 (winter plains), campfire at dist 1 = +0.4/2 = +0.2
+     *     localTemp ≈ -0.35 → "Cold" (~-5°C)
+     *
+     *   Plains, winter, no heat source, blizzard:
+     *     seasonal = -0.55 - 0.4 = -0.95 (blizzard at full intensity)
+     *     no hot blocks
+     *     localTemp ≈ -0.95 → "Freezing" (~-24°C)
+     *
+     *   Desert, summer, standing on magma:
+     *     seasonal = 1.75 (desert + summer + mid phase)
+     *     magma at dist 0 = +0.5
+     *     localTemp ≈ 2.25 → "Scorching" (+72°C)
+     */
+    public static float getLocalChunkTemp(ServerLevel level, BlockPos pos) {
+        return net.enderwish.Atmospheric_Overhaul_Subpack.core.season
+                .LocalChunkTemperature.calculate(level, pos);
+    }
+
+    /**
+     * Returns the local chunk temperature in Celsius.
+     * For player display and debug.
+     */
+    public static int getLocalChunkTempCelsius(ServerLevel level, BlockPos pos) {
+        return net.enderwish.Atmospheric_Overhaul_Subpack.core.season
+                .LocalChunkTemperature.toCelsius(
+                        getLocalChunkTemp(level, pos));
+    }
+
+    /**
+     * Returns a human-readable label for the local chunk temperature.
+     * e.g. "Freezing", "Cold", "Warm", "Hot", "Scorching"
+     */
+    public static String getLocalChunkTempLabel(ServerLevel level, BlockPos pos) {
+        return net.enderwish.Atmospheric_Overhaul_Subpack.core.season
+                .LocalChunkTemperature.getLabel(
+                        getLocalChunkTemp(level, pos));
+    }
+
+    /**
+     * Returns true if the local chunk is considered "hot" for composter boost.
+     * Hot = localChunkTemp > 0.5 (warm threshold)
+     */
+    public static boolean isLocalChunkHot(ServerLevel level, BlockPos pos) {
+        return getLocalChunkTemp(level, pos) > 0.5f;
+    }
 }

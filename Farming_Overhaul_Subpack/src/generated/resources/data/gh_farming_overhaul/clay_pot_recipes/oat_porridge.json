@@ -1,0 +1,15 @@
+{
+  "category": "OTHER",
+  "cook_time_ticks": 400,
+  "ingredients": [
+    "gh_farming_overhaul:bread_crumbs",
+    "gh_farming_overhaul:bread_crumbs"
+  ],
+  "requires_water": true,
+  "result": {
+    "count": 1,
+    "item": "gh_farming_overhaul:oat_porridge"
+  },
+  "shaped": false,
+  "spoil_reduction": 0.05
+}

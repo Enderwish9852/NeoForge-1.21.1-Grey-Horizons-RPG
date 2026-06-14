@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "moisture=0": { "model": "gh_farming_overhaul:block/fertilized_farmland" },
+    "moisture=1": { "model": "gh_farming_overhaul:block/fertilized_farmland" },
+    "moisture=2": { "model": "gh_farming_overhaul:block/fertilized_farmland" },
+    "moisture=3": { "model": "gh_farming_overhaul:block/fertilized_farmland" },
+    "moisture=4": { "model": "gh_farming_overhaul:block/fertilized_farmland" },
+    "moisture=5": { "model": "gh_farming_overhaul:block/fertilized_farmland" },
+    "moisture=6": { "model": "gh_farming_overhaul:block/fertilized_farmland" },
+    "moisture=7": { "model": "gh_farming_overhaul:block/fertilized_farmland_moist" }
+  }
+}

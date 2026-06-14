@@ -1,0 +1,28 @@
+{
+  "variants": {
+    "age=0": {
+      "model": "gh_farming_overhaul:block/crop/broccoli_stage0"
+    },
+    "age=1": {
+      "model": "gh_farming_overhaul:block/crop/broccoli_stage1"
+    },
+    "age=2": {
+      "model": "gh_farming_overhaul:block/crop/broccoli_stage2"
+    },
+    "age=3": {
+      "model": "gh_farming_overhaul:block/crop/broccoli_stage3"
+    },
+    "age=4": {
+      "model": "gh_farming_overhaul:block/crop/broccoli_stage4"
+    },
+    "age=5": {
+      "model": "gh_farming_overhaul:block/crop/broccoli_stage5"
+    },
+    "age=6": {
+      "model": "gh_farming_overhaul:block/crop/broccoli_stage6"
+    },
+    "age=7": {
+      "model": "gh_farming_overhaul:block/crop/broccoli_stage7"
+    }
+  }
+}

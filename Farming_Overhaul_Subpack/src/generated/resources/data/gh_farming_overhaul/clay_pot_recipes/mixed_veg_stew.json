@@ -1,0 +1,16 @@
+{
+  "category": "STEW",
+  "cook_time_ticks": 800,
+  "ingredients": [
+    "gh_farming_overhaul:chopped_carrot",
+    "gh_farming_overhaul:diced_potato",
+    "gh_farming_overhaul:chopped_tomato"
+  ],
+  "requires_water": true,
+  "result": {
+    "count": 1,
+    "item": "gh_farming_overhaul:mixed_veg_stew"
+  },
+  "shaped": false,
+  "spoil_reduction": 0.1
+}

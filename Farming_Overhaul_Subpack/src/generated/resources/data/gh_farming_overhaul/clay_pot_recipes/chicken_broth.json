@@ -1,0 +1,16 @@
+{
+  "category": "SOUP",
+  "cook_time_ticks": 800,
+  "ingredients": [
+    "gh_farming_overhaul:diced_chicken",
+    "gh_farming_overhaul:minced_garlic",
+    "gh_farming_overhaul:chopped_carrot"
+  ],
+  "requires_water": true,
+  "result": {
+    "count": 1,
+    "item": "gh_farming_overhaul:chicken_broth"
+  },
+  "shaped": false,
+  "spoil_reduction": 0.1
+}

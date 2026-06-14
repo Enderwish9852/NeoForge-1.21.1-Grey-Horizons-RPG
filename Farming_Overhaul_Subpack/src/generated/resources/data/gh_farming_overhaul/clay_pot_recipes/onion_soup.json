@@ -1,0 +1,16 @@
+{
+  "category": "SOUP",
+  "cook_time_ticks": 700,
+  "ingredients": [
+    "gh_farming_overhaul:diced_onion",
+    "gh_farming_overhaul:diced_onion",
+    "gh_farming_overhaul:bread_crumbs"
+  ],
+  "requires_water": true,
+  "result": {
+    "count": 1,
+    "item": "gh_farming_overhaul:onion_soup"
+  },
+  "shaped": false,
+  "spoil_reduction": 0.1
+}

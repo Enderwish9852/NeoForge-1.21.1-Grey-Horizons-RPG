@@ -1,0 +1,17 @@
+{
+  "category": "SALAD",
+  "chop_time_ticks": 80,
+  "container_type": "bowl",
+  "ingredients": [
+    "gh_farming_overhaul:shredded_lettuce",
+    "gh_farming_overhaul:sliced_cucumber",
+    "gh_farming_overhaul:chopped_tomato"
+  ],
+  "result": {
+    "count": 1,
+    "item": "gh_farming_overhaul:garden_salad"
+  },
+  "shaped": false,
+  "spoil_reduction": 0.0,
+  "tool_type": "knife"
+}

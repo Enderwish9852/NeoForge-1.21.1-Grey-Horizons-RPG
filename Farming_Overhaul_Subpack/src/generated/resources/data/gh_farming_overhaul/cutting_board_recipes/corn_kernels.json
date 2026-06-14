@@ -1,0 +1,15 @@
+{
+  "category": "CHOP",
+  "chop_time_ticks": 60,
+  "container_type": "none",
+  "ingredients": [
+    "gh_farming_overhaul:corn"
+  ],
+  "result": {
+    "count": 3,
+    "item": "gh_farming_overhaul:corn_kernels"
+  },
+  "shaped": false,
+  "spoil_reduction": 0.0,
+  "tool_type": "knife"
+}

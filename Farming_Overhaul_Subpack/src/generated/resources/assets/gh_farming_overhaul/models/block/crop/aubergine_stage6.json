@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/crop",
+  "render_type": "minecraft:cutout",
+  "textures": {
+    "crop": "gh_farming_overhaul:block/crop/aubergine_stage6"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "category": "PRESERVE",
+  "cook_time_ticks": 500,
+  "ingredients": [
+    "gh_farming_overhaul:chopped_beetroot",
+    "gh_farming_overhaul:chopped_beetroot"
+  ],
+  "requires_water": false,
+  "result": {
+    "count": 2,
+    "item": "gh_farming_overhaul:preserved_beetroot"
+  },
+  "shaped": false,
+  "spoil_reduction": 0.4
+}

@@ -1,0 +1,16 @@
+{
+  "category": "SOUP",
+  "cook_time_ticks": 400,
+  "ingredients": [
+    "gh_farming_overhaul:sliced_cucumber",
+    "gh_farming_overhaul:chopped_tomato",
+    "gh_farming_overhaul:diced_onion"
+  ],
+  "requires_water": false,
+  "result": {
+    "count": 1,
+    "item": "gh_farming_overhaul:cucumber_gazpacho"
+  },
+  "shaped": false,
+  "spoil_reduction": 0.05
+}

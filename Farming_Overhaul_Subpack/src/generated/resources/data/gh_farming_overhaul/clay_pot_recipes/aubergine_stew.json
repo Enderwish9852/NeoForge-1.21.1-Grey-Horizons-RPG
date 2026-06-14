@@ -1,0 +1,16 @@
+{
+  "category": "STEW",
+  "cook_time_ticks": 1000,
+  "ingredients": [
+    "gh_farming_overhaul:aubergine",
+    "gh_farming_overhaul:chopped_tomato",
+    "gh_farming_overhaul:diced_onion"
+  ],
+  "requires_water": true,
+  "result": {
+    "count": 1,
+    "item": "gh_farming_overhaul:aubergine_stew"
+  },
+  "shaped": false,
+  "spoil_reduction": 0.12
+}

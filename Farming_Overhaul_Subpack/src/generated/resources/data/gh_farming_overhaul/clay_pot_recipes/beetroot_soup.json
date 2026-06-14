@@ -1,0 +1,15 @@
+{
+  "category": "SOUP",
+  "cook_time_ticks": 500,
+  "ingredients": [
+    "gh_farming_overhaul:chopped_beetroot",
+    "gh_farming_overhaul:chopped_beetroot"
+  ],
+  "requires_water": true,
+  "result": {
+    "count": 1,
+    "item": "gh_farming_overhaul:beetroot_soup"
+  },
+  "shaped": false,
+  "spoil_reduction": 0.08
+}

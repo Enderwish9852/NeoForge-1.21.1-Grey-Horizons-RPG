@@ -29,6 +29,17 @@ neoForge {
         minecraftVersion = project.parchment_minecraft_version
     }
 
+    runs {
+        data {
+            type = "data"
+            programArguments.addAll '--mod', 'gh_farming_overhaul',
+                    '--all',
+                    '--output', file('src/generated/resources/').absolutePath,
+                    '--existing', file('src/main/resources/').absolutePath,
+                    '--existing', rootProject.project(':Atmospheric_Overhaul_Subpack').projectDir.toPath().resolve('src/main/resources').toAbsolutePath().toString()
+        }
+    }
+
     mods {
         gh_farming_overhaul {
             sourceSet(sourceSets.main)

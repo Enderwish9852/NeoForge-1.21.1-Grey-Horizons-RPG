@@ -1,0 +1,21 @@
+{
+  "category": "PEEL",
+  "chop_time_ticks": 50,
+  "container_type": "none",
+  "ingredients": [
+    "gh_farming_overhaul:orange"
+  ],
+  "result": {
+    "count": 3,
+    "item": "gh_farming_overhaul:orange_slices"
+  },
+  "secondary_max": 2,
+  "secondary_min": 1,
+  "secondary_result": {
+    "count": 1,
+    "item": "gh_farming_overhaul:orange_peel"
+  },
+  "shaped": false,
+  "spoil_reduction": 0.0,
+  "tool_type": "knife"
+}

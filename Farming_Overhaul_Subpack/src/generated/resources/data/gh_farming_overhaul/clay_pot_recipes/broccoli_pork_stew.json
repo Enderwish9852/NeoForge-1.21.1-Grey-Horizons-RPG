@@ -1,0 +1,16 @@
+{
+  "category": "STEW",
+  "cook_time_ticks": 900,
+  "ingredients": [
+    "gh_farming_overhaul:cubed_pork",
+    "gh_farming_overhaul:chopped_broccoli",
+    "gh_farming_overhaul:diced_onion"
+  ],
+  "requires_water": true,
+  "result": {
+    "count": 1,
+    "item": "gh_farming_overhaul:broccoli_pork_stew"
+  },
+  "shaped": false,
+  "spoil_reduction": 0.12
+}

@@ -1,0 +1,16 @@
+{
+  "category": "PRESERVE",
+  "cook_time_ticks": 700,
+  "ingredients": [
+    "gh_farming_overhaul:chopped_tomato",
+    "gh_farming_overhaul:chopped_tomato",
+    "gh_farming_overhaul:minced_garlic"
+  ],
+  "requires_water": false,
+  "result": {
+    "count": 2,
+    "item": "gh_farming_overhaul:preserved_tomatoes"
+  },
+  "shaped": false,
+  "spoil_reduction": 0.4
+}

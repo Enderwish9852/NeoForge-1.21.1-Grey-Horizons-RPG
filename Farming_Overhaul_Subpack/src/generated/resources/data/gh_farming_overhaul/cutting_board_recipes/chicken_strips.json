@@ -1,0 +1,15 @@
+{
+  "category": "MEAT",
+  "chop_time_ticks": 50,
+  "container_type": "none",
+  "ingredients": [
+    "minecraft:chicken"
+  ],
+  "result": {
+    "count": 3,
+    "item": "gh_farming_overhaul:chicken_strips"
+  },
+  "shaped": false,
+  "spoil_reduction": 0.0,
+  "tool_type": "cleaver"
+}

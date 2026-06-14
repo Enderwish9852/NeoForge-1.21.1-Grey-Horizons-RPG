@@ -15,11 +15,29 @@ public record ClayPotRecipe(
         boolean requiresWater,
         int cookTimeTicks,
         float spoilReduction,
+        ClayPotCategory category,
         List<String> pattern,
         Map<String, String> keys,
         List<String> ingredients,
         RecipeResult result
 ) {
+
+    // ── Category enum ─────────────────────────────────────────────────────────
+
+    public enum ClayPotCategory {
+        SOUP,
+        STEW,
+        PRESERVE,
+        OTHER;
+
+        public static final Codec<ClayPotCategory> CODEC =
+                Codec.STRING.xmap(
+                        s -> ClayPotCategory.valueOf(s.toUpperCase()),
+                        ClayPotCategory::name
+                );
+    }
+
+    // ── Codec ─────────────────────────────────────────────────────────────────
 
     public static final Codec<ClayPotRecipe> CODEC = RecordCodecBuilder.create(instance ->
             instance.group(
@@ -27,6 +45,8 @@ public record ClayPotRecipe(
                     Codec.BOOL.fieldOf("requires_water").forGetter(ClayPotRecipe::requiresWater),
                     Codec.INT.fieldOf("cook_time_ticks").forGetter(ClayPotRecipe::cookTimeTicks),
                     Codec.FLOAT.fieldOf("spoil_reduction").forGetter(ClayPotRecipe::spoilReduction),
+                    ClayPotCategory.CODEC.optionalFieldOf("category", ClayPotCategory.OTHER)
+                            .forGetter(ClayPotRecipe::category),
                     Codec.STRING.listOf().optionalFieldOf("pattern", List.of())
                             .forGetter(ClayPotRecipe::pattern),
                     Codec.unboundedMap(Codec.STRING, Codec.STRING)
@@ -38,19 +58,12 @@ public record ClayPotRecipe(
             ).apply(instance, ClayPotRecipe::new)
     );
 
-    /**
-     * Checks if the given 9-slot ingredient grid matches this recipe.
-     * waterSlot is the ItemStack in the water input slot.
-     */
-    public boolean matches(List<ItemStack> grid, ItemStack waterSlot) {
-        // Check water requirement
-        if (requiresWater && !waterSlot.is(Items.WATER_BUCKET)) return false;
+    // ── Matching ──────────────────────────────────────────────────────────────
 
-        if (shaped) {
-            return matchesShaped(grid);
-        } else {
-            return matchesShapeless(grid);
-        }
+    public boolean matches(List<ItemStack> grid, ItemStack waterSlot) {
+        if (requiresWater && !waterSlot.is(Items.WATER_BUCKET)) return false;
+        if (shaped) return matchesShaped(grid);
+        return matchesShapeless(grid);
     }
 
     private boolean matchesShaped(List<ItemStack> grid) {
@@ -82,16 +95,12 @@ public record ClayPotRecipe(
 
     private boolean matchesShapeless(List<ItemStack> grid) {
         if (ingredients.isEmpty()) return false;
-
         List<String> required = new java.util.ArrayList<>(ingredients);
-
         for (ItemStack stack : grid) {
             if (stack.isEmpty()) continue;
-            String id = BuiltInRegistries.ITEM
-                    .getKey(stack.getItem()).toString();
+            String id = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
             if (!required.remove(id)) return false;
         }
-
         return required.isEmpty();
     }
 

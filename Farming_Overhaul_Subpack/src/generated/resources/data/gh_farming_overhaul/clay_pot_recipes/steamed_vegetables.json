@@ -1,0 +1,16 @@
+{
+  "category": "OTHER",
+  "cook_time_ticks": 500,
+  "ingredients": [
+    "gh_farming_overhaul:chopped_broccoli",
+    "gh_farming_overhaul:chopped_carrot",
+    "gh_farming_overhaul:sliced_courgette"
+  ],
+  "requires_water": true,
+  "result": {
+    "count": 1,
+    "item": "gh_farming_overhaul:steamed_vegetables"
+  },
+  "shaped": false,
+  "spoil_reduction": 0.08
+}

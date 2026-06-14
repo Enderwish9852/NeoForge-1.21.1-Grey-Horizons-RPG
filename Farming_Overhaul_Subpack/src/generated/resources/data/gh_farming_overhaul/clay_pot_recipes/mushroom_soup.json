@@ -1,0 +1,15 @@
+{
+  "category": "SOUP",
+  "cook_time_ticks": 500,
+  "ingredients": [
+    "minecraft:brown_mushroom",
+    "minecraft:brown_mushroom"
+  ],
+  "requires_water": true,
+  "result": {
+    "count": 1,
+    "item": "gh_farming_overhaul:mushroom_soup"
+  },
+  "shaped": false,
+  "spoil_reduction": 0.08
+}

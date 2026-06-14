@@ -1,0 +1,16 @@
+{
+  "category": "MEAT",
+  "chop_time_ticks": 80,
+  "container_type": "none",
+  "ingredients": [
+    "minecraft:beef",
+    "minecraft:beef"
+  ],
+  "result": {
+    "count": 3,
+    "item": "gh_farming_overhaul:minced_beef"
+  },
+  "shaped": false,
+  "spoil_reduction": 0.0,
+  "tool_type": "knife"
+}

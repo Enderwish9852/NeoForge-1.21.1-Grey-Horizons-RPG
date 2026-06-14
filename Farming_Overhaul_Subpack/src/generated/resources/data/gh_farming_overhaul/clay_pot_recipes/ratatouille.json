@@ -1,0 +1,22 @@
+{
+  "category": "STEW",
+  "cook_time_ticks": 1200,
+  "keys": {
+    "A": "gh_farming_overhaul:sliced_courgette",
+    "B": "gh_farming_overhaul:chopped_tomato",
+    "C": "gh_farming_overhaul:chopped_bell_pepper",
+    "D": "gh_farming_overhaul:diced_onion"
+  },
+  "pattern": [
+    "AB ",
+    "CD ",
+    "   "
+  ],
+  "requires_water": false,
+  "result": {
+    "count": 1,
+    "item": "gh_farming_overhaul:ratatouille"
+  },
+  "shaped": true,
+  "spoil_reduction": 0.15
+}

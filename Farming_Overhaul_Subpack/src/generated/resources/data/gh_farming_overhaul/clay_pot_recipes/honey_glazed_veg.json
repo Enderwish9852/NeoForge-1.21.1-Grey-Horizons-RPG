@@ -1,0 +1,16 @@
+{
+  "category": "OTHER",
+  "cook_time_ticks": 600,
+  "ingredients": [
+    "gh_farming_overhaul:chopped_carrot",
+    "gh_farming_overhaul:cubed_sweet_potato",
+    "minecraft:honey_bottle"
+  ],
+  "requires_water": false,
+  "result": {
+    "count": 1,
+    "item": "gh_farming_overhaul:honey_glazed_veg"
+  },
+  "shaped": false,
+  "spoil_reduction": 0.1
+}

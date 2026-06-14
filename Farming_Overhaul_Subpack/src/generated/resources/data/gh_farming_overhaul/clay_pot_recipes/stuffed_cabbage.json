@@ -1,0 +1,21 @@
+{
+  "category": "OTHER",
+  "cook_time_ticks": 900,
+  "keys": {
+    "A": "gh_farming_overhaul:cabbage_leaf",
+    "B": "gh_farming_overhaul:minced_beef",
+    "C": "gh_farming_overhaul:diced_onion"
+  },
+  "pattern": [
+    "A  ",
+    "BC ",
+    "   "
+  ],
+  "requires_water": true,
+  "result": {
+    "count": 1,
+    "item": "gh_farming_overhaul:stuffed_cabbage"
+  },
+  "shaped": true,
+  "spoil_reduction": 0.12
+}

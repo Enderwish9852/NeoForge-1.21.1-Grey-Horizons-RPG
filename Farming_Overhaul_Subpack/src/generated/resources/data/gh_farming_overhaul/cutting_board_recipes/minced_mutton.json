@@ -1,0 +1,16 @@
+{
+  "category": "MEAT",
+  "chop_time_ticks": 80,
+  "container_type": "none",
+  "ingredients": [
+    "minecraft:mutton",
+    "minecraft:mutton"
+  ],
+  "result": {
+    "count": 3,
+    "item": "gh_farming_overhaul:minced_mutton"
+  },
+  "shaped": false,
+  "spoil_reduction": 0.0,
+  "tool_type": "knife"
+}

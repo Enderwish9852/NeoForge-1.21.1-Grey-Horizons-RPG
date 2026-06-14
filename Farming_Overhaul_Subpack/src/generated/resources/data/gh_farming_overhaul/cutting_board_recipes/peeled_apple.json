@@ -1,0 +1,21 @@
+{
+  "category": "PEEL",
+  "chop_time_ticks": 60,
+  "container_type": "none",
+  "ingredients": [
+    "minecraft:apple"
+  ],
+  "result": {
+    "count": 1,
+    "item": "gh_farming_overhaul:peeled_apple"
+  },
+  "secondary_max": 3,
+  "secondary_min": 1,
+  "secondary_result": {
+    "count": 1,
+    "item": "gh_farming_overhaul:apple_peel"
+  },
+  "shaped": false,
+  "spoil_reduction": 0.0,
+  "tool_type": "knife"
+}

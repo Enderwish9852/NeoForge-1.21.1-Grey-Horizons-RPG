@@ -1,0 +1,14 @@
+{
+  "category": "PRESERVE",
+  "cook_time_ticks": 500,
+  "ingredients": [
+    "gh_farming_overhaul:beef_strips"
+  ],
+  "requires_water": false,
+  "result": {
+    "count": 1,
+    "item": "gh_farming_overhaul:salted_meat"
+  },
+  "shaped": false,
+  "spoil_reduction": 0.45
+}

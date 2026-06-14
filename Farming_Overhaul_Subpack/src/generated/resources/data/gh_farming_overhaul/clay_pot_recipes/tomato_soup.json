@@ -1,0 +1,15 @@
+{
+  "category": "SOUP",
+  "cook_time_ticks": 500,
+  "ingredients": [
+    "gh_farming_overhaul:chopped_tomato",
+    "gh_farming_overhaul:chopped_tomato"
+  ],
+  "requires_water": true,
+  "result": {
+    "count": 1,
+    "item": "gh_farming_overhaul:tomato_soup"
+  },
+  "shaped": false,
+  "spoil_reduction": 0.08
+}

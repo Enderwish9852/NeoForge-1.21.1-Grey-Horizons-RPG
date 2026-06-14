@@ -1,0 +1,14 @@
+{
+  "category": "PRESERVE",
+  "cook_time_ticks": 400,
+  "ingredients": [
+    "gh_farming_overhaul:sliced_cucumber"
+  ],
+  "requires_water": false,
+  "result": {
+    "count": 2,
+    "item": "gh_farming_overhaul:pickled_cucumber"
+  },
+  "shaped": false,
+  "spoil_reduction": 0.35
+}

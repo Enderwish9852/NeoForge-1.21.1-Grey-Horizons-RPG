@@ -1,0 +1,21 @@
+{
+  "category": "PEEL",
+  "chop_time_ticks": 30,
+  "container_type": "none",
+  "ingredients": [
+    "gh_farming_overhaul:banana"
+  ],
+  "result": {
+    "count": 3,
+    "item": "gh_farming_overhaul:sliced_banana"
+  },
+  "secondary_max": 1,
+  "secondary_min": 1,
+  "secondary_result": {
+    "count": 1,
+    "item": "gh_farming_overhaul:banana_peel"
+  },
+  "shaped": false,
+  "spoil_reduction": 0.0,
+  "tool_type": "knife"
+}

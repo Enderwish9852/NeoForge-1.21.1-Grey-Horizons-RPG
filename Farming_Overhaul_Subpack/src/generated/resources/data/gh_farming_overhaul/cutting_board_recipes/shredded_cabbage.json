@@ -1,0 +1,21 @@
+{
+  "category": "CHOP",
+  "chop_time_ticks": 50,
+  "container_type": "none",
+  "ingredients": [
+    "gh_farming_overhaul:cabbage"
+  ],
+  "result": {
+    "count": 2,
+    "item": "gh_farming_overhaul:shredded_cabbage"
+  },
+  "secondary_max": 2,
+  "secondary_min": 1,
+  "secondary_result": {
+    "count": 1,
+    "item": "gh_farming_overhaul:cabbage_leaf"
+  },
+  "shaped": false,
+  "spoil_reduction": 0.0,
+  "tool_type": "knife"
+}

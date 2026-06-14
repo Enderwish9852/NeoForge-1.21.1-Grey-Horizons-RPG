@@ -1,0 +1,20 @@
+{
+  "category": "OTHER",
+  "cook_time_ticks": 300,
+  "keys": {
+    "A": "minecraft:bread",
+    "B": "gh_farming_overhaul:minced_garlic"
+  },
+  "pattern": [
+    "AB ",
+    "   ",
+    "   "
+  ],
+  "requires_water": false,
+  "result": {
+    "count": 1,
+    "item": "gh_farming_overhaul:garlic_bread"
+  },
+  "shaped": true,
+  "spoil_reduction": 0.08
+}

@@ -76,6 +76,14 @@ public class ClayPotRecipeRegistry implements ResourceManagerReloadListener {
         return Collections.unmodifiableList(recipes);
     }
 
+    public List<ClayPotRecipe> getByCategory(ClayPotRecipe.ClayPotCategory category) {
+        List<ClayPotRecipe> result = new ArrayList<>();
+        for (ClayPotRecipe recipe : recipes) {
+            if (recipe.category() == category) result.add(recipe);
+        }
+        return result;
+    }
+
     public boolean isLoaded() {
         return !recipes.isEmpty();
     }

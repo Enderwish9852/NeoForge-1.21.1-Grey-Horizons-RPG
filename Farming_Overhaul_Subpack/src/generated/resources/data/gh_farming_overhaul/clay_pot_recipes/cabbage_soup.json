@@ -1,0 +1,15 @@
+{
+  "category": "SOUP",
+  "cook_time_ticks": 600,
+  "ingredients": [
+    "gh_farming_overhaul:shredded_cabbage",
+    "gh_farming_overhaul:chopped_carrot"
+  ],
+  "requires_water": true,
+  "result": {
+    "count": 1,
+    "item": "gh_farming_overhaul:cabbage_soup"
+  },
+  "shaped": false,
+  "spoil_reduction": 0.08
+}

@@ -1,0 +1,14 @@
+{
+  "category": "PRESERVE",
+  "cook_time_ticks": 400,
+  "ingredients": [
+    "gh_farming_overhaul:chopped_carrot"
+  ],
+  "requires_water": false,
+  "result": {
+    "count": 2,
+    "item": "gh_farming_overhaul:pickled_carrot"
+  },
+  "shaped": false,
+  "spoil_reduction": 0.35
+}

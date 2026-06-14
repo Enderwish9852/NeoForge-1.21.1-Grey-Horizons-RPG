@@ -1,0 +1,14 @@
+{
+  "category": "OTHER",
+  "cook_time_ticks": 400,
+  "ingredients": [
+    "gh_farming_overhaul:corn_kernels"
+  ],
+  "requires_water": true,
+  "result": {
+    "count": 1,
+    "item": "gh_farming_overhaul:corn_porridge"
+  },
+  "shaped": false,
+  "spoil_reduction": 0.05
+}
