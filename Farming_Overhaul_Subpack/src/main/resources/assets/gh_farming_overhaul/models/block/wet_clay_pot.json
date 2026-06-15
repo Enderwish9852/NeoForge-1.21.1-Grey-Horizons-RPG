@@ -4,7 +4,7 @@
 	"texture_size": [64, 64],
 	"textures": {
 		"0": "gh_farming_overhaul:block/wet_clay_pot",
-		"particle": "gh_farming_overhaul:block/wet_clay_pot"
+		"particle": "wet_clay_pot"
 	},
 	"elements": [
 		{

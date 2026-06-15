@@ -146,7 +146,6 @@ public class FarmingOverhaulSubpack {
                         output.accept(ModItems.PEELED_PEAR.get());
                         output.accept(ModItems.SLICED_PERSIMMON.get());
                         output.accept(ModItems.HALVED_PLUM.get());
-                        output.accept(ModItems.POMEGRANATE_SEEDS_ITEM.get());
                         // Peeled Vanilla Fruits
                         output.accept(ModItems.APPLE_SLICES.get());
                         output.accept(ModItems.PEELED_APPLE.get());
@@ -197,7 +196,12 @@ public class FarmingOverhaulSubpack {
                         output.accept(ModItems.KNIFE.get());
                         output.accept(ModItems.WOODEN_BUCKET.get());
                         output.accept(ModItems.WOODEN_BUCKET_OF_FERTILIZER.get());
-                        output.accept(ModBlocks.GH_COMPOSTER.get().asItem());
+                        output.accept(ModItems.GH_COMPOSTER.get());
+                        output.accept(ModItems.CLEAVER.get());
+                        output.accept(ModItems.BUNDLE.get());
+                        output.accept(ModItems.BUCKET_OF_FERTILIZER.get());
+                        output.accept(ModItems.GH_COMPOSTER.get());
+                        output.accept(ModItems.FERTILIZED_FARMLAND.get());
                     })
                     .build());
 

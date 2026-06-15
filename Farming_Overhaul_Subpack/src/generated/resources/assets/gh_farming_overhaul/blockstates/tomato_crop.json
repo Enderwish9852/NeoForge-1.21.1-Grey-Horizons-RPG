@@ -23,6 +23,9 @@
     },
     "age=7": {
       "model": "gh_farming_overhaul:block/crop/tomato_stage7"
+    },
+    "age=8": {
+      "model": "gh_farming_overhaul:block/crop/tomato_stage8"
     }
   }
 }

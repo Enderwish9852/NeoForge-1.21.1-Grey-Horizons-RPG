@@ -12,3 +12,4 @@ rootProject.name = 'NeoForge-1.21.1-Grey-Horizons RPG'
 
 include 'Atmospheric_Overhaul_Subpack'
 include 'Farming_Overhaul_Subpack'
+include 'TerraForma_Subpack'

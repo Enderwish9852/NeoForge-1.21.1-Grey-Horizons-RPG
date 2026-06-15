@@ -19,30 +19,26 @@ public class FarmingDataGen {
         PackOutput output = gen.getPackOutput();
         CompletableFuture<HolderLookup.Provider> lookupProvider = event.getLookupProvider();
 
-        // Client side
+        // ── Client side ───────────────────────────────────────────────────────
         gen.addProvider(event.includeClient(),
                 new CropBlockStateProvider(output, event.getExistingFileHelper()));
         gen.addProvider(event.includeClient(),
-                new CropItemModelProvider(output, event.getExistingFileHelper()));
+                new FarmingItemModelProvider(output, event.getExistingFileHelper()));
         gen.addProvider(event.includeClient(),
-                new CropLanguageProvider(output));
+                new FarmingLanguageProvider(output));
 
-        // Server side
+        // ── Server side ───────────────────────────────────────────────────────
         gen.addProvider(event.includeServer(),
                 new CropLootTableProvider(output, lookupProvider));
         gen.addProvider(event.includeServer(),
                 new ClayPotRecipeProvider(output));
         gen.addProvider(event.includeServer(),
                 new CuttingBoardRecipeProvider(output));
-
         gen.addProvider(event.includeServer(),
-                new net.enderwish.Farming_Overhaul_Subpack.datagen.tags.OrganicCompostablesTagProvider(
+                new net.enderwish.Farming_Overhaul_Subpack.datagen.tags
+                        .OrganicCompostablesTagProvider(
                         output,
                         event.getLookupProvider(),
                         event.getExistingFileHelper()));
-        gen.addProvider(event.includeServer(),
-                new ClayPotRecipeProvider(output));
-        gen.addProvider(event.includeServer(),
-                new CuttingBoardRecipeProvider(output));
     }
 }

@@ -49,9 +49,16 @@ public class CropBlockStateProvider extends BlockStateProvider {
     private void registerCrop(DeferredBlock<Block> block, String cropName) {
         getVariantBuilder(block.get()).forAllStates(state -> {
             int age = state.getValue(GHCropBlock.AGE);
+
+            // Stage 8 (wilted) reuses stage 7 texture — no separate wilt texture needed
+            // since the block converts to dead bush almost immediately anyway
+            int textureStage = Math.min(age, 7);
+
             ResourceLocation texture = ResourceLocation.fromNamespaceAndPath(
                     FarmingOverhaulSubpack.MODID,
-                    "block/crop/" + cropName + "_stage" + age);
+                    "block/crop/" + cropName + "_stage" + textureStage);
+
+            // Model name still uses actual age so blockstate variants are unique
             return ConfiguredModel.builder()
                     .modelFile(models().withExistingParent(
                                     "block/crop/" + cropName + "_stage" + age,

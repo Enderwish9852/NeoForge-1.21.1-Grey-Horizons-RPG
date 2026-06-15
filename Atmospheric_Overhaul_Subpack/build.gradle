@@ -74,8 +74,7 @@ configurations {
 }
 
 dependencies {
-    compileOnly "top.theillusivec4.curios:curios-neoforge:${curios_version}:api"
-    runtimeOnly "top.theillusivec4.curios:curios-neoforge:${curios_version}"
+
 }
 
 // Logic for replacing variables in mods.toml
