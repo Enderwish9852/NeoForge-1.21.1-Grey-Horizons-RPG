@@ -191,6 +191,16 @@ public class FarmingItemModelProvider extends ItemModelProvider {
         // ── Salads ────────────────────────────────────────────────────────────
         placeholder("garden_salad");
         placeholder("coleslaw");
+
+        // ── Tree blocks ───────────────────────────────────────────────────────────
+        withExistingParent("oak_log",
+                ResourceLocation.fromNamespaceAndPath(
+                        FarmingOverhaulSubpack.MODID,
+                        "block/oak_log_trunk"));
+        withExistingParent("oak_leaves",
+                ResourceLocation.fromNamespaceAndPath(
+                        FarmingOverhaulSubpack.MODID,
+                        "block/oak_leaves_full"));
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

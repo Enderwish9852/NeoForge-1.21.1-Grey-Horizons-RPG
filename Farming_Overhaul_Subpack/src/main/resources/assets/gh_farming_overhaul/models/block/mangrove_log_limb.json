@@ -1,0 +1,7 @@
+{
+  "parent": "gh_farming_overhaul:block/tree/limb",
+  "textures": {
+    "bark": "minecraft:block/mangrove_log",
+    "top":  "minecraft:block/mangrove_log_top"
+  }
+}

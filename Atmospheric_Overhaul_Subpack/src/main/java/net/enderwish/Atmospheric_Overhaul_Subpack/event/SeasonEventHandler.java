@@ -139,6 +139,10 @@ public class SeasonEventHandler {
                     roll.intensity(),
                     roll.durationTicks()
             ));
+
+            // ── Wind — react to the new weather's wind profile ─────────────────
+            net.enderwish.Atmospheric_Overhaul_Subpack.core.weather.WindManager
+                    .INSTANCE.onWeatherChanged(roll.definition(), level);
         }
         ModMessages.sendToAllPlayers(new SeasonSyncPacket(
                 data.getTotalDays(),

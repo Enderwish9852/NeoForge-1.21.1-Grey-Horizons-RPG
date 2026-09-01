@@ -1,0 +1,22 @@
+{
+  "variants": {
+    "axis=x,thickness=1": { "model": "gh_farming_overhaul:block/jungle_log_sprig",     "x": 90, "y": 90 },
+    "axis=x,thickness=2": { "model": "gh_farming_overhaul:block/jungle_log_twig",      "x": 90, "y": 90 },
+    "axis=x,thickness=3": { "model": "gh_farming_overhaul:block/jungle_log_branchlet", "x": 90, "y": 90 },
+    "axis=x,thickness=4": { "model": "gh_farming_overhaul:block/jungle_log_branch",    "x": 90, "y": 90 },
+    "axis=x,thickness=5": { "model": "gh_farming_overhaul:block/jungle_log_limb",      "x": 90, "y": 90 },
+    "axis=x,thickness=6": { "model": "gh_farming_overhaul:block/jungle_log_trunk",     "x": 90, "y": 90 },
+    "axis=y,thickness=1": { "model": "gh_farming_overhaul:block/jungle_log_sprig" },
+    "axis=y,thickness=2": { "model": "gh_farming_overhaul:block/jungle_log_twig" },
+    "axis=y,thickness=3": { "model": "gh_farming_overhaul:block/jungle_log_branchlet" },
+    "axis=y,thickness=4": { "model": "gh_farming_overhaul:block/jungle_log_branch" },
+    "axis=y,thickness=5": { "model": "gh_farming_overhaul:block/jungle_log_limb" },
+    "axis=y,thickness=6": { "model": "gh_farming_overhaul:block/jungle_log_trunk" },
+    "axis=z,thickness=1": { "model": "gh_farming_overhaul:block/jungle_log_sprig",     "x": 90 },
+    "axis=z,thickness=2": { "model": "gh_farming_overhaul:block/jungle_log_twig",      "x": 90 },
+    "axis=z,thickness=3": { "model": "gh_farming_overhaul:block/jungle_log_branchlet", "x": 90 },
+    "axis=z,thickness=4": { "model": "gh_farming_overhaul:block/jungle_log_branch",    "x": 90 },
+    "axis=z,thickness=5": { "model": "gh_farming_overhaul:block/jungle_log_limb",      "x": 90 },
+    "axis=z,thickness=6": { "model": "gh_farming_overhaul:block/jungle_log_trunk",     "x": 90 }
+  }
+}

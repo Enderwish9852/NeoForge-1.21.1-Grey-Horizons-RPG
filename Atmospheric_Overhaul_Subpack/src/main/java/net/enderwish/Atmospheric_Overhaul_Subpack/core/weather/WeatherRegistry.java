@@ -89,7 +89,10 @@ public class WeatherRegistry implements ResourceManagerReloadListener {
                 new WeatherDefinition.IntensityRange(0.0f, 0.0f),
                 0.0f,
                 false,
-                Map.of()
+                Map.of(),
+                0.0f,   // windSpeedMin — fallback is dead calm
+                0.10f,  // windSpeedMax
+                0.05f   // windTurbulence
         );
     }
 }

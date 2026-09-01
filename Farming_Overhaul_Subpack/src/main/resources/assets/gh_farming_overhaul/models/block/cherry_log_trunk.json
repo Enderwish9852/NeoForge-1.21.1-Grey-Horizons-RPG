@@ -1,0 +1,7 @@
+{
+  "parent": "gh_farming_overhaul:block/tree/trunk",
+  "textures": {
+    "bark": "minecraft:block/cherry_log",
+    "top":  "minecraft:block/cherry_log_top"
+  }
+}

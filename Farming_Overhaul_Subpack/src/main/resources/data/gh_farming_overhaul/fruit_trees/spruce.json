@@ -1,0 +1,39 @@
+{
+  "log_block":     "gh_farming_overhaul:spruce_log",
+  "leaf_block":    "gh_farming_overhaul:spruce_leaves",
+  "seasonal_type": "MEDITERRANEAN",
+  "architecture":  "EXCURRENT",
+
+  "trunk": {
+    "thickness_level":    6,
+    "height_min":         10,
+    "height_max":         14,
+    "split_fraction_min": 1.0,
+    "split_fraction_max": 1.0
+  },
+
+  "whorls": {
+    "thickness_level":    4,
+    "spacing_min":        2,
+    "spacing_max":        3,
+    "branch_count_min":   4,
+    "branch_count_max":   5,
+    "base_length_min":    5,
+    "base_length_max":    7,
+    "length_taper":       0.82,
+    "spread":             0.92,
+    "droop":              true,
+    "sub_branch_thickness": 2
+  },
+
+  "canopy": {
+    "cluster_radius_min":    1,
+    "cluster_radius_max":    2,
+    "leaf_density_min":      0.80,
+    "leaf_density_max":      0.90,
+    "top_bias":              0.60,
+    "covers_full_branch":    true
+  },
+
+  "biome_tags": ["gh_terraforma:has_spruce_trees"]
+}

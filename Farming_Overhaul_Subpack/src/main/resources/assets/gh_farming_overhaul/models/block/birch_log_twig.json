@@ -1,0 +1,7 @@
+{
+  "parent": "gh_farming_overhaul:block/tree/twig",
+  "textures": {
+    "bark": "minecraft:block/birch_log",
+    "top":  "minecraft:block/birch_log_top"
+  }
+}

@@ -259,4 +259,62 @@ public final class SeasonsAPI {
     public static boolean isLocalChunkHot(ServerLevel level, BlockPos pos) {
         return getLocalChunkTemp(level, pos) > 0.5f;
     }
+
+    // ── Wind queries (server-side) ────────────────────────────────────────────
+
+    /**
+     * Returns the current wind state on the server.
+     * Use for gameplay logic, particle spawning, structure damage etc.
+     */
+    public static net.enderwish.Atmospheric_Overhaul_Subpack.core.weather.WindState
+    getWindState() {
+        return net.enderwish.Atmospheric_Overhaul_Subpack.core.weather
+                .WindManager.INSTANCE.getState();
+    }
+
+    /** Returns current wind speed (0.0 calm - 1.0 gale). */
+    public static float getWindSpeed() {
+        return net.enderwish.Atmospheric_Overhaul_Subpack.core.weather
+                .WindManager.INSTANCE.getSpeed();
+    }
+
+    /** Returns the current wind direction. */
+    public static net.enderwish.Atmospheric_Overhaul_Subpack.core.weather.WindDirection
+    getWindDirection() {
+        return net.enderwish.Atmospheric_Overhaul_Subpack.core.weather
+                .WindManager.INSTANCE.getDirection();
+    }
+
+    /** Returns true if wind speed exceeds gale threshold. */
+    public static boolean isWindGale(ServerLevel level) {
+        return getWindState().isGale();
+    }
+
+    // ── Wind queries (client-side) ────────────────────────────────────────────
+
+    /** Returns the current wind speed on the client. */
+    public static float getClientWindSpeed() {
+        return ClientSeasonState.getWindSpeed();
+    }
+
+    /** Returns the current wind direction on the client. */
+    public static net.enderwish.Atmospheric_Overhaul_Subpack.core.weather.WindDirection
+    getClientWindDirection() {
+        return ClientSeasonState.getWindDirection();
+    }
+
+    /** Returns the effective client-side wind X velocity — for animations, particles. */
+    public static float getClientWindDx() {
+        return ClientSeasonState.getWindDx();
+    }
+
+    /** Returns the effective client-side wind Z velocity. */
+    public static float getClientWindDz() {
+        return ClientSeasonState.getWindDz();
+    }
+
+    /** True if wind is currently strong on the client. */
+    public static boolean isClientWindy() {
+        return ClientSeasonState.isWindy();
+    }
 }

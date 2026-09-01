@@ -38,6 +38,10 @@ neoForge {
         gh_farming_overhaul {
             sourceSet project(":Farming_Overhaul_Subpack").sourceSets.main
         }
+
+        gh_terraforma {
+            sourceSet project(":TerraForma_Subpack").sourceSets.main
+        }
     }
 
     // 2. DEFINE RUNS SECOND
@@ -45,14 +49,14 @@ neoForge {
         client {
             client()
             systemProperty 'neoforge.enabledGameTestNamespaces', 'gh_atmospheric'
-            loadedMods = [mods.gh_atmospheric, mods.gh_farming_overhaul]
+            loadedMods = [mods.gh_atmospheric, mods.gh_farming_overhaul, mods.gh_terraforma]
         }
 
         server {
             server()
             programArgument '--nogui'
             systemProperty 'neoforge.enabledGameTestNamespaces', 'gh_atmospheric'
-            loadedMods = [mods.gh_atmospheric, mods.gh_farming_overhaul]
+            loadedMods = [mods.gh_atmospheric, mods.gh_farming_overhaul, mods.gh_terraforma]
         }
 
         data {

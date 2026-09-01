@@ -1,0 +1,60 @@
+{
+  "log_block":     "gh_farming_overhaul:acacia_log",
+  "leaf_block":    "gh_farming_overhaul:acacia_leaves",
+  "seasonal_type": "TROPICAL",
+  "architecture":  "DELIQUESCENT",
+
+  "trunk": {
+    "thickness_level":    5,
+    "height_min":         3,
+    "height_max":         5,
+    "split_fraction_min": 0.85,
+    "split_fraction_max": 1.0
+  },
+
+  "primary_limbs": {
+    "thickness_level":  4,
+    "count_min":        3,
+    "count_max":        6,
+    "length_min":       4,
+    "length_max":       7,
+    "spread_min":       2.0,
+    "spread_max":       3.0,
+    "upward_lift_min":  0.05,
+    "upward_lift_max":  0.15
+  },
+
+  "secondary_branches": {
+    "thickness_level":      3,
+    "count_per_parent_min": 2,
+    "count_per_parent_max": 3,
+    "length_min":           2,
+    "length_max":           4,
+    "inward_pull_min":      0.0,
+    "inward_pull_max":      0.05,
+    "upward_lift_min":      0.0,
+    "upward_lift_max":      0.1,
+    "zigzag_min":           0.1,
+    "zigzag_max":           0.3
+  },
+
+  "twigs": {
+    "thickness_level":      2,
+    "count_per_parent_min": 2,
+    "count_per_parent_max": 4,
+    "length_min":           1,
+    "length_max":           2,
+    "verticality_min":      0.0,
+    "verticality_max":      0.1
+  },
+
+  "canopy": {
+    "cluster_radius_min": 2,
+    "cluster_radius_max": 3,
+    "leaf_density_min":   0.80,
+    "leaf_density_max":   0.90,
+    "top_bias":           0.50
+  },
+
+  "biome_tags": ["gh_terraforma:has_acacia_trees"]
+}

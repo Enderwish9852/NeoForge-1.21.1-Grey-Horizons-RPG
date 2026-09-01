@@ -1,0 +1,60 @@
+{
+  "log_block":     "gh_farming_overhaul:mangrove_log",
+  "leaf_block":    "gh_farming_overhaul:mangrove_leaves",
+  "seasonal_type": "TROPICAL",
+  "architecture":  "DELIQUESCENT",
+
+  "trunk": {
+    "thickness_level":    4,
+    "height_min":         3,
+    "height_max":         5,
+    "split_fraction_min": 0.75,
+    "split_fraction_max": 0.90
+  },
+
+  "primary_limbs": {
+    "thickness_level":  3,
+    "count_min":        3,
+    "count_max":        5,
+    "length_min":       3,
+    "length_max":       5,
+    "spread_min":       1.2,
+    "spread_max":       1.8,
+    "upward_lift_min":  0.2,
+    "upward_lift_max":  0.5
+  },
+
+  "secondary_branches": {
+    "thickness_level":      2,
+    "count_per_parent_min": 2,
+    "count_per_parent_max": 3,
+    "length_min":           2,
+    "length_max":           3,
+    "inward_pull_min":      0.1,
+    "inward_pull_max":      0.3,
+    "upward_lift_min":      0.3,
+    "upward_lift_max":      0.6,
+    "zigzag_min":           0.2,
+    "zigzag_max":           0.4
+  },
+
+  "twigs": {
+    "thickness_level":      1,
+    "count_per_parent_min": 2,
+    "count_per_parent_max": 4,
+    "length_min":           1,
+    "length_max":           2,
+    "verticality_min":      0.4,
+    "verticality_max":      0.7
+  },
+
+  "canopy": {
+    "cluster_radius_min": 2,
+    "cluster_radius_max": 3,
+    "leaf_density_min":   0.82,
+    "leaf_density_max":   0.92,
+    "top_bias":           0.60
+  },
+
+  "biome_tags": ["gh_terraforma:has_mangrove_trees"]
+}

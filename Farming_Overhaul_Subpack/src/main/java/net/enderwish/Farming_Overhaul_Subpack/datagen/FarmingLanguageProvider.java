@@ -186,9 +186,15 @@ public class FarmingLanguageProvider extends LanguageProvider {
         add("creativetab.gh_farming_overhaul.meals",     "GH — Meals");
         add("creativetab.gh_farming_overhaul.equipment", "GH — Equipment");
         add("creativetab.gh_farming_overhaul.misc",      "GH — Misc");
+        add("creativetab.gh_farming_overhaul.nature", "GH — Nature");
 
         // ── Container titles ──────────────────────────────────────────────────────
         add("container.gh_farming_overhaul.clay_pot",      "Clay Pot");
         add("container.gh_farming_overhaul.cutting_board", "Cutting Board");
+
+        // ── Trees ─────────────────────────────────────────────────────────────────
+        add(ModItems.OAK_LOG.get(),    "Oak Log");
+        add(ModItems.OAK_LEAVES.get(), "Oak Leaves");
+
     }
 }

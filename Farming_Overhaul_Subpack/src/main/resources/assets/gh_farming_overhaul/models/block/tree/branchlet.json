@@ -1,0 +1,16 @@
+{
+  "parent": "minecraft:block/block",
+  "elements": [
+    {
+      "from": [5, 0, 5], "to": [11, 16, 11],
+      "faces": {
+        "north": { "uv": [5, 0, 11, 16], "texture": "#bark" },
+        "south": { "uv": [5, 0, 11, 16], "texture": "#bark" },
+        "east":  { "uv": [5, 0, 11, 16], "texture": "#bark" },
+        "west":  { "uv": [5, 0, 11, 16], "texture": "#bark" },
+        "up":    { "uv": [5, 5, 11, 11], "texture": "#top" },
+        "down":  { "uv": [5, 5, 11, 11], "texture": "#top" }
+      }
+    }
+  ]
+}

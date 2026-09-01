@@ -1,0 +1,7 @@
+{
+  "parent": "gh_farming_overhaul:block/tree/trunk",
+  "textures": {
+    "bark": "minecraft:block/dark_oak_log",
+    "top":  "minecraft:block/dark_oak_top"
+  }
+}

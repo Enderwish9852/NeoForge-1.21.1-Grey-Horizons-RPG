@@ -270,6 +270,17 @@ public class ModItems {
             () -> new BlockItem(ModBlocks.GH_COMPOSTER.get(),
                     new Item.Properties()));
 
+    // ── Tree Blocks ───────────────────────────────────────────────────────────
+
+    public static final DeferredItem<Item> OAK_LOG = ITEMS.register(
+            "oak_log",
+            () -> new BlockItem(ModBlocks.OAK_LOG.get(),
+                    new Item.Properties()));
+
+    public static final DeferredItem<Item> OAK_LEAVES = ITEMS.register(
+            "oak_leaves",
+            () -> new BlockItem(ModBlocks.OAK_LEAVES.get(),
+                    new Item.Properties()));
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);
     }

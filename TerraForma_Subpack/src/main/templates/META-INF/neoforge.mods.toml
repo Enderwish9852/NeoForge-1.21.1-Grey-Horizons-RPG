@@ -25,6 +25,6 @@ side = "BOTH"
 [[dependencies.gh_terraforma]]
 modId = "gh_atmospheric"
 type = "required"
-versionRange = "[1.0,)"
+versionRange = "[0.0.1,)"
 ordering = "BEFORE"
 side = "BOTH"

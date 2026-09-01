@@ -1,0 +1,61 @@
+{
+  "log_block":     "gh_farming_overhaul:oak_log",
+  "leaf_block":    "gh_farming_overhaul:oak_leaves",
+  "seasonal_type": "TEMPERATE",
+
+  "trunk": {
+    "thickness_level":    6,
+    "height_min":         3,
+    "height_max":         4,
+    "split_fraction_min": 0.85,
+    "split_fraction_max": 1.0
+  },
+
+  "primary_limbs": {
+    "thickness_level": 5,
+    "count_min":       3,
+    "count_max":       5,
+    "length_min":      3,
+    "length_max":      4,
+    "spread_min":      1.0,
+    "spread_max":      1.5,
+    "upward_lift_min": 0.3,
+    "upward_lift_max": 0.5
+  },
+
+  "secondary_branches": {
+    "thickness_level":      3,
+    "count_per_parent_min": 2,
+    "count_per_parent_max": 3,
+    "length_min":           2,
+    "length_max":           3,
+    "inward_pull_min":      0.3,
+    "inward_pull_max":      0.6,
+    "upward_lift_min":      0.7,
+    "upward_lift_max":      1.0,
+    "zigzag_min":           0.2,
+    "zigzag_max":           0.4
+  },
+
+  "twigs": {
+    "thickness_level":      1,
+    "count_per_parent_min": 2,
+    "count_per_parent_max": 4,
+    "length_min":           1,
+    "length_max":           2,
+    "verticality_min":      0.7,
+    "verticality_max":      0.95
+  },
+
+  "canopy": {
+    "cluster_radius_min": 2,
+    "cluster_radius_max": 3,
+    "leaf_density_min":   0.85,
+    "leaf_density_max":   0.95,
+    "top_bias":           0.65
+  },
+
+  "biome_tags": [
+    "gh_terraforma:has_oak_trees"
+  ]
+}

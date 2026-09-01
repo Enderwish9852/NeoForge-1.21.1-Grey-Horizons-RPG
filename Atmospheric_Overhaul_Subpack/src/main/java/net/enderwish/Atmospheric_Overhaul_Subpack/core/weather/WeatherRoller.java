@@ -3,33 +3,28 @@ package net.enderwish.Atmospheric_Overhaul_Subpack.core.weather;
 import net.enderwish.Atmospheric_Overhaul_Subpack.core.season.SeasonCalendar;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.core.BlockPos;
+import net.minecraft.util.RandomSource;
 
 import java.util.List;
-import java.util.Random;
 
 /**
  * WeatherRoller
  *
  * Picks the next weather using weighted random selection.
- *
- * How it works:
- *   1. Gets the pool of valid weathers for the current season + phase
- *   2. Filters out weathers that can't occur in the current biome context
- *   3. Sums all weights
- *   4. Picks a random number between 0 and total weight
- *   5. Walks the list until it finds the winner
- *   6. Rolls duration + intensity for the chosen weather
- *   7. Returns a RollResult with everything ClimateEventHandler needs
+ * Uses the level's own RandomSource (level.getRandom()) rather than
+ * a shared static Random — keeps rolls tied to the world's seed/state
+ * instead of one global instance across all dimensions.
  */
 public class WeatherRoller {
     // Singleton
     public static final WeatherRoller INSTANCE = new WeatherRoller();
-    private static final Random RAND = new Random();
     private WeatherRoller() {}
     // Roll
     public RollResult roll(SeasonCalendar.Season season,
                            SeasonCalendar.Phase phase,
                            ServerLevel level) {
+        RandomSource rand = level.getRandom();
+
         // Guard
         if (!WeatherRegistry.INSTANCE.isLoaded()) {
             return RollResult.fallback(WeatherRegistry.INSTANCE.getFallback());
@@ -51,7 +46,7 @@ public class WeatherRoller {
             totalWeight += def.getWeight(season, phase);
         }
 
-        int roll = RAND.nextInt(totalWeight);
+        int roll = rand.nextInt(totalWeight);
         int cursor = 0;
         WeatherDefinition chosen = pool.get(pool.size() - 1);
 
@@ -63,8 +58,8 @@ public class WeatherRoller {
             }
         }
 
-        int   duration  = chosen.rollDuration(RAND);
-        float intensity = chosen.rollIntensity(RAND);
+        int   duration  = chosen.rollDuration(rand);
+        float intensity = chosen.rollIntensity(rand);
         final WeatherDefinition finalChosen = chosen;
         String name = WeatherRegistry.INSTANCE.getAllNames()
                 .stream()

@@ -1,0 +1,7 @@
+{
+  "parent": "gh_farming_overhaul:block/tree/branch",
+  "textures": {
+    "bark": "minecraft:block/spruce_log",
+    "top":  "minecraft:block/spruce_log_top"
+  }
+}
