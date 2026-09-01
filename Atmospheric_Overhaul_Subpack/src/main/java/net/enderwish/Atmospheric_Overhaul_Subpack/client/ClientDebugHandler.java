@@ -1,6 +1,7 @@
 package net.enderwish.Atmospheric_Overhaul_Subpack.client;
 
 import net.enderwish.Atmospheric_Overhaul_Subpack.AtmosphericOverhaulSubpack;
+import net.enderwish.Atmospheric_Overhaul_Subpack.client.particle.RainDropParticle;
 import net.enderwish.Atmospheric_Overhaul_Subpack.core.season.SeasonTemperature;
 import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
@@ -13,8 +14,8 @@ import java.util.List;
 /**
  * ClientDebugHandler
  *
- * Adds Grey Horizons season + weather + temperature data to the F3 debug menu.
- * Press F3 in-game to see the overlay on the left side.
+ * Adds Grey Horizons season + weather + temperature + wind data to the
+ * F3 debug menu. Press F3 in-game to see the overlay on the left side.
  */
 @EventBusSubscriber(modid = AtmosphericOverhaulSubpack.MOD_ID, bus = EventBusSubscriber.Bus.GAME, value = Dist.CLIENT)
 public class ClientDebugHandler {
@@ -47,6 +48,23 @@ public class ClientDebugHandler {
                 + String.format("%.2f", ClientSeasonState.getIntensity())
                 + (ClientSeasonState.isSpecialWeather() ? " §d[SPECIAL]§r" : "")
                 + (ClientSeasonState.isPrecipitating() ? " §b[PRECIP]§r" : ""));
+
+        // ── Wind — speed, direction, gust, turbulence + live particle angle ──
+        float windSpeed = ClientSeasonState.getWindSpeed();
+        float windDx = ClientSeasonState.getWindDx();
+        float windDz = ClientSeasonState.getWindDz();
+        float horizontalMag = (float) Math.sqrt(
+                (windDx * RainDropParticle.WIND_INFLUENCE) * (windDx * RainDropParticle.WIND_INFLUENCE)
+                        + (windDz * RainDropParticle.WIND_INFLUENCE) * (windDz * RainDropParticle.WIND_INFLUENCE));
+        float particleAngleDeg = (float) Math.toDegrees(
+                Math.atan2(horizontalMag, RainDropParticle.FALL_SPEED));
+
+        left.add("§6[GH Wind]§r "
+                + ClientSeasonState.getWindDirection()
+                + " | Speed: " + String.format("%.2f", windSpeed)
+                + (ClientSeasonState.isGale() ? " §d[GALE]§r"
+                : ClientSeasonState.isWindy() ? " §e[WINDY]§r" : "")
+                + " | Particle angle: " + String.format("%.1f°", particleAngleDeg));
 
         // Dynamic temperature
         float biomeTemp = mc.level.getBiome(mc.player.blockPosition())

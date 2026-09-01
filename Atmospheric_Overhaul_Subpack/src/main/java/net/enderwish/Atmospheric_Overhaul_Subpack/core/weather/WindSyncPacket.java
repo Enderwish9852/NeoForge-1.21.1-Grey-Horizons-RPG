@@ -75,7 +75,7 @@ public record WindSyncPacket(
                     packet.speed(),
                     packet.gustFactor(),
                     packet.turbulence());
-            ClientSeasonState.INSTANCE.setWindState(state);
+            ClientSeasonState.setWindState(state);
         });
     }
 }

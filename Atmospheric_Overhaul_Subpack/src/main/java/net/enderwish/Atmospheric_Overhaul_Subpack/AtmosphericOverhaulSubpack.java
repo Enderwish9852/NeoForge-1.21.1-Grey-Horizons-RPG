@@ -1,5 +1,6 @@
 package net.enderwish.Atmospheric_Overhaul_Subpack;
 
+import net.enderwish.Atmospheric_Overhaul_Subpack.client.particle.ModParticles;
 import net.enderwish.Atmospheric_Overhaul_Subpack.command.SeasonCommand;
 import net.enderwish.Atmospheric_Overhaul_Subpack.command.WeatherCommand;
 import net.enderwish.Atmospheric_Overhaul_Subpack.core.weather.WeatherRegistry;
@@ -23,6 +24,7 @@ public class AtmosphericOverhaulSubpack {
 
         // ── Mod bus events (fired by NeoForge during startup) ─────────────────
         modEventBus.addListener(this::registerNetworking);
+        ModParticles.register(modEventBus);
 
         // ── NeoForge bus events (fired during gameplay) ───────────────────────
         NeoForge.EVENT_BUS.addListener(this::onRegisterCommands);

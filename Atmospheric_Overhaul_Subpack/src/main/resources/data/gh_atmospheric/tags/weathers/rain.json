@@ -6,6 +6,9 @@
   "intensity": { "min": 0.2, "max": 0.9 },
   "temp_offset": -0.1,
   "temp_scales_with_intensity": true,
+  "wind_speed_min": 0.25,
+  "wind_speed_max": 0.60,
+  "wind_turbulence": 0.30,
   "season_weights": {
     "SPRING": { "EARLY": 100, "MID": 80,  "LATE": 60  },
     "SUMMER": { "EARLY": 20,  "MID": 15,  "LATE": 20  },
