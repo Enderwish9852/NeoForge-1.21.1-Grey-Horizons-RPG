@@ -18,11 +18,18 @@ public class ModMessages {
 
 
 
-        // 3. Climate Sync (Server -> Client) - REQUIRED for Weather/Seasons
+        // Season/Weather Sync (Server -> Client) - REQUIRED for Weather/Seasons
         registrar.playToClient(
                 SeasonSyncPacket.TYPE,
                 SeasonSyncPacket.STREAM_CODEC,
                 SeasonSyncPacket::handle
+        );
+
+        // Wind Sync (Server -> Client) - REQUIRED for wind-driven particles
+        registrar.playToClient(
+                net.enderwish.Atmospheric_Overhaul_Subpack.network.WindSyncPacket.TYPE,
+                net.enderwish.Atmospheric_Overhaul_Subpack.network.WindSyncPacket.CODEC,
+                net.enderwish.Atmospheric_Overhaul_Subpack.network.WindSyncPacket::handle
         );
     }
 

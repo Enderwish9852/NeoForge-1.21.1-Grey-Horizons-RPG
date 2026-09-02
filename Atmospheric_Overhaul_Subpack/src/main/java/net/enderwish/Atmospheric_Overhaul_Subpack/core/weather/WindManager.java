@@ -1,6 +1,7 @@
 package net.enderwish.Atmospheric_Overhaul_Subpack.core.weather;
 
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 
 /**
@@ -40,11 +41,13 @@ public class WindManager {
         }
     }
 
-    // ── Weather change ────────────────────────────────────────────────────────
+    // ── Weather change (natural pipeline) ─────────────────────────────────────
 
     /**
      * Called by SeasonEventHandler when the active weather changes.
      * Applies the new WeatherDefinition's wind profile immediately.
+     * Speed still lerps smoothly toward target via WindState.tick() —
+     * this is the natural, non-instant path.
      */
     public void onWeatherChanged(WeatherDefinition newWeather,
                                  ServerLevel level) {
@@ -59,6 +62,25 @@ public class WindManager {
             state.setDirection(WindDirection.random(random));
         }
 
+        broadcastToClients(level);
+    }
+
+    // ── Manual override (command-driven) ──────────────────────────────────────
+
+    /**
+     * Called by WeatherCommand when weather is force-set via /ghweather.
+     * Applies speed/turbulence/direction INSTANTLY (snaps, no lerp) so
+     * command testing isn't fighting WindState's ~10-second natural
+     * interpolation. direction may be null to leave it unchanged.
+     */
+    public void applyManual(float speed, float turbulence,
+                            WindDirection direction, ServerLevel level) {
+        state.setTargetSpeed(Mth.clamp(speed, 0f, 1f));
+        state.snapToTarget(); // instant — no lerp for command testing
+        state.setTurbulence(Mth.clamp(turbulence, 0f, 1f));
+        if (direction != null) {
+            state.setDirection(direction);
+        }
         broadcastToClients(level);
     }
 

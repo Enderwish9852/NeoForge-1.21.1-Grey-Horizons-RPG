@@ -9,7 +9,8 @@
   ],
   "client": [
     "FogRendererMixin",
-    "WeatherParticleMixin"
+    "WeatherParticleMixin",
+    "WeatherRenderMixin"
   ],
   "injectionPoints": {}
 }
