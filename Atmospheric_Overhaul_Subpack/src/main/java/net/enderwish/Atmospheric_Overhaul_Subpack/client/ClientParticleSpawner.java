@@ -21,6 +21,11 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
  * (synced via SeasonSyncPacket -> ClientSeasonState) — higher intensity
  * = more particles per tick = visually "thicker" rain.
  *
+ * Intensity is also passed through to each spawned particle via the
+ * addParticle dy parameter (repurposed — see RainDropParticle.Provider),
+ * so individual particles can scale their own fall speed/size to match
+ * how heavy the current rain is, not just how many spawn.
+ *
  * Skips spawning entirely while the game is paused (singleplayer pause
  * menu). ClientTickEvent still fires while paused, but ParticleEngine
  * stops ticking existing particles — without this guard, new particles
@@ -72,7 +77,10 @@ public class ClientParticleSpawner {
             double z = colZ + random.nextDouble();
             double y = player.getY() + SPAWN_HEIGHT_ABOVE + random.nextDouble() * 5.0;
 
-            level.addParticle(ModParticles.RAIN_DROP.get(), x, y, z, 0.0, 0.0, 0.0);
+            // dy is repurposed to carry intensity (0.0-1.0) through to
+            // RainDropParticle.Provider.createParticle — see that class
+            // for how it's consumed.
+            level.addParticle(ModParticles.RAIN_DROP.get(), x, y, z, 0.0, intensity, 0.0);
         }
     }
 }

@@ -4,6 +4,7 @@ import net.enderwish.Atmospheric_Overhaul_Subpack.AtmosphericOverhaulSubpack;
 import net.enderwish.Atmospheric_Overhaul_Subpack.client.particle.RainDropParticle;
 import net.enderwish.Atmospheric_Overhaul_Subpack.core.season.SeasonTemperature;
 import net.minecraft.client.Minecraft;
+import net.minecraft.util.Mth;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -56,8 +57,15 @@ public class ClientDebugHandler {
         float horizontalMag = (float) Math.sqrt(
                 (windDx * RainDropParticle.WIND_INFLUENCE) * (windDx * RainDropParticle.WIND_INFLUENCE)
                         + (windDz * RainDropParticle.WIND_INFLUENCE) * (windDz * RainDropParticle.WIND_INFLUENCE));
+
+        // Fall speed now scales with intensity (BASE_FALL_SPEED -> MAX_FALL_SPEED),
+        // matching RainDropParticle's own per-particle calculation, so the
+        // debug angle reflects what's actually rendering right now.
+        float intensity = ClientSeasonState.getIntensity();
+        float currentFallSpeed = Mth.lerp(Mth.clamp(intensity, 0f, 1f),
+                RainDropParticle.BASE_FALL_SPEED, RainDropParticle.MAX_FALL_SPEED);
         float particleAngleDeg = (float) Math.toDegrees(
-                Math.atan2(horizontalMag, RainDropParticle.FALL_SPEED));
+                Math.atan2(horizontalMag, currentFallSpeed));
 
         left.add("§6[GH Wind]§r "
                 + ClientSeasonState.getWindDirection()
