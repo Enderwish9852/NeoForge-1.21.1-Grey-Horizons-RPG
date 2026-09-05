@@ -8,7 +8,9 @@ package net.enderwish.Atmospheric_Overhaul_Subpack.core.weather;
  * based on turbulence.
  *
  * Ticked server-side by WindManager. Synced to clients
- * every 20 ticks via WindSyncPacket.
+ * every 20 ticks via WindSyncPacket. Persisted per-level via
+ * SeasonData — WindManager reconstructs this from SeasonData's
+ * saved fields each tick rather than holding it in memory alone.
  *
  * Speed scale:
  *   0.0 = dead calm
@@ -35,8 +37,9 @@ public class WindState {
     /** How fast gusts change */
     private static final float GUST_LERP_RATE  = 0.01f;
 
-    // ── Constructor ───────────────────────────────────────────────────────────
+    // ── Constructors ──────────────────────────────────────────────────────────
 
+    /** Fresh default state — used only when no SeasonData exists yet (new world). */
     public WindState() {
         this.direction   = WindDirection.SOUTHWEST;
         this.speed       = 0.1f;
@@ -45,11 +48,26 @@ public class WindState {
         this.turbulence  = 0.1f;
     }
 
+    /**
+     * Convenience constructor — speed and targetSpeed both set to the
+     * same value (no lerp in progress). Used where target isn't tracked.
+     */
     public WindState(WindDirection direction, float speed,
+                     float gustFactor, float turbulence) {
+        this(direction, speed, speed, gustFactor, turbulence);
+    }
+
+    /**
+     * Full restore constructor — used by WindManager when loading from
+     * SeasonData, so a wind speed that was mid-lerp toward a target when
+     * the world was last saved correctly resumes lerping toward that same
+     * target on reload, instead of snapping to current speed as "done".
+     */
+    public WindState(WindDirection direction, float speed, float targetSpeed,
                      float gustFactor, float turbulence) {
         this.direction   = direction;
         this.speed       = speed;
-        this.targetSpeed = speed;
+        this.targetSpeed = targetSpeed;
         this.gustFactor  = gustFactor;
         this.turbulence  = turbulence;
     }

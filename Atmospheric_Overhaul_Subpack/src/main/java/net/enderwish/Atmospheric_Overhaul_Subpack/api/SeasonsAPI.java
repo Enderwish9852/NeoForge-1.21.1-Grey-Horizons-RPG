@@ -263,31 +263,31 @@ public final class SeasonsAPI {
     // ── Wind queries (server-side) ────────────────────────────────────────────
 
     /**
-     * Returns the current wind state on the server.
+     * Returns the current wind state on the server for this level.
      * Use for gameplay logic, particle spawning, structure damage etc.
      */
     public static net.enderwish.Atmospheric_Overhaul_Subpack.core.weather.WindState
-    getWindState() {
+    getWindState(ServerLevel level) {
         return net.enderwish.Atmospheric_Overhaul_Subpack.core.weather
-                .WindManager.INSTANCE.getState();
+                .WindManager.INSTANCE.getState(level);
     }
 
-    /** Returns current wind speed (0.0 calm - 1.0 gale). */
-    public static float getWindSpeed() {
+    /** Returns current wind speed (0.0 calm - 1.0 gale) for this level. */
+    public static float getWindSpeed(ServerLevel level) {
         return net.enderwish.Atmospheric_Overhaul_Subpack.core.weather
-                .WindManager.INSTANCE.getSpeed();
+                .WindManager.INSTANCE.getSpeed(level);
     }
 
-    /** Returns the current wind direction. */
+    /** Returns the current wind direction for this level. */
     public static net.enderwish.Atmospheric_Overhaul_Subpack.core.weather.WindDirection
-    getWindDirection() {
+    getWindDirection(ServerLevel level) {
         return net.enderwish.Atmospheric_Overhaul_Subpack.core.weather
-                .WindManager.INSTANCE.getDirection();
+                .WindManager.INSTANCE.getDirection(level);
     }
 
-    /** Returns true if wind speed exceeds gale threshold. */
+    /** Returns true if wind speed exceeds gale threshold for this level. */
     public static boolean isWindGale(ServerLevel level) {
-        return getWindState().isGale();
+        return getWindState(level).isGale();
     }
 
     // ── Wind queries (client-side) ────────────────────────────────────────────

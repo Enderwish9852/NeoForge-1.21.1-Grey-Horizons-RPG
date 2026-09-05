@@ -1,5 +1,6 @@
 package net.enderwish.Atmospheric_Overhaul_Subpack.core.season;
 
+import net.enderwish.Atmospheric_Overhaul_Subpack.core.weather.WindDirection;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
@@ -11,6 +12,11 @@ public class SeasonData extends SavedData{
     private static final String KEY_TICKS_TODAY = "ticksToday";
     private static final String KEY_ACTIVE_WEATHER = "activeWeather";
     private static final String KEY_WEATHER_TICKS = "weatherTicks";
+    private static final String KEY_WIND_DIRECTION = "windDirection";
+    private static final String KEY_WIND_SPEED = "windSpeed";
+    private static final String KEY_WIND_TARGET_SPEED = "windTargetSpeed";
+    private static final String KEY_WIND_TURBULENCE = "windTurbulence";
+    private static final String KEY_WIND_GUST_FACTOR = "windGustFactor";
     private static final String DATA_NAME = "greyhorizons";
 
     // State
@@ -19,6 +25,13 @@ public class SeasonData extends SavedData{
     private String activeWeatherId = "clear";
     private int weatherTicksRemaining = 0;
     private  float activeIntensity = 0.0f;
+
+    // Wind state — persisted so wind doesn't reset to defaults on relog
+    private WindDirection windDirection = WindDirection.SOUTHWEST;
+    private float windSpeed = 0.1f;
+    private float windTargetSpeed = 0.1f;
+    private float windTurbulence = 0.1f;
+    private float windGustFactor = 1.0f;
 
     // Access
     // Get the SeasonData for the given Serverlevel
@@ -117,6 +130,14 @@ public class SeasonData extends SavedData{
     public String getDisplayLabel() {
         return SeasonCalendar.getDisplayLabel(totalDays);
     }
+
+    // ── Wind queries ──────────────────────────────────────────────────────────
+    public WindDirection getWindDirection() { return windDirection; }
+    public float getWindSpeed()             { return windSpeed; }
+    public float getWindTargetSpeed()       { return windTargetSpeed; }
+    public float getWindTurbulence()        { return windTurbulence; }
+    public float getWindGustFactor()        { return windGustFactor; }
+
     // Setters
     // Called by WeatherRoller after picking the next weather
     public void setActiveWeather(String weatherId, int durationTicks, float intensity) {
@@ -130,6 +151,21 @@ public class SeasonData extends SavedData{
         this.totalDays = Math.max(0, totalDays);
         setDirty();
     }
+
+    // ── Wind setters ──────────────────────────────────────────────────────────
+    // Called by WindManager every tick after advancing wind state. Marks
+    // dirty only on meaningful change to avoid spamming disk writes every
+    // single tick from tiny gust/interpolation drift — see WindManager.
+    public void setWindState(WindDirection direction, float speed, float targetSpeed,
+                             float turbulence, float gustFactor) {
+        this.windDirection = direction;
+        this.windSpeed = speed;
+        this.windTargetSpeed = targetSpeed;
+        this.windTurbulence = turbulence;
+        this.windGustFactor = gustFactor;
+        setDirty();
+    }
+
     // Save/Laod
     @Override
     public CompoundTag save(CompoundTag tag, HolderLookup.Provider provider) {
@@ -138,6 +174,11 @@ public class SeasonData extends SavedData{
         tag.putString(KEY_ACTIVE_WEATHER, activeWeatherId);
         tag.putInt(KEY_WEATHER_TICKS, weatherTicksRemaining);
         tag.putFloat("activeIntensity", activeIntensity);
+        tag.putString(KEY_WIND_DIRECTION, windDirection.name());
+        tag.putFloat(KEY_WIND_SPEED, windSpeed);
+        tag.putFloat(KEY_WIND_TARGET_SPEED, windTargetSpeed);
+        tag.putFloat(KEY_WIND_TURBULENCE, windTurbulence);
+        tag.putFloat(KEY_WIND_GUST_FACTOR, windGustFactor);
         return tag;
     }
     public static SeasonData load(CompoundTag tag, HolderLookup.Provider provider) {
@@ -147,6 +188,17 @@ public class SeasonData extends SavedData{
         data.activeWeatherId = tag.getString(KEY_ACTIVE_WEATHER);
         data.weatherTicksRemaining = tag.getInt(KEY_WEATHER_TICKS);
         data.activeIntensity = tag.getFloat("activeIntensity");
+        if (tag.contains(KEY_WIND_DIRECTION)) {
+            try {
+                data.windDirection = WindDirection.valueOf(tag.getString(KEY_WIND_DIRECTION));
+            } catch (IllegalArgumentException ignored) {
+                data.windDirection = WindDirection.SOUTHWEST;
+            }
+        }
+        data.windSpeed = tag.getFloat(KEY_WIND_SPEED);
+        data.windTargetSpeed = tag.getFloat(KEY_WIND_TARGET_SPEED);
+        data.windTurbulence = tag.getFloat(KEY_WIND_TURBULENCE);
+        data.windGustFactor = tag.contains(KEY_WIND_GUST_FACTOR) ? tag.getFloat(KEY_WIND_GUST_FACTOR) : 1.0f;
         return data;
     }
 }

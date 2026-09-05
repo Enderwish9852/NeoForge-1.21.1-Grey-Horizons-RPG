@@ -28,6 +28,17 @@ import org.joml.Vector3f;
  * reference) produces an angle with no directional sign, which looked
  * inconsistent/random from different viewing angles.
  *
+ * DEGENERATE CASE — looking near-vertically (straight up/down): the
+ * camera's forward vector becomes nearly parallel to world-up, which is
+ * also roughly the particle's fall direction. The right/up projection
+ * becomes numerically unstable at this angle (tiny look-angle changes
+ * cause large swings in projected components), producing the "streaks
+ * fan out radially / look horizontal" bug. Real rain viewed straight up
+ * also reads as short dots rather than directional streaks anyway, so
+ * we detect this case (camera forward dot world-up near ±1) and fall
+ * back to zero roll — a plain camera-facing streak — instead of letting
+ * the unstable projection produce garbage angles.
+ *
  * Fall speed and streak length both scale with weather intensity, so
  * light drizzle looks visually different from a downpour.
  *
@@ -44,6 +55,11 @@ public class RainDropParticle extends TextureSheetParticle {
     private static final float STREAK_LENGTH_SCALE = 3.2f; // how many quadSizes long the streak is
     private static final float STREAK_WIDTH_SCALE   = 0.35f; // how many quadSizes wide the streak is
 
+    // How close (dot product) the camera's forward vector can get to
+    // world-up/down before we consider the roll projection unstable.
+    // 0.9 ≈ within ~25 degrees of looking straight up or down.
+    private static final float VERTICAL_LOOK_THRESHOLD = 0.9f;
+
     private final float fallSpeed;
 
     protected RainDropParticle(ClientLevel level, double x, double y, double z, float intensity) {
@@ -53,9 +69,7 @@ public class RainDropParticle extends TextureSheetParticle {
         this.fallSpeed = Mth.lerp(clampedIntensity, BASE_FALL_SPEED, MAX_FALL_SPEED);
 
         this.gravity    = 0.0f;   // we drive yd manually, no vanilla gravity accel
-        // Lifetime sized generously so particles reach the ground from typical
-        // spawn heights before aging out, even at BASE_FALL_SPEED (slowest case).
-        this.lifetime   = 60;
+        this.lifetime   = 60;     // ~3 seconds, enough to fall through view range
         this.hasPhysics = false;  // no vanilla block-collision bounce
         this.friction   = 1.0f;   // no vanilla air drag, we set velocity directly
         this.quadSize   = 0.05f + clampedIntensity * 0.02f; // slightly bigger streaks in heavier rain
@@ -98,34 +112,35 @@ public class RainDropParticle extends TextureSheetParticle {
      * Overridden to compute roll from the particle's world-space velocity
      * projected onto the camera's actual right/up vectors, giving a
      * directionally-correct streak angle regardless of which way the
-     * camera is currently facing. This replaces SingleQuadParticle's
-     * default render() which only applies FacingCameraMode + a static roll.
+     * camera is currently facing — except near-vertical looks, where the
+     * projection is unstable and we fall back to zero roll instead.
      */
     @Override
     public void render(VertexConsumer buffer, Camera camera, float partialTicks) {
         Quaternionf quaternionf = new Quaternionf();
         this.getFacingCameraMode().setRotation(quaternionf, camera, partialTicks);
 
-        // Camera's right and up vectors, derived from its rotation quaternion.
         Quaternionf camRot = camera.rotation();
-        Vector3f camRight = new Vector3f(1, 0, 0).rotate(camRot);
-        Vector3f camUp    = new Vector3f(0, 1, 0).rotate(camRot);
+        Vector3f camRight   = new Vector3f(1, 0, 0).rotate(camRot);
+        Vector3f camUp      = new Vector3f(0, 1, 0).rotate(camRot);
+        Vector3f camForward = new Vector3f(0, 0, -1).rotate(camRot);
 
-        // World-space velocity direction (interpolated xd/yd/zd this tick).
-        Vector3f velocity = new Vector3f((float) this.xd, (float) this.yd, (float) this.zd);
-        if (velocity.lengthSquared() > 1.0E-6f) {
-            velocity.normalize();
+        float computedRoll;
+
+        // Degenerate case guard — looking near straight up or down.
+        if (Math.abs(camForward.y()) > VERTICAL_LOOK_THRESHOLD) {
+            computedRoll = 0.0f;
+        } else {
+            Vector3f velocity = new Vector3f((float) this.xd, (float) this.yd, (float) this.zd);
+            if (velocity.lengthSquared() > 1.0E-6f) {
+                velocity.normalize();
+            }
+
+            float rightComponent = velocity.dot(camRight);
+            float upComponent    = velocity.dot(camUp);
+
+            computedRoll = (float) Math.atan2(rightComponent, -upComponent);
         }
-
-        // Project velocity onto camera-right and camera-up to get the
-        // 2D screen-space direction the streak should point.
-        float rightComponent = velocity.dot(camRight);
-        float upComponent    = velocity.dot(camUp);
-
-        // atan2 here DOES carry sign/direction, unlike magnitude-only atan2.
-        // Falling straight down (no wind) -> upComponent negative, rightComponent 0
-        // -> roll near 0, streak stays vertical, as expected.
-        float computedRoll = (float) Math.atan2(rightComponent, -upComponent);
 
         this.oRoll = this.roll;
         this.roll = computedRoll;
