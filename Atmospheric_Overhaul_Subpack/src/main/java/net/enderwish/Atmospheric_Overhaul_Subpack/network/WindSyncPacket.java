@@ -1,7 +1,6 @@
 package net.enderwish.Atmospheric_Overhaul_Subpack.network;
 
 import net.enderwish.Atmospheric_Overhaul_Subpack.client.ClientSeasonState;
-import net.enderwish.Atmospheric_Overhaul_Subpack.core.weather.WindDirection;
 import net.enderwish.Atmospheric_Overhaul_Subpack.core.weather.WindState;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;

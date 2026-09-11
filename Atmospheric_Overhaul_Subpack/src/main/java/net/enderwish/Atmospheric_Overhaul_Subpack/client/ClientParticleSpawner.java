@@ -5,6 +5,7 @@ import net.enderwish.Atmospheric_Overhaul_Subpack.client.particle.ModParticles;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
+import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.levelgen.Heightmap;
@@ -20,6 +21,12 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
  * Density scales directly with the server-rolled weather intensity
  * (synced via SeasonSyncPacket -> ClientSeasonState) — higher intensity
  * = more particles per tick = visually "thicker" rain.
+ *
+ * Spawn radius is large enough that both upwind AND downwind sides of
+ * the player have reasonable particle coverage even at high wind speed
+ * (the upwind bias alone wasn't enough — downwind was still visibly
+ * sparse — so radius was widened substantially rather than fine-tuning
+ * the bias further).
  *
  * Intensity is also passed through to each spawned particle via the
  * addParticle dy parameter (repurposed — see RainDropParticle.Provider),
@@ -38,9 +45,14 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 @EventBusSubscriber(modid = AtmosphericOverhaulSubpack.MOD_ID, bus = EventBusSubscriber.Bus.GAME, value = Dist.CLIENT)
 public class ClientParticleSpawner {
 
-    private static final int BASE_RAIN_COUNT   = 20; // particles/tick at intensity 1.0
-    private static final int SPAWN_RADIUS      = 12;
+    private static final int BASE_RAIN_COUNT    = 20; // particles/tick at intensity 1.0
+    private static final int SPAWN_RADIUS       = 40; // widened significantly for downwind coverage
     private static final int SPAWN_HEIGHT_ABOVE = 15;
+
+    // How strongly spawn position is pulled toward the upwind side.
+    // Lowered since the bigger radius alone now covers downwind reasonably;
+    // a strong bias on top of a big radius over-starved downwind again.
+    private static final float UPWIND_BIAS_STRENGTH = 0.3f;
 
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
@@ -62,9 +74,19 @@ public class ClientParticleSpawner {
         RandomSource random = level.getRandom();
         BlockPos playerPos = player.blockPosition();
 
+        // Upwind direction = opposite of wind travel direction.
+        float windDx = ClientSeasonState.getWindDx();
+        float windDz = ClientSeasonState.getWindDz();
+        float windMag = (float) Math.sqrt(windDx * windDx + windDz * windDz);
+        float upwindX = windMag > 1.0E-4f ? -windDx / windMag : 0f;
+        float upwindZ = windMag > 1.0E-4f ? -windDz / windMag : 0f;
+
         for (int i = 0; i < count; i++) {
-            int dx = random.nextInt(SPAWN_RADIUS * 2) - SPAWN_RADIUS;
-            int dz = random.nextInt(SPAWN_RADIUS * 2) - SPAWN_RADIUS;
+            int rawDx = random.nextInt(SPAWN_RADIUS * 2) - SPAWN_RADIUS;
+            int rawDz = random.nextInt(SPAWN_RADIUS * 2) - SPAWN_RADIUS;
+
+            int dx = (int) Mth.lerp(UPWIND_BIAS_STRENGTH, rawDx, upwindX * SPAWN_RADIUS);
+            int dz = (int) Mth.lerp(UPWIND_BIAS_STRENGTH, rawDz, upwindZ * SPAWN_RADIUS);
 
             int colX = playerPos.getX() + dx;
             int colZ = playerPos.getZ() + dz;

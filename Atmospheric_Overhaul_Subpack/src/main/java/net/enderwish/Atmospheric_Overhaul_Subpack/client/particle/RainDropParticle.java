@@ -8,36 +8,37 @@ import net.minecraft.client.particle.*;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.SimpleParticleType;
 import net.minecraft.util.Mth;
+import net.minecraft.world.phys.Vec3;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
 /**
  * RainDropParticle
  *
- * Custom wind-aware rain particle rendered as an elongated streak that
- * visually rotates to align with the current wind angle AS SEEN FROM
- * THE CAMERA, rather than a flat camera-facing square dot.
+ * Custom wind-aware rain particle rendered as a camera-facing streak
+ * that SMOOTHLY shrinks toward a small dot as the camera's look angle
+ * approaches vertical (up OR down), rather than snapping between two
+ * separate render modes at a hard angle threshold.
  *
- * Why this needs a custom render() override (not just roll in tick()):
- * SingleQuadParticle's LOOKAT_XYZ facing mode orients the quad's local
- * X/Y axes to the camera's right/up vectors. To make a streak visually
- * point toward the particle's actual world-space fall direction, we need
- * to project that world-space velocity onto the camera's right/up axes
- * — which requires the Camera object, only available in render(), not
- * tick(). Computing roll from raw velocity magnitude alone (no camera
- * reference) produces an angle with no directional sign, which looked
- * inconsistent/random from different viewing angles.
+ * Why a smooth blend instead of a mode switch: looking straight up vs.
+ * straight down are NOT the same case geometrically. Looking up puts
+ * the camera nearly along the particle's fall line — genuine
+ * foreshortening, a dot is correct. Looking down does not inherently
+ * foreshorten every particle in view the same way; a blanket "camera
+ * pitch beyond X degrees = dot" rule doesn't check foreshortening per
+ * particle, so it produced wrong-looking results specifically when
+ * looking down. Blending streak length toward zero based on how
+ * foreshortened THIS PARTICLE's velocity actually looks from the
+ * camera (not just overall camera pitch) fixes both cases with one
+ * continuous formula and removes the visible "pop" at a hard cutoff.
  *
- * DEGENERATE CASE — looking near-vertically (straight up/down): the
- * camera's forward vector becomes nearly parallel to world-up, which is
- * also roughly the particle's fall direction. The right/up projection
- * becomes numerically unstable at this angle (tiny look-angle changes
- * cause large swings in projected components), producing the "streaks
- * fan out radially / look horizontal" bug. Real rain viewed straight up
- * also reads as short dots rather than directional streaks anyway, so
- * we detect this case (camera forward dot world-up near ±1) and fall
- * back to zero roll — a plain camera-facing streak — instead of letting
- * the unstable projection produce garbage angles.
+ * Geometry is built entirely in world space (length axis = velocity,
+ * width axis = camera-plane perpendicular), then submitted in DOUBLE
+ * winding order (front + back) since a freestanding quad's winding can
+ * face away from the camera depending on angle and get backface-culled
+ * — mirrors vanilla's own renderSnowAndRain(), which explicitly calls
+ * RenderSystem.disableCull() before drawing its rain quads for the
+ * same reason.
  *
  * Fall speed and streak length both scale with weather intensity, so
  * light drizzle looks visually different from a downpour.
@@ -52,13 +53,9 @@ public class RainDropParticle extends TextureSheetParticle {
     public static final float BASE_FALL_SPEED  = 0.35f; // blocks/tick at low intensity
     public static final float MAX_FALL_SPEED   = 0.65f; // blocks/tick at max intensity
 
-    private static final float STREAK_LENGTH_SCALE = 3.2f; // how many quadSizes long the streak is
-    private static final float STREAK_WIDTH_SCALE   = 0.35f; // how many quadSizes wide the streak is
-
-    // How close (dot product) the camera's forward vector can get to
-    // world-up/down before we consider the roll projection unstable.
-    // 0.9 ≈ within ~25 degrees of looking straight up or down.
-    private static final float VERTICAL_LOOK_THRESHOLD = 0.9f;
+    private static final float STREAK_LENGTH_SCALE = 3.2f; // max streak half-length multiplier
+    private static final float STREAK_WIDTH_SCALE   = 0.35f; // half-width multiplier (constant)
+    private static final float DOT_LENGTH_SCALE     = 0.5f;  // half-length multiplier when fully foreshortened (small dot)
 
     private final float fallSpeed;
 
@@ -68,14 +65,12 @@ public class RainDropParticle extends TextureSheetParticle {
         float clampedIntensity = Mth.clamp(intensity, 0f, 1f);
         this.fallSpeed = Mth.lerp(clampedIntensity, BASE_FALL_SPEED, MAX_FALL_SPEED);
 
-        this.gravity    = 0.0f;   // we drive yd manually, no vanilla gravity accel
-        this.lifetime   = 60;     // ~3 seconds, enough to fall through view range
-        this.hasPhysics = false;  // no vanilla block-collision bounce
-        this.friction   = 1.0f;   // no vanilla air drag, we set velocity directly
-        this.quadSize   = 0.05f + clampedIntensity * 0.02f; // slightly bigger streaks in heavier rain
+        this.gravity    = 0.0f;
+        this.lifetime   = 60;
+        this.hasPhysics = false;
+        this.friction   = 1.0f;
+        this.quadSize   = 0.05f + clampedIntensity * 0.02f;
 
-        // Desaturated grey, low alpha — real rain against overcast sky,
-        // not a saturated blue droplet.
         this.rCol = 0.78f;
         this.gCol = 0.80f;
         this.bCol = 0.82f;
@@ -102,86 +97,94 @@ public class RainDropParticle extends TextureSheetParticle {
 
         this.move(this.xd, this.yd, this.zd);
 
-        // Despawn once it reaches/passes a solid surface
         if (this.level.getBlockState(BlockPos.containing(this.x, this.y, this.z)).isSolid()) {
             this.remove();
         }
     }
 
-    /**
-     * Overridden to compute roll from the particle's world-space velocity
-     * projected onto the camera's actual right/up vectors, giving a
-     * directionally-correct streak angle regardless of which way the
-     * camera is currently facing — except near-vertical looks, where the
-     * projection is unstable and we fall back to zero roll instead.
-     */
     @Override
     public void render(VertexConsumer buffer, Camera camera, float partialTicks) {
-        Quaternionf quaternionf = new Quaternionf();
-        this.getFacingCameraMode().setRotation(quaternionf, camera, partialTicks);
+        Vec3 camPos = camera.getPosition();
+
+        float px = (float) (Mth.lerp(partialTicks, this.xo, this.x) - camPos.x());
+        float py = (float) (Mth.lerp(partialTicks, this.yo, this.y) - camPos.y());
+        float pz = (float) (Mth.lerp(partialTicks, this.zo, this.z) - camPos.z());
 
         Quaternionf camRot = camera.rotation();
-        Vector3f camRight   = new Vector3f(1, 0, 0).rotate(camRot);
-        Vector3f camUp      = new Vector3f(0, 1, 0).rotate(camRot);
+        Vector3f camRight = new Vector3f(1, 0, 0).rotate(camRot);
+        Vector3f camUp    = new Vector3f(0, 1, 0).rotate(camRot);
+        // Camera's forward/view direction — used to measure how end-on
+        // (foreshortened) THIS particle's velocity looks from here.
         Vector3f camForward = new Vector3f(0, 0, -1).rotate(camRot);
 
-        float computedRoll;
-
-        // Degenerate case guard — looking near straight up or down.
-        if (Math.abs(camForward.y()) > VERTICAL_LOOK_THRESHOLD) {
-            computedRoll = 0.0f;
+        Vector3f velocity = new Vector3f((float) this.xd, (float) this.yd, (float) this.zd);
+        if (velocity.lengthSquared() > 1.0E-8f) {
+            velocity.normalize();
         } else {
-            Vector3f velocity = new Vector3f((float) this.xd, (float) this.yd, (float) this.zd);
-            if (velocity.lengthSquared() > 1.0E-6f) {
-                velocity.normalize();
-            }
-
-            float rightComponent = velocity.dot(camRight);
-            float upComponent    = velocity.dot(camUp);
-
-            computedRoll = (float) Math.atan2(rightComponent, -upComponent);
+            velocity.set(0f, -1f, 0f);
         }
 
-        this.oRoll = this.roll;
-        this.roll = computedRoll;
+        // Foreshortening factor: how aligned the velocity is with the
+        // camera's forward axis. 0 = fully side-on (full streak), 1 =
+        // fully end-on (fully foreshortened, should look like a dot).
+        float alignment = Math.abs(velocity.dot(camForward));
+        // Smoothstep-style easing so the transition isn't linear/abrupt.
+        float foreshorten = alignment * alignment * (3f - 2f * alignment);
 
-        quaternionf.rotateZ(Mth.lerp(partialTicks, this.oRoll, this.roll));
+        float vRight = velocity.dot(camRight);
+        float vUp    = velocity.dot(camUp);
+        float screenLenSq = vRight * vRight + vUp * vUp;
+        float sx, sy;
+        if (screenLenSq > 1.0E-6f) {
+            float screenLen = (float) Math.sqrt(screenLenSq);
+            sx = vRight / screenLen;
+            sy = vUp / screenLen;
+        } else {
+            sx = 0f;
+            sy = 1f;
+        }
 
-        this.renderRotatedQuad(buffer, camera, quaternionf, partialTicks);
-    }
+        Vector3f lengthAxis = new Vector3f(camRight).mul(sx).add(new Vector3f(camUp).mul(sy));
+        Vector3f widthAxis  = new Vector3f(camRight).mul(-sy).add(new Vector3f(camUp).mul(sx));
 
-    /**
-     * Builds a stretched rectangle instead of vanilla's uniform square —
-     * long along local Y (length axis), thin along local X (width axis).
-     * Combined with the camera-relative roll computed in render(), this
-     * reads as a streak angled toward the actual fall/wind direction.
-     */
-    @Override
-    protected void renderRotatedQuad(VertexConsumer buffer, Quaternionf quaternion,
-                                     float x, float y, float z, float partialTicks) {
         float size = this.getQuadSize(partialTicks);
-        float halfWidth  = size * STREAK_WIDTH_SCALE;
-        float halfLength = size * STREAK_LENGTH_SCALE;
+        float halfWidth = size * STREAK_WIDTH_SCALE;
+        // Blend half-length smoothly from full streak length down to a
+        // small dot-like length as foreshortening approaches 1.
+        float halfLength = size * Mth.lerp(foreshorten, STREAK_LENGTH_SCALE, DOT_LENGTH_SCALE);
+
+        Vector3f center = new Vector3f(px, py, pz);
+        Vector3f lengthOffset = new Vector3f(lengthAxis).mul(halfLength);
+        Vector3f widthOffset  = new Vector3f(widthAxis).mul(halfWidth);
+
+        Vector3f head = new Vector3f(center).add(lengthOffset);
+        Vector3f tail = new Vector3f(center).sub(lengthOffset);
+
+        Vector3f v1 = new Vector3f(tail).add(widthOffset);
+        Vector3f v2 = new Vector3f(head).add(widthOffset);
+        Vector3f v3 = new Vector3f(head).sub(widthOffset);
+        Vector3f v4 = new Vector3f(tail).sub(widthOffset);
 
         float u0 = this.getU0();
         float u1 = this.getU1();
-        float v0 = this.getV0();
-        float v1 = this.getV1();
+        float texV0 = this.getV0();
+        float texV1 = this.getV1();
         int light = this.getLightColor(partialTicks);
 
-        renderStreakVertex(buffer, quaternion, x, y, z, halfWidth,  -halfLength, u1, v1, light);
-        renderStreakVertex(buffer, quaternion, x, y, z, halfWidth,   halfLength, u1, v0, light);
-        renderStreakVertex(buffer, quaternion, x, y, z, -halfWidth,  halfLength, u0, v0, light);
-        renderStreakVertex(buffer, quaternion, x, y, z, -halfWidth, -halfLength, u0, v1, light);
+        // Front winding
+        addVertex(buffer, v1, u1, texV1, light);
+        addVertex(buffer, v2, u1, texV0, light);
+        addVertex(buffer, v3, u0, texV0, light);
+        addVertex(buffer, v4, u0, texV1, light);
+
+        // Back winding — see class javadoc.
+        addVertex(buffer, v4, u0, texV1, light);
+        addVertex(buffer, v3, u0, texV0, light);
+        addVertex(buffer, v2, u1, texV0, light);
+        addVertex(buffer, v1, u1, texV1, light);
     }
 
-    private void renderStreakVertex(VertexConsumer buffer, Quaternionf quaternion,
-                                    float x, float y, float z,
-                                    float xOffset, float yOffset,
-                                    float u, float v, int packedLight) {
-        Vector3f vertex = new Vector3f(xOffset, yOffset, 0.0f)
-                .rotate(quaternion)
-                .add(x, y, z);
+    private void addVertex(VertexConsumer buffer, Vector3f vertex, float u, float v, int packedLight) {
         buffer.addVertex(vertex.x(), vertex.y(), vertex.z())
                 .setUv(u, v)
                 .setColor(this.rCol, this.gCol, this.bCol, this.alpha)
