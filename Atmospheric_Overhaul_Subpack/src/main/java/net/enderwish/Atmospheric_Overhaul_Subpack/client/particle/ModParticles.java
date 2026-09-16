@@ -16,6 +16,18 @@ public class ModParticles {
     public static final DeferredHolder<ParticleType<?>, SimpleParticleType> RAIN_DROP =
             PARTICLE_TYPES.register("rain_drop", () -> new SimpleParticleType(false));
 
+    public static final DeferredHolder<ParticleType<?>, SimpleParticleType> RAIN_SPLASH =
+            PARTICLE_TYPES.register("rain_splash", () -> new SimpleParticleType(false));
+
+    public static final DeferredHolder<ParticleType<?>, SimpleParticleType> SWIRLING_LEAVES =
+            PARTICLE_TYPES.register("swirling_leaves", () -> new SimpleParticleType(false));
+
+    public static final DeferredHolder<ParticleType<?>, SimpleParticleType> DUST_MOTE =
+            PARTICLE_TYPES.register("dust_mote", () -> new SimpleParticleType(false));
+
+    public static final DeferredHolder<ParticleType<?>, SimpleParticleType> FOG_WISP =
+            PARTICLE_TYPES.register("fog_wisp", () -> new SimpleParticleType(false));
+
     public static void register(IEventBus modEventBus) {
         PARTICLE_TYPES.register(modEventBus);
     }

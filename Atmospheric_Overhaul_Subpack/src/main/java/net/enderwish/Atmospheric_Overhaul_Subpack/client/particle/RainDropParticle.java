@@ -2,12 +2,15 @@ package net.enderwish.Atmospheric_Overhaul_Subpack.client.particle;
 
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.enderwish.Atmospheric_Overhaul_Subpack.client.ClientSeasonState;
+import net.enderwish.Atmospheric_Overhaul_Subpack.core.weather.LocalWindCalculator;
 import net.minecraft.client.Camera;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.particle.*;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.SimpleParticleType;
 import net.minecraft.util.Mth;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
@@ -17,45 +20,24 @@ import org.joml.Vector3f;
  *
  * Custom wind-aware rain particle rendered as a camera-facing streak
  * that SMOOTHLY shrinks toward a small dot as the camera's look angle
- * approaches vertical (up OR down), rather than snapping between two
- * separate render modes at a hard angle threshold.
+ * approaches vertical.
  *
- * Why a smooth blend instead of a mode switch: looking straight up vs.
- * straight down are NOT the same case geometrically. Looking up puts
- * the camera nearly along the particle's fall line — genuine
- * foreshortening, a dot is correct. Looking down does not inherently
- * foreshorten every particle in view the same way; a blanket "camera
- * pitch beyond X degrees = dot" rule doesn't check foreshortening per
- * particle, so it produced wrong-looking results specifically when
- * looking down. Blending streak length toward zero based on how
- * foreshortened THIS PARTICLE's velocity actually looks from the
- * camera (not just overall camera pitch) fixes both cases with one
- * continuous formula and removes the visible "pop" at a hard cutoff.
- *
- * Geometry is built entirely in world space (length axis = velocity,
- * width axis = camera-plane perpendicular), then submitted in DOUBLE
- * winding order (front + back) since a freestanding quad's winding can
- * face away from the camera depending on angle and get backface-culled
- * — mirrors vanilla's own renderSnowAndRain(), which explicitly calls
- * RenderSystem.disableCull() before drawing its rain quads for the
- * same reason.
- *
- * Fall speed and streak length both scale with weather intensity, so
- * light drizzle looks visually different from a downpour.
- *
- * WIND_INFLUENCE, BASE_FALL_SPEED, and MAX_FALL_SPEED are public so
- * ClientDebugHandler can compute the live deflection angle for the F3
- * overlay using the same numbers driving the real particle motion.
+ * Wind blending: particles within LocalWindCalculator.DETECTION_RANGE
+ * blocks of the player smoothly blend toward that player's FELT wind
+ * (obstruction-adjusted); particles farther out use pure GLOBAL wind.
+ * This is a smooth distance-based blend rather than a hard cutoff, same
+ * reasoning as the foreshortening blend below — avoids a visible "pop"
+ * at the boundary.
  */
 public class RainDropParticle extends TextureSheetParticle {
 
     public static final float WIND_INFLUENCE   = 0.45f;
-    public static final float BASE_FALL_SPEED  = 0.35f; // blocks/tick at low intensity
-    public static final float MAX_FALL_SPEED   = 0.65f; // blocks/tick at max intensity
+    public static final float BASE_FALL_SPEED  = 0.35f;
+    public static final float MAX_FALL_SPEED   = 0.65f;
 
-    private static final float STREAK_LENGTH_SCALE = 3.2f; // max streak half-length multiplier
-    private static final float STREAK_WIDTH_SCALE   = 0.35f; // half-width multiplier (constant)
-    private static final float DOT_LENGTH_SCALE     = 0.5f;  // half-length multiplier when fully foreshortened (small dot)
+    private static final float STREAK_LENGTH_SCALE = 3.2f;
+    private static final float STREAK_WIDTH_SCALE   = 0.35f;
+    private static final float DOT_LENGTH_SCALE     = 0.5f;
 
     private final float fallSpeed;
 
@@ -88,8 +70,23 @@ public class RainDropParticle extends TextureSheetParticle {
             return;
         }
 
+        // Blend between global and felt wind based on distance from the player.
         float windDx = ClientSeasonState.getWindDx();
         float windDz = ClientSeasonState.getWindDz();
+
+        Player player = Minecraft.getInstance().player;
+        if (player != null) {
+            float distFromPlayer = (float) player.position()
+                    .distanceTo(new Vec3(this.x, this.y, this.z));
+            float blendFactor = Mth.clamp(
+                    1.0f - (distFromPlayer / LocalWindCalculator.DETECTION_RANGE), 0f, 1f);
+
+            float feltDx = ClientSeasonState.getFeltWindDx();
+            float feltDz = ClientSeasonState.getFeltWindDz();
+
+            windDx = Mth.lerp(blendFactor, windDx, feltDx);
+            windDz = Mth.lerp(blendFactor, windDz, feltDz);
+        }
 
         this.xd = windDx * WIND_INFLUENCE;
         this.zd = windDz * WIND_INFLUENCE;
@@ -98,6 +95,7 @@ public class RainDropParticle extends TextureSheetParticle {
         this.move(this.xd, this.yd, this.zd);
 
         if (this.level.getBlockState(BlockPos.containing(this.x, this.y, this.z)).isSolid()) {
+            this.level.addParticle(ModParticles.RAIN_SPLASH.get(), this.x, this.y, this.z, 0.0, 0.0, 0.0);
             this.remove();
         }
     }
@@ -111,10 +109,8 @@ public class RainDropParticle extends TextureSheetParticle {
         float pz = (float) (Mth.lerp(partialTicks, this.zo, this.z) - camPos.z());
 
         Quaternionf camRot = camera.rotation();
-        Vector3f camRight = new Vector3f(1, 0, 0).rotate(camRot);
-        Vector3f camUp    = new Vector3f(0, 1, 0).rotate(camRot);
-        // Camera's forward/view direction — used to measure how end-on
-        // (foreshortened) THIS particle's velocity looks from here.
+        Vector3f camRight   = new Vector3f(1, 0, 0).rotate(camRot);
+        Vector3f camUp      = new Vector3f(0, 1, 0).rotate(camRot);
         Vector3f camForward = new Vector3f(0, 0, -1).rotate(camRot);
 
         Vector3f velocity = new Vector3f((float) this.xd, (float) this.yd, (float) this.zd);
@@ -124,11 +120,7 @@ public class RainDropParticle extends TextureSheetParticle {
             velocity.set(0f, -1f, 0f);
         }
 
-        // Foreshortening factor: how aligned the velocity is with the
-        // camera's forward axis. 0 = fully side-on (full streak), 1 =
-        // fully end-on (fully foreshortened, should look like a dot).
         float alignment = Math.abs(velocity.dot(camForward));
-        // Smoothstep-style easing so the transition isn't linear/abrupt.
         float foreshorten = alignment * alignment * (3f - 2f * alignment);
 
         float vRight = velocity.dot(camRight);
@@ -149,8 +141,6 @@ public class RainDropParticle extends TextureSheetParticle {
 
         float size = this.getQuadSize(partialTicks);
         float halfWidth = size * STREAK_WIDTH_SCALE;
-        // Blend half-length smoothly from full streak length down to a
-        // small dot-like length as foreshortening approaches 1.
         float halfLength = size * Mth.lerp(foreshorten, STREAK_LENGTH_SCALE, DOT_LENGTH_SCALE);
 
         Vector3f center = new Vector3f(px, py, pz);
@@ -171,13 +161,11 @@ public class RainDropParticle extends TextureSheetParticle {
         float texV1 = this.getV1();
         int light = this.getLightColor(partialTicks);
 
-        // Front winding
         addVertex(buffer, v1, u1, texV1, light);
         addVertex(buffer, v2, u1, texV0, light);
         addVertex(buffer, v3, u0, texV0, light);
         addVertex(buffer, v4, u0, texV1, light);
 
-        // Back winding — see class javadoc.
         addVertex(buffer, v4, u0, texV1, light);
         addVertex(buffer, v3, u0, texV0, light);
         addVertex(buffer, v2, u1, texV0, light);
@@ -195,8 +183,6 @@ public class RainDropParticle extends TextureSheetParticle {
     public ParticleRenderType getRenderType() {
         return ParticleRenderType.PARTICLE_SHEET_TRANSLUCENT;
     }
-
-    // ── Factory — hands each new instance a sprite from the JSON texture list ──
 
     public static class Provider implements ParticleProvider<SimpleParticleType> {
         private final SpriteSet sprites;

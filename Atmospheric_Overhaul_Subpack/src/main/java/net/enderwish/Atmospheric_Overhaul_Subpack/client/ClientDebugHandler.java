@@ -12,12 +12,6 @@ import net.neoforged.neoforge.client.event.CustomizeGuiOverlayEvent;
 
 import java.util.List;
 
-/**
- * ClientDebugHandler
- *
- * Adds Grey Horizons season + weather + temperature + wind data to the
- * F3 debug menu. Press F3 in-game to see the overlay on the left side.
- */
 @EventBusSubscriber(modid = AtmosphericOverhaulSubpack.MOD_ID, bus = EventBusSubscriber.Bus.GAME, value = Dist.CLIENT)
 public class ClientDebugHandler {
 
@@ -27,14 +21,12 @@ public class ClientDebugHandler {
         if (mc.level == null || mc.player == null) return;
 
         List<String> left = event.getLeft();
-        left.add(""); // spacer
+        left.add("");
 
-        // Season + phase + year
         left.add("§6[GH Seasons]§r "
                 + ClientSeasonState.getDisplayLabel()
                 + " §7(Day " + ClientSeasonState.getYearDay() + "/79)");
 
-        // Calendar detail
         left.add("§6[GH Calendar]§r Season day: "
                 + (ClientSeasonState.getYearDay() % 20)
                 + "/19 | Year day: "
@@ -42,7 +34,6 @@ public class ClientDebugHandler {
                 + " | Total: "
                 + ClientSeasonState.getTotalDays());
 
-        // Weather
         left.add("§6[GH Weather]§r "
                 + ClientSeasonState.getWeatherId()
                 + " | Intensity: "
@@ -50,7 +41,7 @@ public class ClientDebugHandler {
                 + (ClientSeasonState.isSpecialWeather() ? " §d[SPECIAL]§r" : "")
                 + (ClientSeasonState.isPrecipitating() ? " §b[PRECIP]§r" : ""));
 
-        // ── Wind — speed, direction, gust, turbulence + live particle angle ──
+        // ── Global wind ────────────────────────────────────────────────────────
         float windSpeed = ClientSeasonState.getWindSpeed();
         float windDx = ClientSeasonState.getWindDx();
         float windDz = ClientSeasonState.getWindDz();
@@ -58,9 +49,6 @@ public class ClientDebugHandler {
                 (windDx * RainDropParticle.WIND_INFLUENCE) * (windDx * RainDropParticle.WIND_INFLUENCE)
                         + (windDz * RainDropParticle.WIND_INFLUENCE) * (windDz * RainDropParticle.WIND_INFLUENCE));
 
-        // Fall speed now scales with intensity (BASE_FALL_SPEED -> MAX_FALL_SPEED),
-        // matching RainDropParticle's own per-particle calculation, so the
-        // debug angle reflects what's actually rendering right now.
         float intensity = ClientSeasonState.getIntensity();
         float currentFallSpeed = Mth.lerp(Mth.clamp(intensity, 0f, 1f),
                 RainDropParticle.BASE_FALL_SPEED, RainDropParticle.MAX_FALL_SPEED);
@@ -74,7 +62,12 @@ public class ClientDebugHandler {
                 : ClientSeasonState.isWindy() ? " §e[WINDY]§r" : "")
                 + " | Particle angle: " + String.format("%.1f°", particleAngleDeg));
 
-        // Dynamic temperature
+        // ── Felt (local, obstruction-adjusted) wind ──────────────────────────
+        left.add("§6[GH Felt Wind]§r "
+                + ClientSeasonState.getFeltWindDirection()
+                + " | Speed: " + String.format("%.2f", ClientSeasonState.getFeltWindSpeed()));
+
+        // ── Regional temperature ─────────────────────────────────────────────
         float biomeTemp = mc.level.getBiome(mc.player.blockPosition())
                 .value().getBaseTemperature();
         float finalTemp = SeasonTemperature.calculateClient(
@@ -90,7 +83,12 @@ public class ClientDebugHandler {
                 + " | Biome base: " + String.format("%.2f", biomeTemp)
                 + " | Final: " + String.format("%.2f", finalTemp));
 
-        // Biome weather category
+        // ── Feels-like (local, chunk-scan-adjusted) temperature ──────────────
+        float feelsLike = ClientSeasonState.getFeelsLikeTemp();
+        left.add("§6[GH Feels Like]§r "
+                + SeasonTemperature.getLabel(feelsLike)
+                + " §7(" + SeasonTemperature.toCelsius(feelsLike) + "°C)");
+
         left.add("§6[GH Biome]§r "
                 + ClientWeatherHandler.getCurrentCategory()
                 + (ClientWeatherHandler.isPrecipitationVisible() ? " §b[PRECIP]§r" : ""));

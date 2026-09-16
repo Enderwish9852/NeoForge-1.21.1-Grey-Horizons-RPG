@@ -9,14 +9,9 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
 public class ModMessages {
 
-    /**
-     * Registers the networking channel and payloads.
-     */
     public static void register(final RegisterPayloadHandlersEvent event) {
         final PayloadRegistrar registrar = event.registrar(AtmosphericOverhaulSubpack.MOD_ID)
                 .versioned("1.0");
-
-
 
         // Season/Weather Sync (Server -> Client) - REQUIRED for Weather/Seasons
         registrar.playToClient(
@@ -27,9 +22,17 @@ public class ModMessages {
 
         // Wind Sync (Server -> Client) - REQUIRED for wind-driven particles
         registrar.playToClient(
-                net.enderwish.Atmospheric_Overhaul_Subpack.network.WindSyncPacket.TYPE,
-                net.enderwish.Atmospheric_Overhaul_Subpack.network.WindSyncPacket.CODEC,
-                net.enderwish.Atmospheric_Overhaul_Subpack.network.WindSyncPacket::handle
+                WindSyncPacket.TYPE,
+                WindSyncPacket.CODEC,
+                WindSyncPacket::handle
+        );
+
+        // Local Player Environment Sync (Server -> specific Client) -
+        // felt wind + feels-like temperature, per-player.
+        registrar.playToClient(
+                LocalPlayerEnvironmentSyncPacket.TYPE,
+                LocalPlayerEnvironmentSyncPacket.CODEC,
+                LocalPlayerEnvironmentSyncPacket::handle
         );
     }
 
