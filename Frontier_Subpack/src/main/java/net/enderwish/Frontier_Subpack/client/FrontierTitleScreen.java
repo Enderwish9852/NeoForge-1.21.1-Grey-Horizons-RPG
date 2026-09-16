@@ -3,6 +3,7 @@ package net.enderwish.Frontier_Subpack.client;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.worldselection.WorldOpenFlows;
 import net.minecraft.network.chat.Component;
@@ -12,35 +13,33 @@ import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.LevelSettings;
 import net.minecraft.world.level.WorldDataConfiguration;
 import net.minecraft.world.level.levelgen.WorldOptions;
+import net.enderwish.Frontier_Subpack.FrontierConfig;
 import net.minecraft.world.level.levelgen.presets.WorldPresets;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Comparator;
 import java.util.Random;
 
 /**
  * FrontierTitleScreen
  *
- * Single-world design: exactly one "Adventure" save exists at a time.
- * Primary button dynamically reads "Start Adventure" (no save exists) or
- * "Continue Adventure" (one does), using the real WorldOpenFlows API
- * (createFreshLevel / openWorld) to bypass vanilla's CreateWorldScreen/
- * SelectWorldScreen entirely.
+ * NEW this round: "Restart Adventure" button (shown only when a save
+ * already exists) — confirms via vanilla's own ConfirmScreen, then
+ * recursively deletes the save folder and returns to a fresh title
+ * screen showing "Start Adventure" again.
  *
- * SCOPING NOTE: TerraForma's custom chunk generator doesn't exist yet,
- * so "Start Adventure" currently generates a VANILLA-terrain world under
- * the fixed adventure name. Swap the dimensionGetter lambda below to
- * TerraForma's real generator once it exists — nothing else in this
- * flow needs to change.
+ * World creation now reads FrontierConfig.HARDCORE_MODE. ASSUMPTION
+ * (flagged, not verified against any design doc): "Dev Mode" =
+ * Creative gamemode + commands/cheats allowed + Normal difficulty +
+ * non-hardcore. "Hardcore Mode" = Survival + hardcore=true + Hard
+ * difficulty + no commands (matches vanilla's own hardcore behavior).
  *
- * VERIFY IF COMPILE FAILS — these surrounding classes were NOT directly
- * confirmed against your decompiled sources (only WorldOpenFlows itself
- * was pasted and verified):
- *   - Minecraft.getLevelSource() — exact accessor name for LevelStorageSource
- *   - LevelSettings(...) constructor — exact parameter order/types
- *   - WorldOptions(...) constructor — exact parameter order/types
- *   - WorldDataConfiguration.DEFAULT — exact field name
- *   - WorldPresets.createNormalWorldDimensions(RegistryAccess) — exact
- *     method name/signature for getting vanilla's default dimension setup
+ * KNOWN UNRESOLVED ISSUE: the blurry/vignetted background in your
+ * screenshot — see question at the end of this response, I don't want
+ * to guess at this one.
  */
 public class FrontierTitleScreen extends Screen {
 
@@ -62,7 +61,7 @@ public class FrontierTitleScreen extends Screen {
     @Override
     protected void init() {
         int centerX = this.width / 2;
-        int startY = this.height / 2 - 20;
+        int startY = this.height / 2 - (adventureExists ? 32 : 20);
 
         String primaryLabel = adventureExists ? "Continue Adventure" : "Start Adventure";
 
@@ -71,6 +70,16 @@ public class FrontierTitleScreen extends Screen {
                 button -> onStartOrContinueAdventure()
         ).bounds(centerX - 100, startY, 200, 20).build());
 
+        int nextY = startY + 24;
+
+        if (adventureExists) {
+            this.addRenderableWidget(Button.builder(
+                    Component.literal("Restart Adventure"),
+                    button -> onRestartAdventure()
+            ).bounds(centerX - 100, nextY, 200, 20).build());
+            nextY += 24;
+        }
+
         this.addRenderableWidget(Button.builder(
                 Component.literal("Settings"),
                 button -> {
@@ -78,7 +87,8 @@ public class FrontierTitleScreen extends Screen {
                         this.minecraft.setScreen(new FrontierSettingsScreen(this));
                     }
                 }
-        ).bounds(centerX - 100, startY + 24, 200, 20).build());
+        ).bounds(centerX - 100, nextY, 200, 20).build());
+        nextY += 24;
 
         this.addRenderableWidget(Button.builder(
                 Component.literal("Quit"),
@@ -87,7 +97,7 @@ public class FrontierTitleScreen extends Screen {
                         this.minecraft.stop();
                     }
                 }
-        ).bounds(centerX - 100, startY + 48, 200, 20).build());
+        ).bounds(centerX - 100, nextY, 200, 20).build());
     }
 
     private void onStartOrContinueAdventure() {
@@ -101,15 +111,18 @@ public class FrontierTitleScreen extends Screen {
             return;
         }
 
-        // DEFAULT: Survival, NOT hardcore. See question at end of response —
-        // this is a real gameplay decision, not a technical detail, and I
-        // don't want to silently bake in permadeath without your say-so.
+        boolean hardcore = FrontierConfig.HARDCORE_MODE.get();
+
+        GameType gameType = hardcore ? GameType.SURVIVAL : GameType.CREATIVE;
+        Difficulty difficulty = hardcore ? Difficulty.HARD : Difficulty.NORMAL;
+        boolean allowCommands = !hardcore;
+
         LevelSettings levelSettings = new LevelSettings(
                 ADVENTURE_WORLD_NAME,
-                GameType.SURVIVAL,
-                false,
-                Difficulty.NORMAL,
-                false,
+                gameType,
+                hardcore,
+                difficulty,
+                allowCommands,
                 new GameRules(),
                 WorldDataConfiguration.DEFAULT
         );
@@ -129,11 +142,47 @@ public class FrontierTitleScreen extends Screen {
         );
     }
 
+    private void onRestartAdventure() {
+        Minecraft mc = this.minecraft;
+        if (mc == null) return;
+
+        mc.setScreen(new ConfirmScreen(
+                confirmed -> {
+                    if (confirmed) {
+                        deleteAdventureWorld();
+                        mc.setScreen(new FrontierTitleScreen());
+                    } else {
+                        mc.setScreen(this);
+                    }
+                },
+                Component.literal("Restart Adventure?"),
+                Component.literal("This will permanently delete your current Adventure world. This cannot be undone.")
+        ));
+    }
+
+    private void deleteAdventureWorld() {
+        File savesDir = new File(Minecraft.getInstance().gameDirectory, "saves");
+        File worldDir = new File(savesDir, ADVENTURE_WORLD_NAME);
+        deleteRecursively(worldDir.toPath());
+    }
+
+    private static void deleteRecursively(Path path) {
+        if (!Files.exists(path)) return;
+        try (var stream = Files.walk(path)) {
+            stream.sorted(Comparator.reverseOrder())
+                    .forEach(p -> {
+                        try {
+                            Files.delete(p);
+                        } catch (IOException ignored) {}
+                    });
+        } catch (IOException ignored) {}
+    }
+
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         graphics.fill(0, 0, this.width, this.height, 0xFF1C1A17);
         graphics.drawCenteredString(this.font, "GREY HORIZONS",
-                this.width / 2, this.height / 2 - 60, 0xFFC9B89A);
+                this.width / 2, this.height / 2 - 90, 0xFFC9B89A);
         super.render(graphics, mouseX, mouseY, partialTick);
     }
 

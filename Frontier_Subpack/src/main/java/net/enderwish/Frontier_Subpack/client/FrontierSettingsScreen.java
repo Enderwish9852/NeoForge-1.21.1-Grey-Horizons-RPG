@@ -10,16 +10,14 @@ import net.minecraft.network.chat.Component;
 /**
  * FrontierSettingsScreen
  *
- * Deliberately minimal for now — only the Adventure Mode toggle exists
- * as a real setting. Video/Sound/Controls routes through to vanilla's
- * actual OptionsScreen rather than us reimplementing those sliders.
- *
- * VERIFY IF COMPILE FAILS — FrontierConfig.ADVENTURE_MODE_ENABLED.set(...)
- * assumes NeoForge's ModConfigSpec.ConfigValue supports runtime mutation
- * this way from inside a screen. This is a different API surface than
- * just DEFINING a config value (which is all we'd done before this),
- * and I haven't verified the exact runtime-set/persist method against
- * your actual NeoForge sources.
+ * ASSUMPTION worth flagging: clicking either Hardcore or Dev Mode's
+ * button switches to that mode directly (one click), turning the other
+ * off automatically and greying its button out. I went with this
+ * "radio button"-style single-click switch since it's the far more
+ * common pattern for exclusive toggle pairs in game settings menus —
+ * if you actually wanted a two-step "must turn the active one off
+ * before the other becomes clickable" flow instead, tell me and it's
+ * a small change.
  */
 public class FrontierSettingsScreen extends Screen {
 
@@ -33,19 +31,46 @@ public class FrontierSettingsScreen extends Screen {
     @Override
     protected void init() {
         int centerX = this.width / 2;
-        int startY = this.height / 2 - 20;
+        int startY = this.height / 2 - 60;
 
         boolean adventureEnabled = FrontierConfig.ADVENTURE_MODE_ENABLED.get();
+        boolean hardcore = FrontierConfig.HARDCORE_MODE.get();
+        boolean devMode = FrontierConfig.DEV_MODE.get();
 
         this.addRenderableWidget(Button.builder(
                 Component.literal("Adventure Mode: " + (adventureEnabled ? "ON" : "OFF")),
                 button -> {
                     FrontierConfig.ADVENTURE_MODE_ENABLED.set(!adventureEnabled);
-                    if (this.minecraft != null) {
-                        this.minecraft.setScreen(new FrontierSettingsScreen(this.parent));
-                    }
+                    FrontierConfig.ADVENTURE_MODE_ENABLED.save();
+                    refresh();
                 }
         ).bounds(centerX - 100, startY, 200, 20).build());
+
+        Button hardcoreButton = Button.builder(
+                Component.literal("Hardcore Mode: " + (hardcore ? "ON" : "OFF")),
+                button -> {
+                    FrontierConfig.HARDCORE_MODE.set(true);
+                    FrontierConfig.HARDCORE_MODE.save();
+                    FrontierConfig.DEV_MODE.set(false);
+                    FrontierConfig.DEV_MODE.save();
+                    refresh();
+                }
+        ).bounds(centerX - 100, startY + 24, 200, 20).build();
+        hardcoreButton.active = !hardcore;
+        this.addRenderableWidget(hardcoreButton);
+
+        Button devModeButton = Button.builder(
+                Component.literal("Dev Mode: " + (devMode ? "ON" : "OFF")),
+                button -> {
+                    FrontierConfig.DEV_MODE.set(true);
+                    FrontierConfig.DEV_MODE.save();
+                    FrontierConfig.HARDCORE_MODE.set(false);
+                    FrontierConfig.HARDCORE_MODE.save();
+                    refresh();
+                }
+        ).bounds(centerX - 100, startY + 48, 200, 20).build();
+        devModeButton.active = !devMode;
+        this.addRenderableWidget(devModeButton);
 
         this.addRenderableWidget(Button.builder(
                 Component.literal("Video / Sound / Controls"),
@@ -54,7 +79,7 @@ public class FrontierSettingsScreen extends Screen {
                         this.minecraft.setScreen(new OptionsScreen(this, this.minecraft.options));
                     }
                 }
-        ).bounds(centerX - 100, startY + 24, 200, 20).build());
+        ).bounds(centerX - 100, startY + 80, 200, 20).build());
 
         this.addRenderableWidget(Button.builder(
                 Component.literal("Back"),
@@ -63,14 +88,20 @@ public class FrontierSettingsScreen extends Screen {
                         this.minecraft.setScreen(parent);
                     }
                 }
-        ).bounds(centerX - 100, startY + 48, 200, 20).build());
+        ).bounds(centerX - 100, startY + 104, 200, 20).build());
+    }
+
+    private void refresh() {
+        if (this.minecraft != null) {
+            this.minecraft.setScreen(new FrontierSettingsScreen(this.parent));
+        }
     }
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         graphics.fill(0, 0, this.width, this.height, 0xFF1C1A17);
         graphics.drawCenteredString(this.font, "SETTINGS",
-                this.width / 2, this.height / 2 - 60, 0xFFC9B89A);
+                this.width / 2, this.height / 2 - 90, 0xFFC9B89A);
         super.render(graphics, mouseX, mouseY, partialTick);
     }
 

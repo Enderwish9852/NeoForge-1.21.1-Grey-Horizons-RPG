@@ -98,9 +98,7 @@ public class GHNoiseRouter {
         // Continental sets the base land height above/below sea
         // Erosion flattens mountains (high erosion = flatter terrain)
         // Peaks and valleys add mountain ranges on top
-        double baseHeight = SEA_LEVEL
-                + cont * (1.0 - eros)
-                + pv * (1.0 - eros * 0.7);
+        double baseHeight = SEA_LEVEL + cont * (1.0 - eros) + pv * (1.0 - eros);
 
         double finalHeight = baseHeight + det;
 

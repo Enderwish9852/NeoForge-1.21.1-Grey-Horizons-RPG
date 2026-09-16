@@ -1,7 +1,6 @@
 package net.enderwish.Atmospheric_Overhaul_Subpack.mixin;
 
 import net.enderwish.Atmospheric_Overhaul_Subpack.client.ClientSeasonState;
-import net.enderwish.Atmospheric_Overhaul_Subpack.client.ClientWeatherHandler;
 import net.minecraft.client.multiplayer.ClientLevel;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -11,15 +10,15 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 /**
  * WeatherParticleMixin
  *
- * Intercepts the method that spawns rain/snow particles each tick.
- * In hot biomes (desert, savanna, badlands) — cancels particle spawning.
+ * Cancels vanilla's ambient weather particle spawning (rain splashes,
+ * snow etc.) whenever OUR system is precipitating — we fully own that
+ * visual now via RainDropParticle + RainSplashParticle + the spawner.
  *
- * This approach is safe because:
- * - It never touches setRainLevel or vanilla weather state
- * - Clouds, darkness, thunder sound, mob spawning all work normally
- * - Rain fades naturally when entering a desert (existing particles finish)
- * - Rain resumes naturally when leaving the desert
- * - No ghost rain / broken state bugs
+ * BUGFIX: previously only cancelled in HOT biomes (to stop desert rain
+ * visuals specifically) — vanilla's own rain splashes kept spawning in
+ * every other biome the whole time. Now cancels unconditionally whenever
+ * precipitating, since hot-biome suppression is already handled
+ * separately by ClientWeatherHandler.isPrecipitationVisible().
  */
 @Mixin(ClientLevel.class)
 public class WeatherParticleMixin {
@@ -30,11 +29,8 @@ public class WeatherParticleMixin {
             cancellable = true
     )
     private void onAnimateTick(int posX, int posY, int posZ, CallbackInfo ci) {
-        if (ClientWeatherHandler.getCurrentCategory()
-                == ClientWeatherHandler.BiomeCategory.HOT) {
-            if (ClientSeasonState.isPrecipitating()) {
-                ci.cancel();
-            }
+        if (ClientSeasonState.isPrecipitating()) {
+            ci.cancel();
         }
     }
 }
