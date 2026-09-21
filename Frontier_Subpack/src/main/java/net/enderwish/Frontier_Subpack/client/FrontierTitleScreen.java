@@ -1,5 +1,7 @@
 package net.enderwish.Frontier_Subpack.client;
 
+import net.enderwish.Frontier_Subpack.FrontierConfig;
+import net.enderwish.TerraForma_Subpack.api.WorldAPI;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -13,8 +15,6 @@ import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.LevelSettings;
 import net.minecraft.world.level.WorldDataConfiguration;
 import net.minecraft.world.level.levelgen.WorldOptions;
-import net.enderwish.Frontier_Subpack.FrontierConfig;
-import net.minecraft.world.level.levelgen.presets.WorldPresets;
 
 import java.io.File;
 import java.io.IOException;
@@ -26,20 +26,11 @@ import java.util.Random;
 /**
  * FrontierTitleScreen
  *
- * NEW this round: "Restart Adventure" button (shown only when a save
- * already exists) — confirms via vanilla's own ConfirmScreen, then
- * recursively deletes the save folder and returns to a fresh title
- * screen showing "Start Adventure" again.
- *
- * World creation now reads FrontierConfig.HARDCORE_MODE. ASSUMPTION
- * (flagged, not verified against any design doc): "Dev Mode" =
- * Creative gamemode + commands/cheats allowed + Normal difficulty +
- * non-hardcore. "Hardcore Mode" = Survival + hardcore=true + Hard
- * difficulty + no commands (matches vanilla's own hardcore behavior).
- *
- * KNOWN UNRESOLVED ISSUE: the blurry/vignetted background in your
- * screenshot — see question at the end of this response, I don't want
- * to guess at this one.
+ * World creation now goes through WorldAPI.createWorldDimensions(...)
+ * instead of importing GHChunkGenerator/GHBiomeSource directly —
+ * matches the project's own established rule that every cross-subpack
+ * import goes through the corresponding API facade, never the
+ * internals directly.
  */
 public class FrontierTitleScreen extends Screen {
 
@@ -137,7 +128,7 @@ public class FrontierTitleScreen extends Screen {
                 ADVENTURE_WORLD_NAME,
                 levelSettings,
                 worldOptions,
-                registryAccess -> WorldPresets.createNormalWorldDimensions(registryAccess),
+                registryAccess -> WorldAPI.createWorldDimensions(registryAccess),
                 this
         );
     }
@@ -179,11 +170,15 @@ public class FrontierTitleScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+    public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         graphics.fill(0, 0, this.width, this.height, 0xFF1C1A17);
+    }
+
+    @Override
+    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        super.render(graphics, mouseX, mouseY, partialTick);
         graphics.drawCenteredString(this.font, "GREY HORIZONS",
                 this.width / 2, this.height / 2 - 90, 0xFFC9B89A);
-        super.render(graphics, mouseX, mouseY, partialTick);
     }
 
     @Override

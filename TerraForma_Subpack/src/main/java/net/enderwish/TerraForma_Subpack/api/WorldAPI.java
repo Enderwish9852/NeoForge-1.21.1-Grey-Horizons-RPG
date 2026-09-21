@@ -1,9 +1,15 @@
 package net.enderwish.TerraForma_Subpack.api;
 
+import net.enderwish.TerraForma_Subpack.core.biome.GHBiomeSource;
 import net.enderwish.TerraForma_Subpack.core.climate.ClimateMap;
 import net.enderwish.TerraForma_Subpack.core.climate.ClimateZone;
+import net.enderwish.TerraForma_Subpack.core.worldgen.GHChunkGenerator;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.levelgen.WorldDimensions;
+import net.minecraft.world.level.levelgen.presets.WorldPresets;
+
 
 /**
  * WorldAPI
@@ -19,6 +25,9 @@ import net.minecraft.server.level.ServerLevel;
  *
  *   ClimateZone zone = WorldAPI.getClimateZone(level, pos);
  *   if (WorldAPI.isTropical(level, pos)) { ... }
+ *
+ * Usage example (from Frontier subpack, world creation):
+ *   registryAccess -> WorldAPI.createWorldDimensions(registryAccess)
  */
 public final class WorldAPI {
 
@@ -98,5 +107,24 @@ public final class WorldAPI {
      */
     public static float getWastelandIntensity(ServerLevel level, BlockPos pos) {
         return ClimateMap.INSTANCE.getWastelandNoise(pos.getX(), pos.getZ());
+    }
+
+    // ── World generation ──────────────────────────────────────────────────────
+
+    /**
+     * Builds a WorldDimensions using GHChunkGenerator/GHBiomeSource for
+     * the overworld, leaving vanilla's nether/end entries untouched.
+     * This is the ONLY thing another subpack should call to get a world
+     * using TerraForma's custom generation — GHChunkGenerator and
+     * GHBiomeSource are never imported outside this file.
+     *
+     * Returns a real vanilla WorldDimensions — fine to expose directly,
+     * it's not a TerraForma-internal type.
+     */
+    public static WorldDimensions createWorldDimensions(RegistryAccess registryAccess) {
+        GHBiomeSource biomeSource = GHBiomeSource.create(registryAccess);
+        GHChunkGenerator chunkGenerator = new GHChunkGenerator(biomeSource);
+        return WorldPresets.createNormalWorldDimensions(registryAccess)
+                .replaceOverworldGenerator(registryAccess, chunkGenerator);
     }
 }

@@ -53,7 +53,7 @@ configurations {
 }
 
 dependencies {
-
+    implementation project(":TerraForma_Subpack")
 }
 
 // Logic for replacing variables in mods.toml

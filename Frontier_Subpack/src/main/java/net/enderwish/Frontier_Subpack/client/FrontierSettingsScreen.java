@@ -4,21 +4,10 @@ import net.enderwish.Frontier_Subpack.FrontierConfig;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.gui.screens.options.OptionsScreen;
 import net.minecraft.network.chat.Component;
 
-/**
- * FrontierSettingsScreen
- *
- * ASSUMPTION worth flagging: clicking either Hardcore or Dev Mode's
- * button switches to that mode directly (one click), turning the other
- * off automatically and greying its button out. I went with this
- * "radio button"-style single-click switch since it's the far more
- * common pattern for exclusive toggle pairs in game settings menus —
- * if you actually wanted a two-step "must turn the active one off
- * before the other becomes clickable" flow instead, tell me and it's
- * a small change.
- */
 public class FrontierSettingsScreen extends Screen {
 
     private final Screen parent;
@@ -40,9 +29,20 @@ public class FrontierSettingsScreen extends Screen {
         this.addRenderableWidget(Button.builder(
                 Component.literal("Adventure Mode: " + (adventureEnabled ? "ON" : "OFF")),
                 button -> {
-                    FrontierConfig.ADVENTURE_MODE_ENABLED.set(!adventureEnabled);
+                    boolean newValue = !adventureEnabled;
+                    FrontierConfig.ADVENTURE_MODE_ENABLED.set(newValue);
                     FrontierConfig.ADVENTURE_MODE_ENABLED.save();
-                    refresh();
+
+                    // Instant switch — the point of this toggle is flipping
+                    // between our menu and vanilla's right now, not "next
+                    // time a title screen happens to open."
+                    if (this.minecraft != null) {
+                        if (newValue) {
+                            this.minecraft.setScreen(new FrontierTitleScreen());
+                        } else {
+                            this.minecraft.setScreen(new TitleScreen());
+                        }
+                    }
                 }
         ).bounds(centerX - 100, startY, 200, 20).build());
 
@@ -98,11 +98,15 @@ public class FrontierSettingsScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+    public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         graphics.fill(0, 0, this.width, this.height, 0xFF1C1A17);
+    }
+
+    @Override
+    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        super.render(graphics, mouseX, mouseY, partialTick);
         graphics.drawCenteredString(this.font, "SETTINGS",
                 this.width / 2, this.height / 2 - 90, 0xFFC9B89A);
-        super.render(graphics, mouseX, mouseY, partialTick);
     }
 
     @Override

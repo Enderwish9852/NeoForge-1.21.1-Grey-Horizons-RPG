@@ -1,0 +1,4 @@
+{
+  "ambient.rain_loop": { "sounds": ["gh_atmospheric:ambient/rain_loop"] },
+  "ambient.wind_howl": { "sounds": ["gh_atmospheric:ambient/wind_howl"] }
+}
