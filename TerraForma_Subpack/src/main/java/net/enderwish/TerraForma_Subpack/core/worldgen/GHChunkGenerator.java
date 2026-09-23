@@ -2,10 +2,13 @@ package net.enderwish.TerraForma_Subpack.core.worldgen;
 
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.enderwish.TerraForma_Subpack.core.biome.GHBiomeSource;
+import net.enderwish.TerraForma_Subpack.core.climate.ClimateMap;
+import net.enderwish.TerraForma_Subpack.core.worldgen.noise.BiomeTerrainProfile;
 import net.enderwish.TerraForma_Subpack.core.worldgen.noise.GHNoiseRouter;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.server.level.WorldGenRegion;
-import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.LevelHeightAccessor;
 import net.minecraft.world.level.NoiseColumn;
@@ -16,10 +19,12 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ChunkGenerator;
+import net.minecraft.world.level.chunk.ChunkGeneratorStructureState;
 import net.minecraft.world.level.levelgen.GenerationStep;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.RandomState;
 import net.minecraft.world.level.levelgen.blending.Blender;
+import net.minecraft.world.level.levelgen.structure.StructureSet;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -27,32 +32,23 @@ import java.util.concurrent.CompletableFuture;
 /**
  * GHChunkGenerator
  *
- * First real working version — turns GHNoiseRouter's terrain-shape
- * queries into actual placed blocks. Deliberately simple right now:
- * solid stone below the surface, 4 blocks of dirt near the top with
- * grass on the very top block, water filling anything below sea
- * level, and GHNoiseRouter's own cave noise carving out air pockets
- * as it goes (per your confirmation to use the custom cave system
- * instead of vanilla's carver pipeline — that's why applyCarvers()
- * below is a deliberate no-op).
+ * UPDATED this round:
+ *   - noiseRouter now references the seeded GHNoiseRouter.INSTANCE
+ *     singleton instead of an unseeded instance of its own -- see
+ *     GHNoiseRouter's own doc comment for the bug this fixes.
+ *   - createState(...) now seeds GHNoiseRouter.INSTANCE alongside the
+ *     existing ClimateMap.INSTANCE.setSeed(seed) call.
+ *   - fillFromNoise / getBaseColumn / getBaseHeight now look up each
+ *     column's BiomeTerrainProfile (via profileAt) before asking for
+ *     its height, so terrain shape actually varies by biome.
  *
- * NOT YET DONE (next passes, once this compiles and generates land):
- *   - Biome-aware surface blocks (arctic should get snow/podzol etc.
- *     — everything is dirt/grass/stone regardless of biome for now)
- *   - Ore vein placement
- *   - River carving (GHNoiseRouter.isRiver() exists but isn't
- *     consumed here yet — flagged in the review as needing continuous
- *     path-following logic, not just a per-point check)
+ * profileAt bootstraps with a NEUTRAL-profile height estimate first,
+ * since biome selection (Glacial Peaks specifically) depends on
+ * altitude, and altitude depends on the very profile being looked up --
+ * one extra cheap height sample breaks that circularity.
  *
- * VERIFY IF COMPILE FAILS:
- *   - ChunkAccess.setBlockState(BlockPos, BlockState, boolean) — this
- *     is extremely standard, stable vanilla API used in essentially
- *     every chunk generator ever written, but I don't have
- *     ChunkAccess's actual source confirmed this round the way I do
- *     for ChunkGenerator/BiomeSource.
- *   - NoiseColumn's constructor — I'm using
- *     `new NoiseColumn(minBuildHeight, BlockState[])` based on general
- *     recollection, not a confirmed signature.
+ * STILL NOT DONE: biome-aware surface blocks, ore veins, river
+ * carving, terrain-profile blending across biome borders.
  */
 public class GHChunkGenerator extends ChunkGenerator {
 
@@ -62,15 +58,10 @@ public class GHChunkGenerator extends ChunkGenerator {
             ).apply(instance, GHChunkGenerator::new)
     );
 
-    private final GHNoiseRouter noiseRouter;
+    private final GHNoiseRouter noiseRouter = GHNoiseRouter.INSTANCE;
 
     public GHChunkGenerator(BiomeSource biomeSource) {
         super(biomeSource);
-        // Placeholder seed — GHNoiseRouter's noise layers need a real
-        // seed threaded through eventually (same concern as
-        // ClimateMap.setSeed() needing the real world seed, flagged
-        // in last round's review). Not wired yet.
-        this.noiseRouter = new GHNoiseRouter(RandomSource.create());
     }
 
     @Override
@@ -79,24 +70,34 @@ public class GHChunkGenerator extends ChunkGenerator {
     }
 
     @Override
+    public ChunkGeneratorStructureState createState(HolderLookup<StructureSet> structureSetLookup,
+                                                    RandomState randomState, long seed) {
+        ClimateMap.INSTANCE.setSeed(seed);
+        GHNoiseRouter.INSTANCE.setSeed(seed);
+        return super.createState(structureSetLookup, randomState, seed);
+    }
+
+    private BiomeTerrainProfile profileAt(int x, int z) {
+        int roughHeight = noiseRouter.getSurfaceHeight(x, z, BiomeTerrainProfile.NEUTRAL);
+        return BiomeTerrainRegistry.get(GHBiomeSource.getBiomeKeyAt(x, roughHeight, z));
+    }
+
+    @Override
     public void applyCarvers(WorldGenRegion level, long seed, RandomState randomState,
                              BiomeManager biomeManager, StructureManager structureManager,
                              ChunkAccess chunk, GenerationStep.Carving step) {
-        // No-op — GHNoiseRouter's own cave noise carves directly inside
-        // fillFromNoise below instead of using vanilla's carver pipeline.
+        // No-op -- GHNoiseRouter's own cave noise carves inside fillFromNoise.
     }
 
     @Override
     public void buildSurface(WorldGenRegion level, StructureManager structureManager,
                              RandomState randomState, ChunkAccess chunk) {
-        // Surface blocks are placed directly in fillFromNoise for now —
-        // revisit once biome-aware surface blocks are added.
+        // Surface blocks placed directly in fillFromNoise for now.
     }
 
     @Override
     public void spawnOriginalMobs(WorldGenRegion level) {
-        // TerraFormaSubpack already globally cancels vanilla hostile
-        // spawns; nothing to do here yet.
+        // TerraFormaSubpack already globally cancels vanilla hostile spawns.
     }
 
     @Override
@@ -119,7 +120,8 @@ public class GHChunkGenerator extends ChunkGenerator {
 
         for (int x = minX; x < minX + 16; x++) {
             for (int z = minZ; z < minZ + 16; z++) {
-                int surfaceY = noiseRouter.getSurfaceHeight(x, z);
+                BiomeTerrainProfile profile = profileAt(x, z);
+                int surfaceY = noiseRouter.getSurfaceHeight(x, z, profile);
 
                 for (int y = GHNoiseRouter.MIN_HEIGHT; y <= Math.max(surfaceY, GHNoiseRouter.SEA_LEVEL); y++) {
                     BlockPos pos = new BlockPos(x, y, z);
@@ -132,7 +134,7 @@ public class GHChunkGenerator extends ChunkGenerator {
                     }
 
                     if (noiseRouter.isCave(x, y, z)) {
-                        continue; // leave as air — carves out the cave
+                        continue;
                     }
 
                     if (y == surfaceY) {
@@ -161,12 +163,13 @@ public class GHChunkGenerator extends ChunkGenerator {
 
     @Override
     public int getBaseHeight(int x, int z, Heightmap.Types type, LevelHeightAccessor level, RandomState randomState) {
-        return noiseRouter.getSurfaceHeight(x, z) + 1;
+        return noiseRouter.getSurfaceHeight(x, z, profileAt(x, z)) + 1;
     }
 
     @Override
     public NoiseColumn getBaseColumn(int x, int z, LevelHeightAccessor level, RandomState randomState) {
-        int surfaceY = noiseRouter.getSurfaceHeight(x, z);
+        BiomeTerrainProfile profile = profileAt(x, z);
+        int surfaceY = noiseRouter.getSurfaceHeight(x, z, profile);
         BlockState[] states = new BlockState[level.getHeight()];
 
         for (int i = 0; i < states.length; i++) {
@@ -189,6 +192,7 @@ public class GHChunkGenerator extends ChunkGenerator {
 
     @Override
     public void addDebugScreenInfo(List<String> info, RandomState randomState, BlockPos pos) {
-        info.add("GH TerraForma — surface: " + noiseRouter.getSurfaceHeight(pos.getX(), pos.getZ()));
+        info.add("GH TerraForma -- surface: "
+                + noiseRouter.getSurfaceHeight(pos.getX(), pos.getZ(), profileAt(pos.getX(), pos.getZ())));
     }
 }

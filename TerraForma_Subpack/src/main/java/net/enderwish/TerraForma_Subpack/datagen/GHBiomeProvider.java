@@ -26,19 +26,17 @@ import com.google.gson.JsonObject;
 /**
  * GHBiomeProvider
  *
- * Generates all 15 biome JSON files for TerraForma.
- * Output: data/gh_terraforma/worldgen/biome/<name>.json
+ * UPDATED this round:
+ *   - 3 new sea biomes (FROZEN_SEA, TEMPERATE_SEA, TROPICAL_REEF_WATERS)
+ *     added, matching the new GHBiomes keys.
+ *   - Lava lakes were previously hardcoded onto EVERY biome (including
+ *     Wetlands, Tropical Rainforest) -- buildBiomeJson now only adds
+ *     them for Volcanic Lowlands and Cracked Badlands.
  *
- * Each biome JSON defines:
- *   - temperature + downfall
- *   - has_precipitation
- *   - effects (fog, water, sky, grass, foliage colours)
- *   - carvers (vanilla defaults)
- *   - features (vegetation, ores, springs etc.)
- *   - spawners (mob spawn rules)
- *
- * To modify a biome: change values here and run runData.
- * Or override individual JSONs with a datapack — no recompile needed.
+ * Everything else (feature/spawner tag lists not actually being
+ * consumed into real placed-feature resource locations yet) is
+ * unchanged and still a known gap from a few rounds back -- not
+ * touched this round, still needs its own careful pass.
  */
 public class GHBiomeProvider implements DataProvider {
 
@@ -54,8 +52,6 @@ public class GHBiomeProvider implements DataProvider {
         this.lookupProvider = lookupProvider;
     }
 
-    // ── Biome definition record ───────────────────────────────────────────────
-
     record BiomeDef(
             ResourceKey<Biome> key,
             float temperature,
@@ -67,11 +63,9 @@ public class GHBiomeProvider implements DataProvider {
             int skyColor,
             Optional<Integer> grassColor,
             Optional<Integer> foliageColor,
-            List<String> features,   // vanilla feature tags to include
-            List<String> spawners    // vanilla spawn group tags
+            List<String> features,
+            List<String> spawners
     ) {}
-
-    // ── Register all biomes ───────────────────────────────────────────────────
 
     private List<BiomeDef> buildBiomes() {
         List<BiomeDef> biomes = new ArrayList<>();
@@ -248,10 +242,36 @@ public class GHBiomeProvider implements DataProvider {
                 List.of("common_spawns")
         ));
 
+        // ── Seas (NEW) ────────────────────────────────────────────────────────
+        biomes.add(new BiomeDef(
+                GHBiomes.FROZEN_SEA,
+                -0.8f, 0.5f, true,
+                0xC0D8FF, 0x2A4A9A, 0x032040, 0x8AB4FF,
+                Optional.empty(), Optional.empty(),
+                List.of("default_underground", "default_springs"),
+                List.of("water_spawns")
+        ));
+
+        biomes.add(new BiomeDef(
+                GHBiomes.TEMPERATE_SEA,
+                0.5f, 0.5f, true,
+                0xC0D8FF, 0x3F76E4, 0x050533, 0x78A7FF,
+                Optional.empty(), Optional.empty(),
+                List.of("default_underground", "default_springs"),
+                List.of("water_spawns")
+        ));
+
+        biomes.add(new BiomeDef(
+                GHBiomes.TROPICAL_REEF_WATERS,
+                1.2f, 0.8f, true,
+                0x9DE0D0, 0x1FA8A0, 0x0A4038, 0x77D8C8,
+                Optional.empty(), Optional.empty(),
+                List.of("default_underground", "default_springs", "reef_vegetation"),
+                List.of("water_spawns")
+        ));
+
         return biomes;
     }
-
-    // ── DataProvider ──────────────────────────────────────────────────────────
 
     @Override
     public CompletableFuture<?> run(CachedOutput cache) {
@@ -276,29 +296,22 @@ public class GHBiomeProvider implements DataProvider {
         return "GH TerraForma Biomes";
     }
 
-    // ── JSON builder ──────────────────────────────────────────────────────────
-
     private JsonObject buildBiomeJson(BiomeDef def) {
         JsonObject json = new JsonObject();
 
-        // ── Climate ───────────────────────────────────────────────────────────
         json.addProperty("has_precipitation", def.hasPrecipitation());
         json.addProperty("temperature",       def.temperature());
         json.addProperty("downfall",          def.downfall());
 
-        // ── Effects ───────────────────────────────────────────────────────────
         JsonObject effects = new JsonObject();
         effects.addProperty("fog_color",       def.fogColor());
         effects.addProperty("water_color",     def.waterColor());
         effects.addProperty("water_fog_color", def.waterFogColor());
         effects.addProperty("sky_color",       def.skyColor());
-        def.grassColor().ifPresent(c ->
-                effects.addProperty("grass_color", c));
-        def.foliageColor().ifPresent(c ->
-                effects.addProperty("foliage_color", c));
+        def.grassColor().ifPresent(c -> effects.addProperty("grass_color", c));
+        def.foliageColor().ifPresent(c -> effects.addProperty("foliage_color", c));
         json.add("effects", effects);
 
-        // ── Carvers ───────────────────────────────────────────────────────────
         JsonObject carvers = new JsonObject();
         JsonArray airCarvers = new JsonArray();
         airCarvers.add("minecraft:cave");
@@ -307,23 +320,23 @@ public class GHBiomeProvider implements DataProvider {
         json.add("carvers", carvers);
 
         // ── Features ──────────────────────────────────────────────────────────
-        // 11 feature steps (vanilla biome structure)
-        // We add ores and underground features at appropriate steps
+        // BUGFIX: lava lakes were previously on ALL 15 biomes; now only
+        // on Volcanic Lowlands and Cracked Badlands.
         JsonArray features = new JsonArray();
-        // Step 0 — raw generation (none custom)
-        features.add(new JsonArray());
-        // Step 1 — lakes
-        JsonArray lakes = new JsonArray();
-        lakes.add("minecraft:lake_lava_underground");
-        lakes.add("minecraft:lake_lava_surface");
-        features.add(lakes);
-        // Step 2-10 — default underground + surface vegetation
+        features.add(new JsonArray()); // step 0
+
+        JsonArray step1 = new JsonArray();
+        if (def.key().equals(GHBiomes.VOLCANIC_LOWLANDS) || def.key().equals(GHBiomes.CRACKED_BADLANDS)) {
+            step1.add("minecraft:lake_lava_underground");
+            step1.add("minecraft:lake_lava_surface");
+        }
+        features.add(step1);
+
         for (int i = 2; i <= 10; i++) features.add(new JsonArray());
         json.add("features", features);
 
-// ── Spawners ──────────────────────────────────────────────────────────────
         JsonObject spawners = new JsonObject();
-        spawners.add("monster",   new JsonArray()); // GH monsters added by Combat subpack
+        spawners.add("monster",   new JsonArray());
         spawners.add("creature",  new JsonArray());
         spawners.add("ambient",   new JsonArray());
         spawners.add("water_creature", new JsonArray());
@@ -332,15 +345,8 @@ public class GHBiomeProvider implements DataProvider {
         spawners.add("misc", new JsonArray());
         json.add("spawners", spawners);
 
-        // ── Spawn costs ───────────────────────────────────────────────────────
         json.add("spawn_costs", new JsonObject());
 
         return json;
-    }
-
-    private JsonArray defaultMonsterSpawns(float temperature) {
-        // No vanilla hostile mobs — GH monsters are registered
-        // by the Combat & Monsters subpack via spawn rules
-        return new JsonArray();
     }
 }

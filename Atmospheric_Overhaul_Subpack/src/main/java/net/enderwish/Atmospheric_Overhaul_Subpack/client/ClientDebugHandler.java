@@ -41,7 +41,6 @@ public class ClientDebugHandler {
                 + (ClientSeasonState.isSpecialWeather() ? " §d[SPECIAL]§r" : "")
                 + (ClientSeasonState.isPrecipitating() ? " §b[PRECIP]§r" : ""));
 
-        // ── Global wind ────────────────────────────────────────────────────────
         float windSpeed = ClientSeasonState.getWindSpeed();
         float windDx = ClientSeasonState.getWindDx();
         float windDz = ClientSeasonState.getWindDz();
@@ -62,12 +61,10 @@ public class ClientDebugHandler {
                 : ClientSeasonState.isWindy() ? " §e[WINDY]§r" : "")
                 + " | Particle angle: " + String.format("%.1f°", particleAngleDeg));
 
-        // ── Felt (local, obstruction-adjusted) wind ──────────────────────────
         left.add("§6[GH Felt Wind]§r "
                 + ClientSeasonState.getFeltWindDirection()
                 + " | Speed: " + String.format("%.2f", ClientSeasonState.getFeltWindSpeed()));
 
-        // ── Regional temperature ─────────────────────────────────────────────
         float biomeTemp = mc.level.getBiome(mc.player.blockPosition())
                 .value().getBaseTemperature();
         float finalTemp = SeasonTemperature.calculateClient(
@@ -75,7 +72,8 @@ public class ClientDebugHandler {
                 ClientSeasonState.getSeason(),
                 ClientSeasonState.getPhase(),
                 ClientSeasonState.getWeatherId(),
-                ClientSeasonState.getIntensity()
+                ClientSeasonState.getIntensity(),
+                mc.level.getDayTime()
         );
         left.add("§6[GH Temp]§r "
                 + SeasonTemperature.getLabel(finalTemp)
@@ -83,7 +81,6 @@ public class ClientDebugHandler {
                 + " | Biome base: " + String.format("%.2f", biomeTemp)
                 + " | Final: " + String.format("%.2f", finalTemp));
 
-        // ── Feels-like (local, chunk-scan-adjusted) temperature ──────────────
         float feelsLike = ClientSeasonState.getFeelsLikeTemp();
         left.add("§6[GH Feels Like]§r "
                 + SeasonTemperature.getLabel(feelsLike)

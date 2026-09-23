@@ -5,8 +5,6 @@ import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.levelgen.synth.ImprovedNoise;
 
-import java.util.Random;
-
 /**
  * ClimateMap
  *
@@ -14,6 +12,27 @@ import java.util.Random;
  *   1. Temperature axis — Z coordinate + altitude modifier + local noise
  *   2. Moisture axis — independent Perlin noise
  *   3. Wasteland placement — separate noise for collapse epicentres
+ *
+ * BUGFIX (crash): world generation runs across MULTIPLE background
+ * threads concurrently (confirmed from ChunkGenerator's own
+ * createBiomes(), which dispatches via CompletableFuture.supplyAsync
+ * on a shared background executor). ensureInitialized()/setSeed() were
+ * previously unsynchronized plain field writes — one thread could see
+ * temperatureNoise already set (so it assumes init is done and skips
+ * setSeed()) while ANOTHER thread's setSeed() call hadn't yet reached
+ * the wastelandNoise assignment, leaving wastelandNoise null for the
+ * first thread. That's the exact NullPointerException that was
+ * crashing world generation. Marking both methods `synchronized` on
+ * this singleton closes the race: only one thread can be inside either
+ * at a time, and the Java memory model guarantees that once a thread
+ * acquires the lock, every field write made under that same lock by
+ * whichever thread held it before is fully visible — the standard
+ * "safe publication via synchronization" pattern.
+ *
+ * ALSO FIXED: the real world seed was never wired in — setSeed() only
+ * ever ran via ensureInitialized()'s hardcoded fallback (12345L).
+ * GHChunkGenerator now overrides createState(...) and calls
+ * ClimateMap.INSTANCE.setSeed(seed) there with the real world seed.
  */
 public class ClimateMap {
 
@@ -28,9 +47,9 @@ public class ClimateMap {
 
     /**
      * Must be called when the world loads to seed noise with the world seed.
-     * Called from GHBiomeSource on construction.
+     * Called from GHChunkGenerator.createState() with the real world seed.
      */
-    public void setSeed(long seed) {
+    public synchronized void setSeed(long seed) {
         if (seed == lastSeed) return;
         lastSeed = seed;
 
@@ -52,7 +71,6 @@ public class ClimateMap {
     public ClimateZone getZone(int x, int y, int z) {
         ensureInitialized();
 
-        // Wasteland check first — overrides climate
         if (getWastelandNoise(x, z) > ClimateSettings.WASTELAND_THRESHOLD) {
             return ClimateZone.WASTELAND;
         }
@@ -72,16 +90,13 @@ public class ClimateMap {
     public float getTemperature(int x, int y, int z) {
         ensureInitialized();
 
-        // 1. Latitude gradient — Z axis, north cold south hot
         float latitudeTemp = Mth.clamp(
                 (float) z / ClimateSettings.TEMPERATURE_SCALE,
                 -1.0f, 1.0f);
 
-        // 2. Altitude modifier
         float altitudeDrop = Math.max(0, y - ClimateSettings.SEA_LEVEL)
                 * ClimateSettings.ALTITUDE_TEMP_DROP;
 
-        // 3. Local noise variation
         float noiseVariation = (float) temperatureNoise.noise(
                 x / (ClimateSettings.TEMPERATURE_SCALE * 0.3),
                 0,
@@ -115,7 +130,7 @@ public class ClimateMap {
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    private void ensureInitialized() {
+    private synchronized void ensureInitialized() {
         if (temperatureNoise == null) {
             setSeed(12345L);
         }

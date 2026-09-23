@@ -8,6 +8,19 @@ import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.gui.screens.options.OptionsScreen;
 import net.minecraft.network.chat.Component;
 
+/**
+ * FrontierSettingsScreen
+ *
+ * NEW this round: "Exotic Start" toggle under World Creation, independent
+ * of Hardcore/Dev Mode (no mutual exclusion -- a fresh Adventure world
+ * can combine Exotic Start with either). This is ONLY the config
+ * plumbing: it stores the preference correctly, but nothing reads it yet
+ * to actually force the spawn point into Volcanic Lowlands. That needs
+ * confirming whichever vanilla/NeoForge API controls initial world-spawn
+ * selection first -- see this reply's questions. FrontierTitleScreen.
+ * onStartOrContinueAdventure() is the natural place that wiring lands
+ * once confirmed.
+ */
 public class FrontierSettingsScreen extends Screen {
 
     private final Screen parent;
@@ -20,11 +33,12 @@ public class FrontierSettingsScreen extends Screen {
     @Override
     protected void init() {
         int centerX = this.width / 2;
-        int startY = this.height / 2 - 60;
+        int startY = this.height / 2 - 72;
 
         boolean adventureEnabled = FrontierConfig.ADVENTURE_MODE_ENABLED.get();
         boolean hardcore = FrontierConfig.HARDCORE_MODE.get();
         boolean devMode = FrontierConfig.DEV_MODE.get();
+        boolean exoticStart = FrontierConfig.EXOTIC_START.get();
 
         this.addRenderableWidget(Button.builder(
                 Component.literal("Adventure Mode: " + (adventureEnabled ? "ON" : "OFF")),
@@ -33,9 +47,6 @@ public class FrontierSettingsScreen extends Screen {
                     FrontierConfig.ADVENTURE_MODE_ENABLED.set(newValue);
                     FrontierConfig.ADVENTURE_MODE_ENABLED.save();
 
-                    // Instant switch — the point of this toggle is flipping
-                    // between our menu and vanilla's right now, not "next
-                    // time a title screen happens to open."
                     if (this.minecraft != null) {
                         if (newValue) {
                             this.minecraft.setScreen(new FrontierTitleScreen());
@@ -73,13 +84,22 @@ public class FrontierSettingsScreen extends Screen {
         this.addRenderableWidget(devModeButton);
 
         this.addRenderableWidget(Button.builder(
+                Component.literal("Exotic Start: " + (exoticStart ? "ON" : "OFF")),
+                button -> {
+                    FrontierConfig.EXOTIC_START.set(!exoticStart);
+                    FrontierConfig.EXOTIC_START.save();
+                    refresh();
+                }
+        ).bounds(centerX - 100, startY + 72, 200, 20).build());
+
+        this.addRenderableWidget(Button.builder(
                 Component.literal("Video / Sound / Controls"),
                 button -> {
                     if (this.minecraft != null) {
                         this.minecraft.setScreen(new OptionsScreen(this, this.minecraft.options));
                     }
                 }
-        ).bounds(centerX - 100, startY + 80, 200, 20).build());
+        ).bounds(centerX - 100, startY + 104, 200, 20).build());
 
         this.addRenderableWidget(Button.builder(
                 Component.literal("Back"),
@@ -88,7 +108,7 @@ public class FrontierSettingsScreen extends Screen {
                         this.minecraft.setScreen(parent);
                     }
                 }
-        ).bounds(centerX - 100, startY + 104, 200, 20).build());
+        ).bounds(centerX - 100, startY + 128, 200, 20).build());
     }
 
     private void refresh() {
@@ -106,7 +126,7 @@ public class FrontierSettingsScreen extends Screen {
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         super.render(graphics, mouseX, mouseY, partialTick);
         graphics.drawCenteredString(this.font, "SETTINGS",
-                this.width / 2, this.height / 2 - 90, 0xFFC9B89A);
+                this.width / 2, this.height / 2 - 102, 0xFFC9B89A);
     }
 
     @Override

@@ -6,163 +6,158 @@ import net.minecraft.util.RandomSource;
 /**
  * GHNoiseRouter
  *
- * The terrain shape system. Five noise layers combine
- * to produce realistic geography:
+ * RETUNED this round: continental/erosion/peaksAndValleys wavelengths
+ * were still their original values (20,000 / 5,000 / 1,000 blocks)
+ * from before biome size was narrowed to ~1,800-3,500 blocks last
+ * round -- meaning a biome was smaller than a single peaks-and-valleys
+ * cycle, and far smaller than one continental cycle, so real elevation
+ * change only showed up many thousands of blocks apart. Confirmed as
+ * the cause of "everything is flat" -- within any normal walk/view
+ * distance only surfaceDetail (+-8 blocks) was short enough to move at
+ * all. Scaled down proportionally: continental 20,000->7,000, erosion
+ * 5,000->2,000, peaksAndValleys 1,000->400. surfaceDetail (100) and
+ * the cave layers (80) untouched -- already the right order of
+ * magnitude. oceanBasin (40,000) also left alone -- it's meant to stay
+ * much broader than land terrain regardless of biome size, so seas
+ * stay few and large; not implicated in this bug report.
  *
- * Layer 1 — Continental (~20,000 block scale)
- *   Determines where land rises above sea level.
- *   High values = continental interior (mountains possible)
- *   Low values  = ocean floor
- *   Medium      = coastal lowlands, islands
- *
- * Layer 2 — Erosion (~5,000 block scale)
- *   Controls how "worn down" the terrain is.
- *   High erosion = flat plains, river valleys
- *   Low erosion  = sharp mountains, rocky terrain
- *
- * Layer 3 — Peaks and Valleys (~1,000 block scale)
- *   Creates mountain ranges and valley systems.
- *   Works WITH erosion — eroded mountains become hills.
- *
- * Layer 4 — Surface Detail (~100 block scale)
- *   Small-scale roughness: cliffs, rock outcrops,
- *   uneven ground, surface variation.
- *
- * Layer 5 — Cave Systems (3D, ~80 block scale)
- *   Underground cavity placement.
- *   Two noise fields that multiply — only creates
- *   caves where BOTH are near zero (Swiss cheese model).
- *
- * Final height formula:
- *   baseHeight = SEA_LEVEL + continental * (1 - erosion) * peaksAndValleys
- *   finalHeight = baseHeight + surfaceDetail
- *
- * All values are seeded from the world seed via GHBiomeSource.
+ * These four numbers are a first-pass proposal reasoned from
+ * wavelength-vs-biome-size math, not measured -- expect to retune
+ * once you've actually walked a biome edge to edge.
  */
 public class GHNoiseRouter {
 
-    // ── Height constants ──────────────────────────────────────────────────────
+    public static final GHNoiseRouter INSTANCE = new GHNoiseRouter();
+    private GHNoiseRouter() {}
+
     public static final int SEA_LEVEL        = 63;
     public static final int MIN_HEIGHT       = -64;
     public static final int MAX_HEIGHT       = 320;
     public static final int BEDROCK_HEIGHT   = MIN_HEIGHT + 5;
 
-    // ── The five noise layers ─────────────────────────────────────────────────
-    private final NoiseLayer continental;
-    private final NoiseLayer erosion;
-    private final NoiseLayer peaksAndValleys;
-    private final NoiseLayer surfaceDetail;
-    private final NoiseLayer caveA;  // cave system — field A
-    private final NoiseLayer caveB;  // cave system — field B
+    private static final int OCEAN_BASIN_DEPTH = 25;
+    private static final double OCEAN_BASIN_THRESHOLD = -0.55;
 
-    public GHNoiseRouter(RandomSource random) {
-        continental    = new NoiseLayer("continental",
-                RandomSource.create(random.nextLong()),
-                20_000, 120, 4);
+    private long lastSeed = Long.MIN_VALUE;
 
-        erosion        = new NoiseLayer("erosion",
-                RandomSource.create(random.nextLong()),
-                5_000, 1, 3);   // amplitude 1 = normalized 0-1 range
+    private NoiseLayer continental;
+    private NoiseLayer erosion;
+    private NoiseLayer peaksAndValleys;
+    private NoiseLayer surfaceDetail;
+    private NoiseLayer caveA;
+    private NoiseLayer caveB;
+    private NoiseLayer oceanBasin;
+
+    public synchronized void setSeed(long seed) {
+        if (seed == lastSeed) return;
+        lastSeed = seed;
+
+        RandomSource rand = RandomSource.create(seed);
+
+        continental = new NoiseLayer("continental",
+                RandomSource.create(rand.nextLong()), 7_000, 120, 4);
+
+        erosion = new NoiseLayer("erosion",
+                RandomSource.create(rand.nextLong()), 2_000, 1, 3);
 
         peaksAndValleys = new NoiseLayer("peaks_and_valleys",
-                RandomSource.create(random.nextLong()),
-                1_000, 80, 5);
+                RandomSource.create(rand.nextLong()), 400, 80, 5);
 
-        surfaceDetail  = new NoiseLayer("surface_detail",
-                RandomSource.create(random.nextLong()),
-                100, 8, 3);
+        surfaceDetail = new NoiseLayer("surface_detail",
+                RandomSource.create(rand.nextLong()), 100, 8, 3);
 
-        caveA          = new NoiseLayer("cave_a",
-                RandomSource.create(random.nextLong()),
-                80, 1, 2);
+        caveA = new NoiseLayer("cave_a",
+                RandomSource.create(rand.nextLong()), 80, 1, 2);
 
-        caveB          = new NoiseLayer("cave_b",
-                RandomSource.create(random.nextLong()),
-                80, 1, 2);
+        caveB = new NoiseLayer("cave_b",
+                RandomSource.create(rand.nextLong()), 80, 1, 2);
+
+        oceanBasin = new NoiseLayer("ocean_basin",
+                RandomSource.create(rand.nextLong()), 40_000, 1, 2);
     }
 
-    // ── Surface height ────────────────────────────────────────────────────────
+    private synchronized void ensureInitialized() {
+        if (continental == null) {
+            setSeed(12345L);
+        }
+    }
 
-    /**
-     * Returns the surface height (Y coordinate) at (x, z).
-     * This is the block the player stands on.
-     *
-     * Range: MIN_HEIGHT to MAX_HEIGHT
-     */
     public int getSurfaceHeight(int x, int z) {
-        double cont = getContinentalValue(x, z);  // -120 to +120
-        double eros = getErosionValue(x, z);       // 0.0 to 1.0
-        double pv   = getPeaksAndValleysValue(x, z); // -80 to +80
-        double det  = surfaceDetail.sample(x, z);  // -8 to +8
+        return getSurfaceHeight(x, z, BiomeTerrainProfile.NEUTRAL);
+    }
 
-        // Continental sets the base land height above/below sea
-        // Erosion flattens mountains (high erosion = flatter terrain)
-        // Peaks and valleys add mountain ranges on top
-        double baseHeight = SEA_LEVEL + cont * (1.0 - eros) + pv * (1.0 - eros);
+    public int getSurfaceHeight(int x, int z, BiomeTerrainProfile profile) {
+        ensureInitialized();
 
-        double finalHeight = baseHeight + det;
+        double cont = getContinentalValue(x, z);
+        double eros = getErosionValue(x, z);
+        double pv   = getPeaksAndValleysValue(x, z);
+        double det  = surfaceDetail.sample(x, z);
+
+        double effectiveEros = Mth.clamp(eros + profile.erosionBias(), 0.0, 1.0);
+
+        double baseHeight = SEA_LEVEL
+                + cont * (1.0 - effectiveEros)
+                + pv * profile.hilliness() * (1.0 - effectiveEros);
+
+        double finalHeight = baseHeight + det * profile.roughness();
+
+        if (isOceanBasin(x, z)) {
+            finalHeight = Math.min(finalHeight, SEA_LEVEL - OCEAN_BASIN_DEPTH);
+        }
 
         return (int) Mth.clamp(finalHeight, MIN_HEIGHT, MAX_HEIGHT);
     }
 
-    /**
-     * Returns true if the given position is ocean
-     * (continental value below sea threshold).
-     */
-    public boolean isOcean(int x, int z) {
-        return getContinentalValue(x, z) < -30;
+    public boolean isOceanBasin(int x, int z) {
+        ensureInitialized();
+        return oceanBasin.sample(x, z) < OCEAN_BASIN_THRESHOLD;
     }
 
-    /**
-     * Returns true if the position is in a river valley
-     * (low erosion, specific peaks and valleys range).
-     */
+    public boolean isOcean(int x, int z) {
+        return isOceanBasin(x, z) || getContinentalValue(x, z) < -30;
+    }
+
+    public FlowDirection getWaterFlowDirection(int x, int z) {
+        ensureInitialized();
+        double step = 8.0;
+        double dx = oceanBasin.sample(x + step, z) - oceanBasin.sample(x - step, z);
+        double dz = oceanBasin.sample(x, z + step) - oceanBasin.sample(x, z - step);
+        return new FlowDirection((float) -dx, (float) -dz);
+    }
+
+    public record FlowDirection(float x, float z) {}
+
     public boolean isRiver(int x, int z) {
+        ensureInitialized();
         double pv = getPeaksAndValleysValue(x, z);
         double eros = getErosionValue(x, z);
-        // Rivers form in valleys with moderate erosion
         return Math.abs(pv) < 5.0 && eros > 0.5 && !isOcean(x, z);
     }
 
-    /**
-     * Returns true if the position is mountainous
-     * (high continental, low erosion, high peaks and valleys).
-     */
     public boolean isMountain(int x, int z) {
+        ensureInitialized();
         return getContinentalValue(x, z) > 40
                 && getErosionValue(x, z) < 0.3
                 && getPeaksAndValleysValue(x, z) > 20;
     }
 
-    // ── Cave systems ──────────────────────────────────────────────────────────
-
-    /**
-     * Returns true if a cave exists at this 3D position.
-     *
-     * Uses two noise fields — caves only form where BOTH
-     * are near zero (product near zero = cheese model).
-     *
-     * More generous near sea level, tighter deep underground.
-     */
     public boolean isCave(int x, int y, int z) {
+        ensureInitialized();
         if (y <= BEDROCK_HEIGHT) return false;
         if (y >= getSurfaceHeight(x, z) - 5) return false;
 
         double a = caveA.sample3D(x, y, z);
         double b = caveB.sample3D(x, y, z);
 
-        // Cave threshold tightens with depth (deeper = fewer but larger caves)
         double depthFactor = 1.0 - ((double)(y - MIN_HEIGHT) / (SEA_LEVEL - MIN_HEIGHT));
         double threshold = 0.15 + depthFactor * 0.1;
 
         return Math.abs(a) < threshold && Math.abs(b) < threshold;
     }
 
-    /**
-     * Returns true if this is a large cave chamber
-     * (both noise fields very close to zero — rarer).
-     */
     public boolean isLargeChamber(int x, int y, int z) {
+        ensureInitialized();
         if (y <= BEDROCK_HEIGHT || y >= SEA_LEVEL - 10) return false;
 
         double a = caveA.sample3D(x, y, z);
@@ -171,29 +166,24 @@ public class GHNoiseRouter {
         return Math.abs(a) < 0.05 && Math.abs(b) < 0.05;
     }
 
-    // ── Raw noise accessors ───────────────────────────────────────────────────
-
-    /** Continental noise — range approx -120 to +120 */
     public double getContinentalValue(int x, int z) {
+        ensureInitialized();
         return continental.sample(x, z);
     }
 
-    /**
-     * Erosion noise — remapped to 0.0 (no erosion) to 1.0 (fully eroded).
-     * Raw noise is -1 to +1, we remap to 0-1.
-     */
     public double getErosionValue(int x, int z) {
-        double raw = erosion.sample(x, z); // -1 to +1
+        ensureInitialized();
+        double raw = erosion.sample(x, z);
         return Mth.clamp((raw + 1.0) * 0.5, 0.0, 1.0);
     }
 
-    /** Peaks and valleys noise — range approx -80 to +80 */
     public double getPeaksAndValleysValue(int x, int z) {
+        ensureInitialized();
         return peaksAndValleys.sample(x, z);
     }
 
-    /** Surface detail noise — range approx -8 to +8 */
     public double getSurfaceDetailValue(int x, int z) {
+        ensureInitialized();
         return surfaceDetail.sample(x, z);
     }
 }

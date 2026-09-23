@@ -2,15 +2,6 @@ package net.enderwish.Frontier_Subpack;
 
 import net.neoforged.neoforge.common.ModConfigSpec;
 
-/**
- * FrontierConfig
- *
- * World Creation category: HARDCORE_MODE and DEV_MODE are mutually
- * exclusive in practice — enforced in FrontierSettingsScreen's click
- * handlers, since ModConfigSpec has no native concept of linked booleans.
- * Default: Hardcore ON, Dev Mode OFF, per the project's hardcore-realism
- * design philosophy.
- */
 public class FrontierConfig {
 
     private static final ModConfigSpec.Builder BUILDER = new ModConfigSpec.Builder();
@@ -21,6 +12,7 @@ public class FrontierConfig {
 
     public static final ModConfigSpec.BooleanValue HARDCORE_MODE;
     public static final ModConfigSpec.BooleanValue DEV_MODE;
+    public static final ModConfigSpec.BooleanValue EXOTIC_START;
 
     public static final ModConfigSpec SPEC;
 
@@ -36,6 +28,12 @@ public class FrontierConfig {
                 .comment("Whether a fresh Adventure world is created in Dev Mode (Creative, cheats allowed, non-hardcore).",
                         "Mutually exclusive with Hardcore Mode.")
                 .define("devMode", false);
+
+        EXOTIC_START = BUILDER
+                .comment("Whether a fresh Adventure world forces the player's spawn point into a Volcanic Lowlands biome.",
+                        "Independent of Hardcore/Dev Mode -- can be combined with either.",
+                        "Players can otherwise NEVER spawn in Volcanic Lowlands; this is the one exception.")
+                .define("exoticStart", false);
 
         BUILDER.pop();
         SPEC = BUILDER.build();
