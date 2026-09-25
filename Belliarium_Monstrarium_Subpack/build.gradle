@@ -16,7 +16,7 @@ repositories {
 }
 
 base {
-    archivesName = "gh_atmospheric"
+    archivesName = "gh_belliarium_monstrarium"
 }
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
@@ -29,52 +29,19 @@ neoForge {
         minecraftVersion = project.parchment_minecraft_version
     }
 
-    // 1. DEFINE MODS FIRST
-    mods {
-        gh_atmospheric {
-            sourceSet(sourceSets.main)
-        }
-
-        gh_farming_overhaul {
-            sourceSet project(":Farming_Overhaul_Subpack").sourceSets.main
-        }
-
-        gh_terraforma {
-            sourceSet project(":TerraForma_Subpack").sourceSets.main
-        }
-
-        gh_frontier {
-            sourceSet project(":Frontier_Subpack").sourceSets.main
-        }
-
-        gh_belliarium_monstrarium {
-            sourceSet project(":Belliarium_Monstrarium_Subpack").sourceSets.main
+    runs {
+        data {
+            type = "data"
+            programArguments.addAll '--mod', 'gh_belliarium_monstrarium',
+                    '--all',
+                    '--output', file('src/generated/resources/').absolutePath,
+                    '--existing', file('src/main/resources/').absolutePath
         }
     }
 
-    // 2. DEFINE RUNS SECOND
-    runs {
-        client {
-            client()
-            systemProperty 'neoforge.enabledGameTestNamespaces', 'gh_atmospheric'
-            loadedMods = [mods.gh_atmospheric, mods.gh_farming_overhaul, mods.gh_terraforma, mods.gh_frontier, mods.gh_belliarium_monstrarium]
-        }
-
-        server {
-            server()
-            programArgument '--nogui'
-            systemProperty 'neoforge.enabledGameTestNamespaces', 'gh_atmospheric'
-            loadedMods = [mods.gh_atmospheric, mods.gh_farming_overhaul, mods.gh_terraforma, mods.gh_frontier, mods.gh_belliarium_monstrarium]
-        }
-
-        data {
-            data()
-            programArguments.addAll '--mod', 'gh_atmospheric', '--all', '--output', file('src/generated/resources/').getAbsolutePath(), '--existing', file('src/main/resources/').getAbsolutePath()
-        }
-
-        configureEach {
-            systemProperty 'forge.logging.markers', 'REGISTRIES'
-            logLevel = org.slf4j.event.Level.DEBUG
+    mods {
+        gh_belliarium_monstrarium {
+            sourceSet(sourceSets.main)
         }
     }
 }
@@ -96,8 +63,8 @@ var generateModMetadata = tasks.register("generateModMetadata", ProcessResources
             minecraft_version_range: minecraft_version_range,
             neo_version            : neo_version,
             loader_version_range   : loader_version_range,
-            mod_id                 : 'gh_atmospheric',
-            mod_name               : 'Atmospheric_Overhaul_Subpack',
+            mod_id                 : 'gh_belliarium_monstrarium',
+            mod_name               : 'Belliarium_Monstrarium_Subpack',
             mod_license            : mod_license,
             mod_version            : mod_version,
     ]

@@ -15,18 +15,6 @@ import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.levelgen.WorldDimensions;
 import net.minecraft.world.level.levelgen.presets.WorldPresets;
 
-/**
- * WorldAPI
- *
- * The ONLY class other subpacks should import from TerraForma.
- *
- * NEW -- findExoticSpawnPosition(RandomSource): 50/50 between Volcanic
- * Lowlands and Glacial Peaks, searches outward from the origin for a
- * real match. This only FINDS the position -- actually calling
- * ServerLevel.setDefaultSpawnPos(BlockPos, float) with it, at the
- * right moment during fresh-world creation, is the piece still open
- * (see this reply's question).
- */
 public final class WorldAPI {
 
     private WorldAPI() {}
@@ -81,16 +69,17 @@ public final class WorldAPI {
     /**
      * Picks 50/50 between Volcanic Lowlands and Glacial Peaks and
      * searches outward from the origin in growing rings for a real
-     * position in that biome. Both should be common enough to resolve
-     * well within the search cap below.
+     * position in that biome.
      *
-     * TIMING CAVEAT: GHNoiseRouter/ClimateMap must already be seeded
-     * with the real world seed (via GHChunkGenerator.createState) for
-     * this to match what the actual generated world has at that spot.
-     * If this runs before that seeding happens, it'll search against
-     * the fallback seed instead and could hand back a position the
-     * real world doesn't actually have as Volcanic/Glacial. See this
-     * reply's question about exactly when to call this.
+     * Called from Frontier_Subpack's ExoticSpawnHandler, itself
+     * triggered by LevelEvent.CreateSpawnPosition -- which fires after
+     * GHChunkGenerator.createState(...) has already seeded both
+     * ClimateMap.INSTANCE and GHNoiseRouter.INSTANCE with the real
+     * world seed, so the old "must already be seeded" timing worry
+     * from a few rounds back is resolved: by the time anything can be
+     * asking for a spawn position, the chunk generator handling that
+     * request necessarily already exists and has been through
+     * createState.
      */
     public static BlockPos findExoticSpawnPosition(RandomSource random) {
         ResourceKey<Biome> target = random.nextBoolean()
@@ -110,6 +99,6 @@ public final class WorldAPI {
             }
         }
 
-        return BlockPos.ZERO; // shouldn't happen -- both biomes exist well within 20,000 blocks
+        return BlockPos.ZERO;
     }
 }

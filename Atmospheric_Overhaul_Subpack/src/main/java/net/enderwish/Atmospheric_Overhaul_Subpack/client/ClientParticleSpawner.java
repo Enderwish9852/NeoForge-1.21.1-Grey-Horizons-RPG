@@ -18,19 +18,16 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 /**
  * ClientParticleSpawner
  *
- * Spawns ALL weather/season-driven ambient particles near the player.
- * Rain unchanged from before. Three new blocks added this round:
+ * BUGFIX this round: none of the four ambient spawn calls checked
+ * whether the PLAYER'S OWN EYES were underwater -- so rain/splash
+ * (and leaves/dust/fog, equally nonsensical while submerged) kept
+ * rendering right through the water surface from below, as you
+ * found. One guard at the top of the tick now suppresses all of
+ * them while the player is underwater.
  *
- *   - Swirling leaves: autumn season only, sparse, open-sky columns.
- *   - Dust motes: hot + non-precipitating biomes (reuses
- *     ClientWeatherHandler's existing HOT/TEMPERATE/COLD category —
- *     no dependency on TerraForma, stays self-contained in Atmospheric).
- *   - Fog wisps: only when active weather ID is literally "fog".
- *
- * All three are deliberately simple v1 triggers (season/biome-category/
- * weather-id gates + a random chance per tick) rather than anything
- * spatially precise (e.g. leaves don't yet check for actual nearby tree
- * blocks) — good enough to confirm they're visible, refinable later.
+ * VERIFY IF COMPILE FAILS -- Entity.isUnderWater() is long-standing,
+ * stable vanilla API (used for sprint/FOV/drowning logic) but not
+ * something I've seen pasted source for this round.
  */
 @EventBusSubscriber(modid = AtmosphericOverhaulSubpack.MOD_ID, bus = EventBusSubscriber.Bus.GAME, value = Dist.CLIENT)
 public class ClientParticleSpawner {
@@ -49,14 +46,13 @@ public class ClientParticleSpawner {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null || mc.player == null) return;
         if (mc.isPaused()) return;
+        if (mc.player.isUnderWater()) return;
 
         spawnRain(mc.level, mc.player);
         spawnSwirlingLeaves(mc.level, mc.player);
         spawnDustMotes(mc.level, mc.player);
         spawnFogWisps(mc.level, mc.player);
     }
-
-    // ── Rain (unchanged) ──────────────────────────────────────────────────────
 
     private static void spawnRain(ClientLevel level, Player player) {
         if (!ClientSeasonState.isPrecipitating()) return;
@@ -97,13 +93,11 @@ public class ClientParticleSpawner {
         }
     }
 
-    // ── Swirling leaves — autumn only ─────────────────────────────────────────
-
     private static void spawnSwirlingLeaves(ClientLevel level, Player player) {
         if (ClientSeasonState.getSeason() != SeasonCalendar.Season.AUTUMN) return;
 
         RandomSource random = level.getRandom();
-        if (random.nextFloat() > 0.3f) return; // sparse — not every tick
+        if (random.nextFloat() > 0.3f) return;
 
         BlockPos playerPos = player.blockPosition();
         int dx = random.nextInt(LEAVES_SPAWN_RADIUS * 2) - LEAVES_SPAWN_RADIUS;
@@ -120,8 +114,6 @@ public class ClientParticleSpawner {
 
         level.addParticle(ModParticles.SWIRLING_LEAVES.get(), x, y, z, 0.0, 0.0, 0.0);
     }
-
-    // ── Dust motes — hot, non-precipitating biomes ────────────────────────────
 
     private static void spawnDustMotes(ClientLevel level, Player player) {
         if (ClientWeatherHandler.getCurrentCategory() != ClientWeatherHandler.BiomeCategory.HOT) return;
@@ -143,8 +135,6 @@ public class ClientParticleSpawner {
 
         level.addParticle(ModParticles.DUST_MOTE.get(), x, y, z, 0.0, 0.0, 0.0);
     }
-
-    // ── Fog wisps — fog weather only ──────────────────────────────────────────
 
     private static void spawnFogWisps(ClientLevel level, Player player) {
         if (!ClientSeasonState.getWeatherId().equals("fog")) return;

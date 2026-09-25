@@ -6,24 +6,28 @@ import net.minecraft.util.RandomSource;
 /**
  * GHNoiseRouter
  *
- * RETUNED this round: continental/erosion/peaksAndValleys wavelengths
- * were still their original values (20,000 / 5,000 / 1,000 blocks)
- * from before biome size was narrowed to ~1,800-3,500 blocks last
- * round -- meaning a biome was smaller than a single peaks-and-valleys
- * cycle, and far smaller than one continental cycle, so real elevation
- * change only showed up many thousands of blocks apart. Confirmed as
- * the cause of "everything is flat" -- within any normal walk/view
- * distance only surfaceDetail (+-8 blocks) was short enough to move at
- * all. Scaled down proportionally: continental 20,000->7,000, erosion
- * 5,000->2,000, peaksAndValleys 1,000->400. surfaceDetail (100) and
- * the cave layers (80) untouched -- already the right order of
- * magnitude. oceanBasin (40,000) also left alone -- it's meant to stay
- * much broader than land terrain regardless of biome size, so seas
- * stay few and large; not implicated in this bug report.
+ * BUGFIX 1 -- isOcean: previously `isOceanBasin(x,z) || continental
+ * < -30`, a threshold DECOUPLED from the actual height formula. A
+ * column could compute a real below-sea-level height without ever
+ * crossing that -30 cutoff -- water fills it, but biome selection
+ * (which calls isOcean) never finds out, so it keeps a LAND biome
+ * name. Confirmed as the cause of the "massive sea labeled Ash
+ * Plains/Temperate Forest" report -- both readings now come from the
+ * SAME getSurfaceHeight formula, using the neutral profile so biome
+ * selection (which needs this before it knows the biome) isn't
+ * circular.
  *
- * These four numbers are a first-pass proposal reasoned from
- * wavelength-vs-biome-size math, not measured -- expect to retune
- * once you've actually walked a biome edge to edge.
+ * BUGFIX 2 -- isCave: previously always checked against the
+ * NEUTRAL-profile surface height for its "how close to the surface"
+ * gate, while actual terrain was built with each column's REAL
+ * per-biome profile. In high-hilliness biomes (Volcanic Lowlands
+ * 2.4x, Glacial Peaks 2.2x) those two heights can differ by 100+
+ * blocks, so the depth-based cave-density tightening (meant to keep
+ * caves rare near a peak) was checking against the wrong depth
+ * entirely. Confirmed as the cause of the chaotic "drilled-through"
+ * underground, concentrated exactly where Volcanic Lowlands
+ * generates. isCave now takes a BiomeTerrainProfile; a neutral
+ * overload remains for callers without one handy.
  */
 public class GHNoiseRouter {
 
@@ -114,8 +118,10 @@ public class GHNoiseRouter {
         return oceanBasin.sample(x, z) < OCEAN_BASIN_THRESHOLD;
     }
 
+    /** True if this column's raw landform ends up below sea level -- see class doc. */
     public boolean isOcean(int x, int z) {
-        return isOceanBasin(x, z) || getContinentalValue(x, z) < -30;
+        ensureInitialized();
+        return getSurfaceHeight(x, z, BiomeTerrainProfile.NEUTRAL) < SEA_LEVEL;
     }
 
     public FlowDirection getWaterFlowDirection(int x, int z) {
@@ -142,10 +148,15 @@ public class GHNoiseRouter {
                 && getPeaksAndValleysValue(x, z) > 20;
     }
 
+    /** Neutral-profile overload -- prefer the 4-arg version below when a profile is already known. */
     public boolean isCave(int x, int y, int z) {
+        return isCave(x, y, z, BiomeTerrainProfile.NEUTRAL);
+    }
+
+    public boolean isCave(int x, int y, int z, BiomeTerrainProfile profile) {
         ensureInitialized();
         if (y <= BEDROCK_HEIGHT) return false;
-        if (y >= getSurfaceHeight(x, z) - 5) return false;
+        if (y >= getSurfaceHeight(x, z, profile) - 5) return false;
 
         double a = caveA.sample3D(x, y, z);
         double b = caveB.sample3D(x, y, z);

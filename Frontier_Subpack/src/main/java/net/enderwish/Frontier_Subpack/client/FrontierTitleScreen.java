@@ -26,11 +26,13 @@ import java.util.Random;
 /**
  * FrontierTitleScreen
  *
- * World creation now goes through WorldAPI.createWorldDimensions(...)
- * instead of importing GHChunkGenerator/GHBiomeSource directly —
- * matches the project's own established rule that every cross-subpack
- * import goes through the corresponding API facade, never the
- * internals directly.
+ * BUGFIX this round: Restart Adventure previously deleted the world
+ * folder then just opened a new FrontierTitleScreen and stopped --
+ * leaving the player to click "Start Adventure" themselves. World
+ * creation is now factored into its own startFreshAdventure() method
+ * (no longer gated on the adventureExists field, which would have
+ * been stale immediately after deletion anyway), and the confirm
+ * handler calls it directly.
  */
 public class FrontierTitleScreen extends Screen {
 
@@ -92,15 +94,32 @@ public class FrontierTitleScreen extends Screen {
     }
 
     private void onStartOrContinueAdventure() {
+        if (adventureExists) {
+            openExistingAdventure();
+        } else {
+            startFreshAdventure();
+        }
+    }
+
+    private void openExistingAdventure() {
         Minecraft mc = this.minecraft;
         if (mc == null) return;
 
         WorldOpenFlows flows = new WorldOpenFlows(mc, mc.getLevelSource());
+        flows.openWorld(ADVENTURE_WORLD_NAME, () -> mc.setScreen(this));
+    }
 
-        if (adventureExists) {
-            flows.openWorld(ADVENTURE_WORLD_NAME, () -> mc.setScreen(this));
-            return;
-        }
+    /**
+     * Always creates a brand new Adventure world, regardless of
+     * adventureExists -- this is what onRestartAdventure() calls
+     * directly after deleting the old save, so confirming "Restart"
+     * goes straight into world-gen instead of back to a menu.
+     */
+    private void startFreshAdventure() {
+        Minecraft mc = this.minecraft;
+        if (mc == null) return;
+
+        WorldOpenFlows flows = new WorldOpenFlows(mc, mc.getLevelSource());
 
         boolean hardcore = FrontierConfig.HARDCORE_MODE.get();
 
@@ -141,7 +160,7 @@ public class FrontierTitleScreen extends Screen {
                 confirmed -> {
                     if (confirmed) {
                         deleteAdventureWorld();
-                        mc.setScreen(new FrontierTitleScreen());
+                        startFreshAdventure();
                     } else {
                         mc.setScreen(this);
                     }

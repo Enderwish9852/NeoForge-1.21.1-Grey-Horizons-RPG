@@ -32,23 +32,11 @@ import java.util.concurrent.CompletableFuture;
 /**
  * GHChunkGenerator
  *
- * UPDATED this round:
- *   - noiseRouter now references the seeded GHNoiseRouter.INSTANCE
- *     singleton instead of an unseeded instance of its own -- see
- *     GHNoiseRouter's own doc comment for the bug this fixes.
- *   - createState(...) now seeds GHNoiseRouter.INSTANCE alongside the
- *     existing ClimateMap.INSTANCE.setSeed(seed) call.
- *   - fillFromNoise / getBaseColumn / getBaseHeight now look up each
- *     column's BiomeTerrainProfile (via profileAt) before asking for
- *     its height, so terrain shape actually varies by biome.
- *
- * profileAt bootstraps with a NEUTRAL-profile height estimate first,
- * since biome selection (Glacial Peaks specifically) depends on
- * altitude, and altitude depends on the very profile being looked up --
- * one extra cheap height sample breaks that circularity.
- *
- * STILL NOT DONE: biome-aware surface blocks, ore veins, river
- * carving, terrain-profile blending across biome borders.
+ * UPDATED this round: every isCave(...) call now passes the column's
+ * real BiomeTerrainProfile (already computed via profileAt for the
+ * height itself) instead of the old neutral-defaulting overload --
+ * see GHNoiseRouter's own doc comment for the underground-mess bug
+ * this closes.
  */
 public class GHChunkGenerator extends ChunkGenerator {
 
@@ -133,7 +121,7 @@ public class GHChunkGenerator extends ChunkGenerator {
                         continue;
                     }
 
-                    if (noiseRouter.isCave(x, y, z)) {
+                    if (noiseRouter.isCave(x, y, z, profile)) {
                         continue;
                     }
 
@@ -176,7 +164,7 @@ public class GHChunkGenerator extends ChunkGenerator {
             int y = level.getMinBuildHeight() + i;
             if (y > surfaceY) {
                 states[i] = y <= GHNoiseRouter.SEA_LEVEL ? Blocks.WATER.defaultBlockState() : Blocks.AIR.defaultBlockState();
-            } else if (noiseRouter.isCave(x, y, z)) {
+            } else if (noiseRouter.isCave(x, y, z, profile)) {
                 states[i] = Blocks.AIR.defaultBlockState();
             } else if (y == surfaceY) {
                 states[i] = Blocks.GRASS_BLOCK.defaultBlockState();

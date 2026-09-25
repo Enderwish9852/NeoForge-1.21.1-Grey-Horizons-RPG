@@ -3,28 +3,33 @@ package net.enderwish.TerraForma_Subpack.core.climate;
 /**
  * ClimateSettings
  *
- * Central place for all climate system constants.
- *
- * RETUNED this round: TEMPERATURE_SCALE and MOISTURE_SCALE both
- * narrowed to hit the confirmed biome-size target (standard biomes
- * ~1,800-3,500 blocks across; a full arctic-to-tropical crossing now
- * ~40-70 minutes on foot instead of the better part of two hours).
- * WASTELAND_SCALE scaled down proportionally to match. Thresholds
- * below are untouched -- they're proportions of the -1..1 / 0..1
- * range, not distances, so they don't need to move.
+ * RETUNED this round, correcting a real mistake from last round: I
+ * scaled MOISTURE_SCALE (and to a lesser extent TEMPERATURE_SCALE)
+ * targeting the FULL desired biome-patch size directly -- but moisture
+ * is ONE periodic noise field that up to 5 different biome thresholds
+ * carve out of, so each resulting patch was only getting roughly a
+ * fifth of that number. That's the direct cause of "3 biomes crammed
+ * together, characteristics can't show." Both widened to compensate:
+ * MOISTURE_SCALE 2,600 -> 11,000 (11,000/5 ~= 2,200, back in the
+ * target range). TEMPERATURE_SCALE 9,000 -> 14,000 -- this also
+ * widens the noiseVariation wavelength used for the Wasteland-internal
+ * Cracked Badlands/Ash Plains split (derived as TEMPERATURE_SCALE*0.3
+ * inside ClimateMap), fixing that squeeze too, while keeping a full
+ * arctic-to-tropical crossing around 45-50 minutes on foot -- still
+ * inside the original target.
  */
 public final class ClimateSettings {
 
     private ClimateSettings() {}
 
     // ── Temperature axis ──────────────────────────────────────────────────────
-    public static final float TEMPERATURE_SCALE = 9_000f;
+    public static final float TEMPERATURE_SCALE = 14_000f;
     public static final float ALTITUDE_TEMP_DROP = 0.003f;
     public static final int SEA_LEVEL = 63;
     public static final int ALPINE_HEIGHT = 160;
 
     // ── Moisture axis ─────────────────────────────────────────────────────────
-    public static final float MOISTURE_SCALE = 2_600f;
+    public static final float MOISTURE_SCALE = 11_000f;
 
     // ── Wasteland placement ───────────────────────────────────────────────────
     public static final float WASTELAND_SCALE = 4_000f;
