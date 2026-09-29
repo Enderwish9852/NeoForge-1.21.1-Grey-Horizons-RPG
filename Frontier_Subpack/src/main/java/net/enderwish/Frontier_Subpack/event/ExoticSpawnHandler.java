@@ -5,6 +5,7 @@ import net.enderwish.Frontier_Subpack.FrontierSubpack;
 import net.enderwish.TerraForma_Subpack.api.WorldAPI;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.RandomSource;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.level.LevelEvent;
@@ -35,10 +36,15 @@ public class ExoticSpawnHandler {
 
         boolean enabled = FrontierConfig.EXOTIC_START.get();
         LOGGER.info("CreateSpawnPosition fired for overworld -- Exotic Start enabled: {}", enabled);
-
         if (!enabled) return;
 
-        BlockPos exoticSpawn = WorldAPI.findExoticSpawnPosition(level.getRandom());
+        RandomSource random = level.getRandom();
+        boolean seekingGlacialPeaks = random.nextBoolean();
+        LOGGER.info("Exotic Start -- seeking {}", seekingGlacialPeaks ? "Glacial Peaks" : "Volcanic Lowlands");
+
+        // NOTE: WorldAPI.findExoticSpawnPosition rolls its OWN 50/50 internally --
+        // this log line's roll is diagnostic-only and doesn't affect the real pick.
+        BlockPos exoticSpawn = WorldAPI.findExoticSpawnPosition(random);
         LOGGER.info("Exotic Start -- forcing spawn to {}", exoticSpawn);
 
         event.getSettings().setSpawn(exoticSpawn, 0.0f);

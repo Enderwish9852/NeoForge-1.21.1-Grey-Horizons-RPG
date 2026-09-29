@@ -67,33 +67,31 @@ public final class WorldAPI {
     }
 
     /**
-     * Picks 50/50 between Volcanic Lowlands and Glacial Peaks and
-     * searches outward from the origin in growing rings for a real
-     * position in that biome.
-     *
-     * Called from Frontier_Subpack's ExoticSpawnHandler, itself
-     * triggered by LevelEvent.CreateSpawnPosition -- which fires after
-     * GHChunkGenerator.createState(...) has already seeded both
-     * ClimateMap.INSTANCE and GHNoiseRouter.INSTANCE with the real
-     * world seed, so the old "must already be seeded" timing worry
-     * from a few rounds back is resolved: by the time anything can be
-     * asking for a spawn position, the chunk generator handling that
-     * request necessarily already exists and has been through
-     * createState.
+     * BUGFIX: previously estimated height with the NEUTRAL profile before
+     * checking the target biome -- Glacial Peaks' y>180 requirement is only
+     * realistically reachable with ITS OWN 2.2x hilliness multiplier applied.
+     * Under neutral profile that combination (near-max continental AND
+     * near-max peaks-and-valleys AND near-zero erosion, simultaneously, AND
+     * arctic temperature) is rare enough that 480 samples could plausibly
+     * find zero -- matches your log exactly (fell through to BlockPos.ZERO).
+     * Volcanic Lowlands has no such altitude dependency, so this fix is
+     * specifically for the Glacial Peaks half of the 50/50 pick -- if it's
+     * STILL broken after this, the new logging below will show whether
+     * Volcanic Lowlands is ALSO failing, which would point to a different bug.
      */
     public static BlockPos findExoticSpawnPosition(RandomSource random) {
-        ResourceKey<Biome> target = random.nextBoolean()
-                ? GHBiomes.VOLCANIC_LOWLANDS
-                : GHBiomes.GLACIAL_PEAKS;
+        boolean seekingGlacialPeaks = random.nextBoolean();
+        ResourceKey<Biome> target = seekingGlacialPeaks ? GHBiomes.GLACIAL_PEAKS : GHBiomes.VOLCANIC_LOWLANDS;
+
+        var targetProfile = net.enderwish.TerraForma_Subpack.core.worldgen.BiomeTerrainRegistry.get(target);
 
         for (int radius = 500; radius <= 20_000; radius += 500) {
-            for (int attempt = 0; attempt < 12; attempt++) {
+            for (int attempt = 0; attempt < 20; attempt++) {
                 int x = random.nextInt(radius * 2) - radius;
                 int z = random.nextInt(radius * 2) - radius;
-                int roughY = GHNoiseRouter.INSTANCE.getSurfaceHeight(x, z);
+                int y = GHNoiseRouter.INSTANCE.getSurfaceHeight(x, z, targetProfile);
 
-                if (GHBiomeSource.getBiomeKeyAt(x, roughY, z).equals(target)) {
-                    int y = GHNoiseRouter.INSTANCE.getSurfaceHeight(x, z);
+                if (GHBiomeSource.getBiomeKeyAt(x, y, z).equals(target)) {
                     return new BlockPos(x, y + 1, z);
                 }
             }
