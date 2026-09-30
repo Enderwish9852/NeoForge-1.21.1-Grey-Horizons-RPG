@@ -14,6 +14,8 @@ public class ModMessages {
         registrar.playToClient(SurvivalSyncPacket.TYPE, SurvivalSyncPacket.STREAM_CODEC, SurvivalSyncPacket::handle);
         registrar.playToClient(CombatTimerSyncPacket.TYPE, CombatTimerSyncPacket.STREAM_CODEC, CombatTimerSyncPacket::handle);
         registrar.playToClient(DeathReportPacket.TYPE, DeathReportPacket.STREAM_CODEC, DeathReportPacket::handle);
+        registrar.playToClient(KillFeedPacket.TYPE, KillFeedPacket.STREAM_CODEC, KillFeedPacket::handle);
+        registrar.playToClient(ExpLogPacket.TYPE, ExpLogPacket.STREAM_CODEC, ExpLogPacket::handle);
     }
 
     public static void sendToPlayer(CustomPacketPayload packet, ServerPlayer player) {

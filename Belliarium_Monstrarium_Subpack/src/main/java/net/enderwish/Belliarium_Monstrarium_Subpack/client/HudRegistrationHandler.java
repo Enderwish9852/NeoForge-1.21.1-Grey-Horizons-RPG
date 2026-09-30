@@ -1,6 +1,7 @@
 package net.enderwish.Belliarium_Monstrarium_Subpack.client;
 
 import net.enderwish.Belliarium_Monstrarium_Subpack.client.gui.BodyHealthHUD;
+import net.enderwish.Belliarium_Monstrarium_Subpack.client.gui.CombatLogHUD;
 import net.enderwish.Belliarium_Monstrarium_Subpack.client.gui.CombatTimerHUD;
 import net.enderwish.Belliarium_Monstrarium_Subpack.client.gui.SurvivalBarsHUD;
 import net.minecraft.resources.ResourceLocation;
@@ -17,5 +18,8 @@ public class HudRegistrationHandler {
         event.registerAboveAll(
                 ResourceLocation.fromNamespaceAndPath("gh_belliarium_monstrarium", "combat_timer"),
                 CombatTimerHUD.LAYER);
+        event.registerAboveAll(
+                ResourceLocation.fromNamespaceAndPath("gh_belliarium_monstrarium", "combat_log"),
+                CombatLogHUD.LAYER);
     }
 }

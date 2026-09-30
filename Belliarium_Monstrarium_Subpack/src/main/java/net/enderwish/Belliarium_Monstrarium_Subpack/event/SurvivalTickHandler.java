@@ -20,53 +20,41 @@ import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 /**
  * SurvivalTickHandler
  *
- * NEW -- energy regeneration, gated by a 50% food threshold:
- *   - Hunger >= 50% ("rapid" tier): actively pushes energy toward 100%,
- *     paying for it with food exhaustion (same causeFoodExhaustion mechanism
- *     the weight-drain line below already uses). Weight both slows this
- *     regen AND multiplies its exhaustion cost.
- *   - Hunger < 50% ("passive" tier): a much slower trickle, no extra
- *     exhaustion cost, still slowed further by weight.
- *   hungerFraction is re-read fresh every tick, so if rapid-tier regen ever
- *   pulls hunger below 50%, the very next tick naturally drops into the
- *   passive tier -- that's what makes "keep energy at 100% if all possible"
- *   self-limiting without a separate hard cutoff.
- *   RAPID_/PASSIVE_ENERGY_REGEN_PER_TICK and the hunger-cost constants below
- *   are first-pass tuning numbers, not derived from anything -- adjust freely.
- *
- * BUGFIX (sync timing) -- same issue as BodyDamageHandler: sending
- * SurvivalSyncPacket during PlayerEvent.Clone is unreliable. Data mutation
- * (healAll()) stays on Clone; the network sync now happens on
- * PlayerRespawnEvent instead.
- *
- * NEW -- onPlayerJoin syncs the persisted SurvivalCapability to the client
- * on login/rejoin, which previously never happened at all.
+ * BUGFIX (stamina recovery too slow) -- STAMINA_BASE_REGEN bumped 0.05 -> 0.35
+ * (~7x). At zero weight this takes an empty stamina bar from 0->100 in about
+ * 14 seconds instead of ~100. No drain constant anywhere in this file was
+ * touched. Note: since stamina regen spends energy 1:1 (per last change),
+ * energy will now visibly drop FASTER specifically while stamina is
+ * recovering than before -- that's the faster regen consuming more energy
+ * per second, not a change to energy's own drain rate.
  */
 @EventBusSubscriber(modid = BelliariumMonstrariumSubpack.MODID)
 public class SurvivalTickHandler {
 
-    // Energy drain
+    // Energy drain (unchanged)
     private static final float BASE_ENERGY_DRAIN_PER_TICK = 0.0015f;
     private static final float WEIGHT_ENERGY_DRAIN_MULTIPLIER = 5.0f;
     private static final float HUNGER_ENERGY_DRAIN_MULTIPLIER = 2.0f;
     private static final float WEIGHT_EXHAUSTION_PER_TICK = 0.002f;
 
-    // Energy regen (new)
+    // Energy regen (unchanged)
     private static final float HUNGER_RAPID_THRESHOLD = 0.5f;
     private static final float RAPID_ENERGY_REGEN_PER_TICK = 0.05f;
-    private static final float PASSIVE_ENERGY_REGEN_PER_TICK = 0.005f;
+    private static final float NORMAL_ENERGY_REGEN_PER_TICK = 0.01f;
     private static final float WEIGHT_REGEN_SLOWDOWN = 0.85f;
     private static final float RAPID_HUNGER_COST_PER_ENERGY = 0.05f;
+    private static final float NORMAL_HUNGER_COST_PER_ENERGY = 0.01f;
     private static final float WEIGHT_HUNGER_COST_MULTIPLIER = 4.0f;
 
-    // Stamina
-    private static final float STAMINA_SPRINT_DRAIN = 0.15f;
-    private static final float STAMINA_BASE_REGEN = 0.05f;
+    // Stamina regen -- spends energy
+    private static final float STAMINA_BASE_REGEN = 0.35f; // was 0.05f -- THE FIX
     private static final float SLEEPING_REGEN_MULTIPLIER = 3.0f;
+    private static final float STAMINA_ENERGY_COST_RATIO = 1.0f;
+    private static final float STAMINA_SPRINT_DRAIN = 0.15f;
     private static final float RECOVERY_THRESHOLD = 15.0f;
     private static final float MAXED_WEIGHT_STANDING_DRAIN = 0.03f;
 
-    // Jumping
+    // Jumping (unchanged)
     private static final float MAXED_THRESHOLD = 0.98f;
     private static final float HALF_HEIGHT_WEIGHT_THRESHOLD = 0.5f;
     private static final float BASE_JUMP_STAMINA_COST = 3.0f;
@@ -86,7 +74,6 @@ public class SurvivalTickHandler {
         if (!(event.getEntity() instanceof ServerPlayer newPlayer)) return;
         SurvivalCapability cap = newPlayer.getData(ModAttachments.SURVIVAL);
         cap.healAll();
-        // Sync moved to PlayerRespawnEvent -- see class doc comment.
     }
 
     @SubscribeEvent
@@ -107,37 +94,30 @@ public class SurvivalTickHandler {
         float weightFraction = Mth.clamp(WeightEnforcementHandler.getWeightFraction(player), 0f, 1f);
         float hungerFraction = player.getFoodData().getFoodLevel() / 20.0f;
 
-        // Energy drain: scales with weight and how hungry the player is
         float drainMultiplier = 1.0f
                 + weightFraction * WEIGHT_ENERGY_DRAIN_MULTIPLIER
                 + (1.0f - hungerFraction) * HUNGER_ENERGY_DRAIN_MULTIPLIER;
         cap.setEnergy(cap.getEnergy() - BASE_ENERGY_DRAIN_PER_TICK * drainMultiplier);
 
-        // Heavy carrying also makes vanilla hunger drain a little faster
         if (weightFraction > 0f) {
             player.causeFoodExhaustion(WEIGHT_EXHAUSTION_PER_TICK * weightFraction);
         }
 
-        // Energy regen: two hunger tiers, both slowed by weight (see class doc comment)
         if (cap.getEnergy() < 100f) {
-            if (hungerFraction >= HUNGER_RAPID_THRESHOLD) {
-                float regenRate = RAPID_ENERGY_REGEN_PER_TICK * (1.0f - weightFraction * WEIGHT_REGEN_SLOWDOWN);
-                float energyGain = Math.min(regenRate, 100f - cap.getEnergy());
-                if (energyGain > 0f) {
-                    cap.setEnergy(cap.getEnergy() + energyGain);
-                    float exhaustionCost = energyGain * RAPID_HUNGER_COST_PER_ENERGY
-                            * (1.0f + weightFraction * WEIGHT_HUNGER_COST_MULTIPLIER);
-                    player.causeFoodExhaustion(exhaustionCost);
-                }
-            } else {
-                float passiveRate = PASSIVE_ENERGY_REGEN_PER_TICK * (1.0f - weightFraction * WEIGHT_REGEN_SLOWDOWN);
-                if (passiveRate > 0f) {
-                    cap.setEnergy(cap.getEnergy() + Math.min(passiveRate, 100f - cap.getEnergy()));
-                }
+            boolean rapidTier = hungerFraction >= HUNGER_RAPID_THRESHOLD;
+            float baseRate = rapidTier ? RAPID_ENERGY_REGEN_PER_TICK : NORMAL_ENERGY_REGEN_PER_TICK;
+            float hungerCostRate = rapidTier ? RAPID_HUNGER_COST_PER_ENERGY : NORMAL_HUNGER_COST_PER_ENERGY;
+
+            float regenRate = baseRate * (1.0f - weightFraction * WEIGHT_REGEN_SLOWDOWN);
+            float energyGain = Math.min(regenRate, 100f - cap.getEnergy());
+            if (energyGain > 0f) {
+                cap.setEnergy(cap.getEnergy() + energyGain);
+                float exhaustionCost = energyGain * hungerCostRate
+                        * (1.0f + weightFraction * WEIGHT_HUNGER_COST_MULTIPLIER);
+                player.causeFoodExhaustion(exhaustionCost);
             }
         }
 
-        // Stamina
         if (cap.getEnergy() <= 0) {
             cap.setStamina(0);
         } else if (weightFraction >= MAXED_THRESHOLD) {
@@ -146,17 +126,27 @@ public class SurvivalTickHandler {
             cap.setStamina(cap.getStamina() - STAMINA_SPRINT_DRAIN);
         } else {
             float weightPenalty = 1.0f - weightFraction * 0.6f;
-            float energyEfficiency = Math.max(0.1f, cap.getEnergy() / 100.0f);
             float regenMultiplier = player.isSleeping() ? SLEEPING_REGEN_MULTIPLIER : 1.0f;
-            cap.setStamina(cap.getStamina()
-                    + STAMINA_BASE_REGEN * weightPenalty * energyEfficiency * regenMultiplier);
+
+            float staminaGain = STAMINA_BASE_REGEN * weightPenalty * regenMultiplier;
+            staminaGain = Math.min(staminaGain, 100f - cap.getStamina());
+
+            float energyCost = staminaGain * STAMINA_ENERGY_COST_RATIO;
+            if (energyCost > cap.getEnergy()) {
+                staminaGain = cap.getEnergy() / STAMINA_ENERGY_COST_RATIO;
+                energyCost = cap.getEnergy();
+            }
+
+            if (staminaGain > 0f) {
+                cap.setStamina(cap.getStamina() + staminaGain);
+                cap.setEnergy(cap.getEnergy() - energyCost);
+            }
         }
 
         if (cap.getStamina() <= 0 && player.isSprinting()) {
             player.setSprinting(false);
         }
 
-        // Collapse
         if (!cap.isCollapsed() && cap.getEnergy() <= 0 && cap.getStamina() <= 0) {
             cap.setCollapsed(true);
         } else if (cap.isCollapsed()

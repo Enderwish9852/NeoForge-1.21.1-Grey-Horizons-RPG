@@ -11,8 +11,10 @@ import java.util.UUID;
 /**
  * CombatState
  *
- * NEW -- isTagged(UUID) exposes membership in taggedMobs, needed by
- * CombatTimerHandler's escape-bug fix. Everything else unchanged.
+ * BUGFIX (re-engaging the same mob never retriggers combat) -- endCombat()
+ * now clears taggedMobs for every end reason. log is left untouched (still
+ * needed by the Death Report on DEFEAT; harmless to leave on SUCCESS/ESCAPED
+ * since it just gets overwritten by the next startCombat()).
  */
 public class CombatState {
 
@@ -43,7 +45,6 @@ public class CombatState {
         return taggedMobs.containsKey(mobId);
     }
 
-    /** Returns how many of the given mobs were NOT already tagged this battle. */
     public int tagMobs(List<Mob> mobs, long gameTime) {
         currentGroup++;
         int added = 0;
@@ -55,7 +56,6 @@ public class CombatState {
         return added;
     }
 
-    /** Returns true if the given UUID was actually tagged (and removes it). */
     public boolean untagMob(UUID mobId) {
         return taggedMobs.remove(mobId) != null;
     }
@@ -71,5 +71,6 @@ public class CombatState {
     public void endCombat(EndReason reason) {
         inCombat = false;
         lastEndReason = reason;
+        taggedMobs.clear(); // THE FIX -- see class doc comment
     }
 }
