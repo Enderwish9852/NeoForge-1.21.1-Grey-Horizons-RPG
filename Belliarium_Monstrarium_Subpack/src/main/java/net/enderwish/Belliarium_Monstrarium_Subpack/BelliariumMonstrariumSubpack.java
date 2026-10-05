@@ -2,12 +2,12 @@ package net.enderwish.Belliarium_Monstrarium_Subpack;
 
 import net.enderwish.Belliarium_Monstrarium_Subpack.client.HudRegistrationHandler;
 import net.enderwish.Belliarium_Monstrarium_Subpack.command.SkillCommand;
-import net.enderwish.Belliarium_Monstrarium_Subpack.core.ArmorToughnessRegistry;
+import net.enderwish.Belliarium_Monstrarium_Subpack.core.gear.ArmorToughnessRegistry;
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.ModAttachments;
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.ModDataComponents;
-import net.enderwish.Belliarium_Monstrarium_Subpack.core.SkillRegistry;
-import net.enderwish.Belliarium_Monstrarium_Subpack.core.ToolProfileRegistry;
-import net.enderwish.Belliarium_Monstrarium_Subpack.core.WeightRegistry;
+import net.enderwish.Belliarium_Monstrarium_Subpack.core.skills.SkillRegistry;
+import net.enderwish.Belliarium_Monstrarium_Subpack.core.gear.ToolProfileRegistry;
+import net.enderwish.Belliarium_Monstrarium_Subpack.core.gear.WeightRegistry;
 import net.enderwish.Belliarium_Monstrarium_Subpack.item.ModItems;
 import net.enderwish.Belliarium_Monstrarium_Subpack.network.ModMessages;
 import net.neoforged.bus.api.IEventBus;

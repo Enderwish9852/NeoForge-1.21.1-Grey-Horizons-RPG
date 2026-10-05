@@ -1,7 +1,7 @@
 package net.enderwish.Belliarium_Monstrarium_Subpack.client.gui;
 
-import net.enderwish.Belliarium_Monstrarium_Subpack.core.BodyPartColors;
-import net.enderwish.Belliarium_Monstrarium_Subpack.core.CombatLogEntry;
+import net.enderwish.Belliarium_Monstrarium_Subpack.core.body.BodyPartColors;
+import net.enderwish.Belliarium_Monstrarium_Subpack.core.combat.CombatLogEntry;
 import net.enderwish.Belliarium_Monstrarium_Subpack.network.DeathReportPacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;

@@ -1,7 +1,7 @@
 package net.enderwish.Belliarium_Monstrarium_Subpack.network;
 
 import net.enderwish.Belliarium_Monstrarium_Subpack.BelliariumMonstrariumSubpack;
-import net.enderwish.Belliarium_Monstrarium_Subpack.core.BodyHealthCapability;
+import net.enderwish.Belliarium_Monstrarium_Subpack.core.body.BodyHealthCapability;
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.ModAttachments;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.FriendlyByteBuf;

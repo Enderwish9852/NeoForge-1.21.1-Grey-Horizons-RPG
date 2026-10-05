@@ -2,7 +2,7 @@ package net.enderwish.Belliarium_Monstrarium_Subpack.event;
 
 import net.enderwish.Belliarium_Monstrarium_Subpack.BelliariumMonstrariumSubpack;
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.ModAttachments;
-import net.enderwish.Belliarium_Monstrarium_Subpack.core.SurvivalCapability;
+import net.enderwish.Belliarium_Monstrarium_Subpack.core.survival.SurvivalCapability;
 import net.enderwish.Belliarium_Monstrarium_Subpack.network.ModMessages;
 import net.enderwish.Belliarium_Monstrarium_Subpack.network.SurvivalSyncPacket;
 import net.minecraft.server.level.ServerPlayer;

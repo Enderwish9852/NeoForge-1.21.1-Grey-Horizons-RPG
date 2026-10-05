@@ -2,7 +2,7 @@ package net.enderwish.Belliarium_Monstrarium_Subpack.network;
 
 import net.enderwish.Belliarium_Monstrarium_Subpack.BelliariumMonstrariumSubpack;
 import net.enderwish.Belliarium_Monstrarium_Subpack.client.DeathReportClientState;
-import net.enderwish.Belliarium_Monstrarium_Subpack.core.CombatLogEntry;
+import net.enderwish.Belliarium_Monstrarium_Subpack.core.combat.CombatLogEntry;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;

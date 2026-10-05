@@ -1,6 +1,6 @@
 package net.enderwish.Belliarium_Monstrarium_Subpack.client;
 
-import net.enderwish.Belliarium_Monstrarium_Subpack.core.CombatLogRowType;
+import net.enderwish.Belliarium_Monstrarium_Subpack.core.combat.CombatLogRowType;
 
 import java.util.ArrayList;
 import java.util.EnumMap;

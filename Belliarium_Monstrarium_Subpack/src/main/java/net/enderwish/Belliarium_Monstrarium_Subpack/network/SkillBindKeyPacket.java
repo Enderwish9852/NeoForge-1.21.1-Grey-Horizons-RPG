@@ -1,7 +1,7 @@
 package net.enderwish.Belliarium_Monstrarium_Subpack.network;
 
 import net.enderwish.Belliarium_Monstrarium_Subpack.BelliariumMonstrariumSubpack;
-import net.enderwish.Belliarium_Monstrarium_Subpack.core.LearnedSkillsCapability;
+import net.enderwish.Belliarium_Monstrarium_Subpack.core.skills.LearnedSkillsCapability;
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.ModAttachments;
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.ModDataComponents;
 import net.enderwish.Belliarium_Monstrarium_Subpack.item.SkillBookItem;

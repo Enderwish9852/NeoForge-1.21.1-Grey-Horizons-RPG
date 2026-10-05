@@ -1,4 +1,4 @@
-package net.enderwish.Belliarium_Monstrarium_Subpack.core;
+package net.enderwish.Belliarium_Monstrarium_Subpack.core.combat;
 
 import net.minecraft.world.entity.Mob;
 

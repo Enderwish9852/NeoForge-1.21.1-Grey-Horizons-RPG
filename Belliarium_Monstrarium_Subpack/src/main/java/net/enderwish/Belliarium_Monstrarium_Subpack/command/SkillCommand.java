@@ -4,7 +4,8 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import net.enderwish.Belliarium_Monstrarium_Subpack.core.LearnedSkillsCapability;
+import net.enderwish.Belliarium_Monstrarium_Subpack.core.skills.KeyComboCodec;
+import net.enderwish.Belliarium_Monstrarium_Subpack.core.skills.LearnedSkillsCapability;
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.ModAttachments;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -13,14 +14,6 @@ import net.minecraft.server.level.ServerPlayer;
 
 import java.util.Map;
 
-/**
- * SkillCommand
- *
- * /skill list | /skill <name> keybind | /skill remove | /skill remove <name>
- *
- * NOT admin-gated like SeasonCommand/WeatherCommand -- those are debug
- * tools, this is a player managing their own skills.
- */
 public class SkillCommand {
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
@@ -35,7 +28,7 @@ public class SkillCommand {
         );
     }
 
-    private static int listSkills(CommandContext<CommandSourceStack> ctx)  throws CommandSyntaxException {
+    private static int listSkills(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
         ServerPlayer player = ctx.getSource().getPlayerOrException();
         LearnedSkillsCapability skills = player.getData(ModAttachments.LEARNED_SKILLS);
 
@@ -53,27 +46,28 @@ public class SkillCommand {
         return 1;
     }
 
-    private static int showKeybind(CommandContext<CommandSourceStack> ctx)  throws CommandSyntaxException {
+    private static int showKeybind(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
         ServerPlayer player = ctx.getSource().getPlayerOrException();
         String name = StringArgumentType.getString(ctx, "name");
-        Integer keyCode = player.getData(ModAttachments.LEARNED_SKILLS).getKeyFor(name);
+        Integer packedKey = player.getData(ModAttachments.LEARNED_SKILLS).getKeyFor(name);
 
-        if (keyCode == null) {
+        if (packedKey == null) {
             ctx.getSource().sendFailure(Component.literal("§cYou haven't learned '" + name + "'."));
             return 0;
         }
-        ctx.getSource().sendSuccess(() -> Component.literal("§6[Skills]§r '" + name + "' is bound to key code " + keyCode), false);
+        String display = KeyComboCodec.describe(packedKey);
+        ctx.getSource().sendSuccess(() -> Component.literal("§6[Skills]§r '" + name + "' is bound to " + display), false);
         return 1;
     }
 
-    private static int removeAll(CommandContext<CommandSourceStack> ctx)  throws CommandSyntaxException {
+    private static int removeAll(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
         ServerPlayer player = ctx.getSource().getPlayerOrException();
         player.getData(ModAttachments.LEARNED_SKILLS).removeAll();
         ctx.getSource().sendSuccess(() -> Component.literal("§6[Skills]§r All learned skills removed."), false);
         return 1;
     }
 
-    private static int removeOne(CommandContext<CommandSourceStack> ctx)  throws CommandSyntaxException {
+    private static int removeOne(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
         ServerPlayer player = ctx.getSource().getPlayerOrException();
         String name = StringArgumentType.getString(ctx, "name");
 

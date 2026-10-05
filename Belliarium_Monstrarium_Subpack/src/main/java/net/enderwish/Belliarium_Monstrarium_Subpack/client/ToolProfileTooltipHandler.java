@@ -1,11 +1,11 @@
 package net.enderwish.Belliarium_Monstrarium_Subpack.client;
 
 import net.enderwish.Belliarium_Monstrarium_Subpack.BelliariumMonstrariumSubpack;
-import net.enderwish.Belliarium_Monstrarium_Subpack.core.ItemRarity;
+import net.enderwish.Belliarium_Monstrarium_Subpack.core.gear.ItemRarity;
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.ModDataComponents;
-import net.enderwish.Belliarium_Monstrarium_Subpack.core.RepairChargesComponent;
-import net.enderwish.Belliarium_Monstrarium_Subpack.core.ToolProfileDefinition;
-import net.enderwish.Belliarium_Monstrarium_Subpack.core.ToolProfileRegistry;
+import net.enderwish.Belliarium_Monstrarium_Subpack.core.gear.RepairChargesComponent;
+import net.enderwish.Belliarium_Monstrarium_Subpack.core.gear.ToolProfileDefinition;
+import net.enderwish.Belliarium_Monstrarium_Subpack.core.gear.ToolProfileRegistry;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;

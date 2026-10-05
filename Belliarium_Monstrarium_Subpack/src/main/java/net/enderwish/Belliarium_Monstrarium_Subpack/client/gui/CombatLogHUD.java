@@ -1,7 +1,7 @@
 package net.enderwish.Belliarium_Monstrarium_Subpack.client.gui;
 
 import net.enderwish.Belliarium_Monstrarium_Subpack.client.CombatLogClientState;
-import net.enderwish.Belliarium_Monstrarium_Subpack.core.CombatLogRowType;
+import net.enderwish.Belliarium_Monstrarium_Subpack.core.combat.CombatLogRowType;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;

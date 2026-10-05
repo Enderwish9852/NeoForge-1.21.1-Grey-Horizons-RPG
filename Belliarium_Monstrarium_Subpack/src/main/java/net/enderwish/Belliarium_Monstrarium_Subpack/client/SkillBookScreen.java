@@ -1,7 +1,7 @@
 package net.enderwish.Belliarium_Monstrarium_Subpack.client;
 
-import net.enderwish.Belliarium_Monstrarium_Subpack.core.SkillDefinition;
-import net.enderwish.Belliarium_Monstrarium_Subpack.core.SkillRegistry;
+import net.enderwish.Belliarium_Monstrarium_Subpack.core.skills.SkillDefinition;
+import net.enderwish.Belliarium_Monstrarium_Subpack.core.skills.SkillRegistry;
 import net.enderwish.Belliarium_Monstrarium_Subpack.network.ModMessages;
 import net.enderwish.Belliarium_Monstrarium_Subpack.network.SkillBookScreenStatePacket;
 import net.minecraft.client.gui.GuiGraphics;

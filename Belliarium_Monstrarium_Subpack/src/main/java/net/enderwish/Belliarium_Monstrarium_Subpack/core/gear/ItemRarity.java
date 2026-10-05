@@ -1,4 +1,4 @@
-package net.enderwish.Belliarium_Monstrarium_Subpack.core;
+package net.enderwish.Belliarium_Monstrarium_Subpack.core.gear;
 
 public enum ItemRarity {
     COMMON(1, 0xFFAAAAAA),

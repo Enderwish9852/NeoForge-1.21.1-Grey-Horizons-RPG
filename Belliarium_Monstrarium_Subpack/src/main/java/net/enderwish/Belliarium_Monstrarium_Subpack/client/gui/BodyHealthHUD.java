@@ -1,8 +1,9 @@
 package net.enderwish.Belliarium_Monstrarium_Subpack.client.gui;
 
-import net.enderwish.Belliarium_Monstrarium_Subpack.core.BodyHealthCapability;
-import net.enderwish.Belliarium_Monstrarium_Subpack.core.BodyPartColors;
+import net.enderwish.Belliarium_Monstrarium_Subpack.core.body.BodyHealthCapability;
+import net.enderwish.Belliarium_Monstrarium_Subpack.core.body.BodyPartColors;
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.ModAttachments;
+import net.enderwish.Belliarium_Monstrarium_Subpack.core.integration.CuriosHooks;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -28,7 +29,7 @@ public class BodyHealthHUD {
         Minecraft mc = Minecraft.getInstance();
         Player player = mc.player;
         if (player == null || !player.isAlive()) return;
-        if (!net.enderwish.Belliarium_Monstrarium_Subpack.core.CuriosHooks.hasWatchEquipped(player)) return;
+        if (!CuriosHooks.hasWatchEquipped(player)) return;
 
         BodyHealthCapability cap = player.getData(ModAttachments.BODY_HEALTH);
         int baseY = mc.getWindow().getGuiScaledHeight() - BASE_Y_FROM_BOTTOM;

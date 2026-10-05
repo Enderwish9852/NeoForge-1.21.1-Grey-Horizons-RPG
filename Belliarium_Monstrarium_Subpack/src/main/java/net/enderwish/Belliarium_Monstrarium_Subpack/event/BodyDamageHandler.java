@@ -1,11 +1,11 @@
 package net.enderwish.Belliarium_Monstrarium_Subpack.event;
 
 import net.enderwish.Belliarium_Monstrarium_Subpack.BelliariumMonstrariumSubpack;
-import net.enderwish.Belliarium_Monstrarium_Subpack.core.ArmorToughnessRegistry;
-import net.enderwish.Belliarium_Monstrarium_Subpack.core.BodyHealthCapability;
-import net.enderwish.Belliarium_Monstrarium_Subpack.core.CombatLogEntry;
-import net.enderwish.Belliarium_Monstrarium_Subpack.core.CombatState;
-import net.enderwish.Belliarium_Monstrarium_Subpack.core.CombatTimerManager;
+import net.enderwish.Belliarium_Monstrarium_Subpack.core.gear.ArmorToughnessRegistry;
+import net.enderwish.Belliarium_Monstrarium_Subpack.core.body.BodyHealthCapability;
+import net.enderwish.Belliarium_Monstrarium_Subpack.core.combat.CombatLogEntry;
+import net.enderwish.Belliarium_Monstrarium_Subpack.core.combat.CombatState;
+import net.enderwish.Belliarium_Monstrarium_Subpack.core.combat.CombatTimerManager;
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.ModAttachments;
 import net.enderwish.Belliarium_Monstrarium_Subpack.network.BodyHealthSyncPacket;
 import net.enderwish.Belliarium_Monstrarium_Subpack.network.DeathReportPacket;

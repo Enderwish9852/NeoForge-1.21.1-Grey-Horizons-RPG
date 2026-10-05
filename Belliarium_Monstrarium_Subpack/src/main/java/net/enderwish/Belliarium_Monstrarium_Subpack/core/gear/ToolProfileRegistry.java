@@ -1,4 +1,4 @@
-package net.enderwish.Belliarium_Monstrarium_Subpack.core;
+package net.enderwish.Belliarium_Monstrarium_Subpack.core.gear;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;

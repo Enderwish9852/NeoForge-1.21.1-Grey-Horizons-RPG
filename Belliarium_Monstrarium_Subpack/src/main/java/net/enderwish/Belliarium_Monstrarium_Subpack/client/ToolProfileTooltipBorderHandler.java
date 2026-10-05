@@ -1,7 +1,7 @@
 package net.enderwish.Belliarium_Monstrarium_Subpack.client;
 
 import net.enderwish.Belliarium_Monstrarium_Subpack.BelliariumMonstrariumSubpack;
-import net.enderwish.Belliarium_Monstrarium_Subpack.core.ToolProfileRegistry;
+import net.enderwish.Belliarium_Monstrarium_Subpack.core.gear.ToolProfileRegistry;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;

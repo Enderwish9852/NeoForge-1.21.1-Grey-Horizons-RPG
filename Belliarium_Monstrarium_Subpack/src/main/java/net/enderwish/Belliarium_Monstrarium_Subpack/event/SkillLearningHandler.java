@@ -2,12 +2,13 @@ package net.enderwish.Belliarium_Monstrarium_Subpack.event;
 
 import net.enderwish.Belliarium_Monstrarium_Subpack.BelliariumMonstrariumSubpack;
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.ModDataComponents;
-import net.enderwish.Belliarium_Monstrarium_Subpack.core.SkillDefinition;
-import net.enderwish.Belliarium_Monstrarium_Subpack.core.SkillLearningManager;
-import net.enderwish.Belliarium_Monstrarium_Subpack.core.SkillRegistry;
+import net.enderwish.Belliarium_Monstrarium_Subpack.core.skills.SkillDefinition;
+import net.enderwish.Belliarium_Monstrarium_Subpack.core.skills.SkillLearningManager;
+import net.enderwish.Belliarium_Monstrarium_Subpack.core.skills.SkillRegistry;
 import net.enderwish.Belliarium_Monstrarium_Subpack.item.SkillBookItem;
 import net.enderwish.Belliarium_Monstrarium_Subpack.network.ModMessages;
 import net.enderwish.Belliarium_Monstrarium_Subpack.network.SkillLearningCompletePacket;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
@@ -20,15 +21,10 @@ import org.slf4j.LoggerFactory;
 /**
  * SkillLearningHandler
  *
- * Advances progress by 1 tick for every tick the heartbeat stays fresh --
- * not by computing elapsed real time -- so pausing/resuming is just
- * "heartbeat stopped/started arriving," no separate state machine needed.
- * Progress itself lives on the ItemStack, so it survives relogs for free.
- *
- * Cooldown visual (the "like an ender pearl" ask) is removed the instant a
- * heartbeat goes stale and re-added, resuming from the remaining time, the
- * next time one arrives -- vanilla's ItemCooldowns has no native pause,
- * only add/remove, so this is how "the cd will stop" is actually achieved.
+ * CLARIFICATION (not a bug) -- see class doc comment summary in chat
+ * message. onExplicitClose now sends a chat confirmation with the exact
+ * saved tick count on close, so progress persistence is directly visible
+ * rather than something you have to take my word for.
  */
 @EventBusSubscriber(modid = BelliariumMonstrariumSubpack.MODID)
 public class SkillLearningHandler {
@@ -101,5 +97,11 @@ public class SkillLearningHandler {
         ItemStack stack = player.getItemInHand(hand);
         if (!stack.isEmpty()) player.getCooldowns().removeCooldown(stack.getItem());
         SkillLearningManager.INSTANCE.clear(player.getUUID());
+
+        SkillRegistry.INSTANCE.getSkill(skillId).ifPresent(def -> {
+            int progress = stack.isEmpty() ? 0 : stack.getOrDefault(ModDataComponents.LEARNING_PROGRESS.get(), 0);
+            player.displayClientMessage(Component.literal(
+                    "Learning paused -- progress saved: " + progress + " / " + def.getLearningTimeTicks() + " ticks."), true);
+        });
     }
 }

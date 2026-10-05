@@ -2,6 +2,7 @@ package net.enderwish.Belliarium_Monstrarium_Subpack.core;
 
 import com.mojang.serialization.Codec;
 import net.enderwish.Belliarium_Monstrarium_Subpack.BelliariumMonstrariumSubpack;
+import net.enderwish.Belliarium_Monstrarium_Subpack.core.gear.RepairChargesComponent;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.registries.Registries;
 import net.neoforged.bus.api.IEventBus;

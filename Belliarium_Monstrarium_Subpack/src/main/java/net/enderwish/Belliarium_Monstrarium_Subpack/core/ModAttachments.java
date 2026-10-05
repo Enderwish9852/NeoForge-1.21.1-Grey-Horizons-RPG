@@ -1,6 +1,9 @@
 package net.enderwish.Belliarium_Monstrarium_Subpack.core;
 
 import net.enderwish.Belliarium_Monstrarium_Subpack.BelliariumMonstrariumSubpack;
+import net.enderwish.Belliarium_Monstrarium_Subpack.core.body.BodyHealthCapability;
+import net.enderwish.Belliarium_Monstrarium_Subpack.core.skills.LearnedSkillsCapability;
+import net.enderwish.Belliarium_Monstrarium_Subpack.core.survival.SurvivalCapability;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.attachment.AttachmentType;
 import net.neoforged.neoforge.registries.DeferredHolder;

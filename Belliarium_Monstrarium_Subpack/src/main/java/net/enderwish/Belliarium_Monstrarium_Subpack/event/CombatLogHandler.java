@@ -1,11 +1,11 @@
 package net.enderwish.Belliarium_Monstrarium_Subpack.event;
 
 import net.enderwish.Belliarium_Monstrarium_Subpack.BelliariumMonstrariumSubpack;
-import net.enderwish.Belliarium_Monstrarium_Subpack.core.CombatLogManager;
-import net.enderwish.Belliarium_Monstrarium_Subpack.core.CombatLogRowType;
-import net.enderwish.Belliarium_Monstrarium_Subpack.core.CombatState;
-import net.enderwish.Belliarium_Monstrarium_Subpack.core.CombatTimerManager;
-import net.enderwish.Belliarium_Monstrarium_Subpack.core.PlayerCombatLogState;
+import net.enderwish.Belliarium_Monstrarium_Subpack.core.combat.CombatLogManager;
+import net.enderwish.Belliarium_Monstrarium_Subpack.core.combat.CombatLogRowType;
+import net.enderwish.Belliarium_Monstrarium_Subpack.core.combat.CombatState;
+import net.enderwish.Belliarium_Monstrarium_Subpack.core.combat.CombatTimerManager;
+import net.enderwish.Belliarium_Monstrarium_Subpack.core.combat.PlayerCombatLogState;
 import net.enderwish.Belliarium_Monstrarium_Subpack.network.ExpLogPacket;
 import net.enderwish.Belliarium_Monstrarium_Subpack.network.KillFeedPacket;
 import net.enderwish.Belliarium_Monstrarium_Subpack.network.ModMessages;

@@ -1,8 +1,8 @@
 package net.enderwish.Belliarium_Monstrarium_Subpack.client.gui;
 
-import net.enderwish.Belliarium_Monstrarium_Subpack.core.CuriosHooks;
+import net.enderwish.Belliarium_Monstrarium_Subpack.core.integration.CuriosHooks;
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.ModAttachments;
-import net.enderwish.Belliarium_Monstrarium_Subpack.core.SurvivalCapability;
+import net.enderwish.Belliarium_Monstrarium_Subpack.core.survival.SurvivalCapability;
 import net.enderwish.Belliarium_Monstrarium_Subpack.event.WeightEnforcementHandler;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;

@@ -1,4 +1,4 @@
-package net.enderwish.Belliarium_Monstrarium_Subpack.core;
+package net.enderwish.Belliarium_Monstrarium_Subpack.core.integration;
 
 import net.minecraft.world.entity.player.Player;
 import top.theillusivec4.curios.api.CuriosApi;

@@ -1,4 +1,6 @@
-package net.enderwish.Belliarium_Monstrarium_Subpack.core;
+package net.enderwish.Belliarium_Monstrarium_Subpack.core.skills;
+
+import net.enderwish.Belliarium_Monstrarium_Subpack.core.gear.ItemRarity;
 
 import java.util.List;
 
