@@ -8,6 +8,9 @@ version="1.0.0"
 displayName="Belliarium Monstrarium Subpack"
 description="Combat and hostile-creature systems for Grey Horizons RPG -- the Hive's own parasitic threats, replacing vanilla hostiles entirely."
 
+[[mixins]]
+config="gh_belliarium_monstrarium.mixins.json"
+
 [[dependencies.gh_belliarium_monstrarium]]
 modId="neoforge"
 type="required"

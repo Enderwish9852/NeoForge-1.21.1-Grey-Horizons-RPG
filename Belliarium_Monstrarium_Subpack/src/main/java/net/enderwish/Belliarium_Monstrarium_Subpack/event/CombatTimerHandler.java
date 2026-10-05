@@ -19,26 +19,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * CombatTimerHandler
- *
- * BUGFIX (escaped after 2 steps) -- see chat message for the full trace. The
- * 3x3-chunk scan box itself was already correct; the real cause was that
- * EVERY scan re-checked line-of-sight for EVERY threat, including ones
- * already mid-battle -- one broken LOS from walking past any obstruction
- * instantly ended the fight (zero grace period, as you specifically wanted).
- * Fix: LOS is now only required to TAG a brand-new mob (anti-radar intent
- * preserved); staying in an already-started battle only needs the mob to
- * still be targeting the player.
- *
- * BUGFIX (creative never entering combat) -- creative players were being
- * skipped from the scan entirely. Removed; only spectators are excluded now.
- */
 @EventBusSubscriber(modid = BelliariumMonstrariumSubpack.MODID)
 public class CombatTimerHandler {
 
     private static final int SCAN_INTERVAL_TICKS = 20;
-    private static final int SCAN_CHUNK_RADIUS = 1; // 1 = a 3x3 chunk block (48x48)
+    private static final int SCAN_CHUNK_RADIUS = 1;
 
     private static int tickCounter = 0;
 
@@ -87,8 +72,6 @@ public class CombatTimerHandler {
                 sync(player, state, "Battle end: Escaped");
             }
         } else if (!newlyTaggable.isEmpty()) {
-            // Starting a NEW battle still requires both target AND line of
-            // sight -- the anti-radar condition (see class doc comment).
             state.startCombat(level.getGameTime());
             state.tagMobs(newlyTaggable, level.getGameTime());
             sync(player, state, null);
@@ -125,6 +108,6 @@ public class CombatTimerHandler {
                 ? (int) ((player.level().getGameTime() - state.getCombatStartTick()) / 20L)
                 : 0;
         ModMessages.sendToPlayer(
-                new CombatTimerSyncPacket(state.isInCombat(), elapsedSeconds, endMessage), player);
+                new CombatTimerSyncPacket(state.isInCombat(), elapsedSeconds, endMessage, state.getBattleId()), player);
     }
 }

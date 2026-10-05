@@ -20,24 +20,23 @@ import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 /**
  * SurvivalTickHandler
  *
- * BUGFIX (stamina recovery too slow) -- STAMINA_BASE_REGEN bumped 0.05 -> 0.35
- * (~7x). At zero weight this takes an empty stamina bar from 0->100 in about
- * 14 seconds instead of ~100. No drain constant anywhere in this file was
- * touched. Note: since stamina regen spends energy 1:1 (per last change),
- * energy will now visibly drop FASTER specifically while stamina is
- * recovering than before -- that's the faster regen consuming more energy
- * per second, not a change to energy's own drain rate.
+ * BUGFIX (energy draining faster than stamina) -- STAMINA_ENERGY_COST_RATIO
+ * dropped 1.0 -> 0.1. At the boosted STAMINA_BASE_REGEN=0.35, a full 0->100
+ * stamina refill now takes ~14 seconds; at a 1:1 cost ratio that alone burned
+ * ~100 energy in those same 14 seconds (nearly a full bar). At 0.1, the same
+ * full refill costs 10 energy -- you can fully burn-and-refill stamina
+ * roughly ten times before this mechanism alone empties the energy bar,
+ * which reads as "normal" rather than instantly draining. Still fully
+ * adjustable.
  */
 @EventBusSubscriber(modid = BelliariumMonstrariumSubpack.MODID)
 public class SurvivalTickHandler {
 
-    // Energy drain (unchanged)
     private static final float BASE_ENERGY_DRAIN_PER_TICK = 0.0015f;
     private static final float WEIGHT_ENERGY_DRAIN_MULTIPLIER = 5.0f;
     private static final float HUNGER_ENERGY_DRAIN_MULTIPLIER = 2.0f;
     private static final float WEIGHT_EXHAUSTION_PER_TICK = 0.002f;
 
-    // Energy regen (unchanged)
     private static final float HUNGER_RAPID_THRESHOLD = 0.5f;
     private static final float RAPID_ENERGY_REGEN_PER_TICK = 0.05f;
     private static final float NORMAL_ENERGY_REGEN_PER_TICK = 0.01f;
@@ -46,15 +45,13 @@ public class SurvivalTickHandler {
     private static final float NORMAL_HUNGER_COST_PER_ENERGY = 0.01f;
     private static final float WEIGHT_HUNGER_COST_MULTIPLIER = 4.0f;
 
-    // Stamina regen -- spends energy
-    private static final float STAMINA_BASE_REGEN = 0.35f; // was 0.05f -- THE FIX
+    private static final float STAMINA_BASE_REGEN = 0.35f;
     private static final float SLEEPING_REGEN_MULTIPLIER = 3.0f;
-    private static final float STAMINA_ENERGY_COST_RATIO = 1.0f;
+    private static final float STAMINA_ENERGY_COST_RATIO = 0.1f; // was 1.0f -- THE FIX
     private static final float STAMINA_SPRINT_DRAIN = 0.15f;
     private static final float RECOVERY_THRESHOLD = 15.0f;
     private static final float MAXED_WEIGHT_STANDING_DRAIN = 0.03f;
 
-    // Jumping (unchanged)
     private static final float MAXED_THRESHOLD = 0.98f;
     private static final float HALF_HEIGHT_WEIGHT_THRESHOLD = 0.5f;
     private static final float BASE_JUMP_STAMINA_COST = 3.0f;

@@ -1,7 +1,6 @@
 package net.enderwish.Belliarium_Monstrarium_Subpack.client.gui;
 
 import net.enderwish.Belliarium_Monstrarium_Subpack.client.CombatLogClientState;
-import net.enderwish.Belliarium_Monstrarium_Subpack.client.CombatTimerClientState;
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.CombatLogRowType;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
@@ -15,15 +14,11 @@ import java.util.List;
 /**
  * CombatLogHUD
  *
- * Layout traced from your annotated screenshot: a vertical rectangle from
- * ~67% to ~85% of screen width (NOT flush to the right edge), ~6% to ~80%
- * of screen height. Top 25% of that box is the kill feed; the rest is the
- * exp log. All icons are plain colored-square placeholders per your
- * instruction.
- *
- * Count-up animation: each visible xp value approaches its target at a flat
- * rate per render call rather than an easing curve, so it reads as "rapidly
- * counting up" and always lands exactly on the target.
+ * BUGFIX (scoreboard sometimes not cleared) -- the old per-frame
+ * true/false edge detection (wasInCombatLastFrame) is removed entirely.
+ * Clearing now happens deterministically inside
+ * CombatTimerClientState.update() the instant battleId changes -- see
+ * that class.
  */
 public class CombatLogHUD {
 
@@ -45,18 +40,10 @@ public class CombatLogHUD {
     private static final long COMBO_BREAK_FADE_MS = 500;
     private static final float COUNT_UP_RATE = 40f;
 
-    private static boolean wasInCombatLastFrame = false;
-
     public static void render(GuiGraphics graphics, DeltaTracker deltaTracker) {
         Minecraft mc = Minecraft.getInstance();
         Player player = mc.player;
         if (player == null) return;
-
-        boolean inCombatNow = CombatTimerClientState.isInCombat();
-        if (wasInCombatLastFrame && !inCombatNow) {
-            CombatLogClientState.clearAllExpRows();
-        }
-        wasInCombatLastFrame = inCombatNow;
 
         CombatLogClientState.pruneKillFeed(KILL_FEED_LINGER_MS, KILL_FEED_FADE_MS);
 
@@ -64,7 +51,6 @@ public class CombatLogHUD {
         int screenH = mc.getWindow().getGuiScaledHeight();
 
         int boxX = (int) (screenW * BOX_LEFT_FRACTION);
-        int boxWidth = (int) (screenW * BOX_WIDTH_FRACTION);
         int boxTop = (int) (screenH * BOX_TOP_FRACTION);
         int boxBottom = (int) (screenH * BOX_BOTTOM_FRACTION);
 

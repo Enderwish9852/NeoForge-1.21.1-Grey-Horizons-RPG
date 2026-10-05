@@ -7,15 +7,6 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.registries.NeoForgeRegistries;
 
-/**
- * ModAttachments
- *
- * VERIFY IF COMPILE FAILS -- AttachmentType.builder(...).serialize(...).build()
- * is written from the standard, long-stable NeoForge attachment pattern, not
- * from source pasted in this conversation. If the builder method names differ
- * slightly, IntelliJ's autocomplete on "AttachmentType.builder(" will resolve
- * it in seconds.
- */
 public class ModAttachments {
 
     public static final DeferredRegister<AttachmentType<?>> ATTACHMENT_TYPES =
@@ -31,6 +22,12 @@ public class ModAttachments {
             ATTACHMENT_TYPES.register("survival", () ->
                     AttachmentType.builder(SurvivalCapability::new)
                             .serialize(SurvivalCapability.CODEC)
+                            .build());
+
+    public static final DeferredHolder<AttachmentType<?>, AttachmentType<LearnedSkillsCapability>> LEARNED_SKILLS =
+            ATTACHMENT_TYPES.register("learned_skills", () ->
+                    AttachmentType.builder(() -> new LearnedSkillsCapability())
+                            .serialize(LearnedSkillsCapability.CODEC)
                             .build());
 
     public static void register(IEventBus modEventBus) {

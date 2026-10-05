@@ -7,14 +7,6 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * CombatLogClientState
- *
- * Client-side mirror for the whole Combat Log HUD. Kill feed rows carry
- * their own spawn timestamp and get pruned once fully faded. Exp rows
- * persist until explicitly told to fade/restart, or until CombatLogHUD
- * detects combat has ended (via CombatTimerClientState) and clears them.
- */
 public final class CombatLogClientState {
 
     private CombatLogClientState() {}
@@ -76,6 +68,23 @@ public final class CombatLogClientState {
         row.fadingOut = false;
     }
 
+    /**
+     * NEW -- battle-end entry point. Leaves label/displayedValue/targetValue
+     * completely untouched, only starts the same fade timer fadeOutRow()
+     * already uses per-row -- the row keeps showing its real last value
+     * while it fades, instead of visibly resetting to 0 first.
+     */
+    public static void fadeOutAllRows() {
+        long now = System.currentTimeMillis();
+        for (ExpRowState row : expRows.values()) {
+            if (row.visible && !row.fadingOut) {
+                row.fadingOut = true;
+                row.fadeStartMillis = now;
+            }
+        }
+    }
+
+    /** Kept for a possible future hard-reset case (e.g. logout) -- battle-end no longer uses this. */
     public static void clearAllExpRows() {
         for (ExpRowState row : expRows.values()) {
             row.visible = false;

@@ -9,7 +9,7 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
-public record CombatTimerSyncPacket(boolean inCombat, int elapsedSeconds, String endMessage)
+public record CombatTimerSyncPacket(boolean inCombat, int elapsedSeconds, String endMessage, long battleId)
         implements CustomPacketPayload {
 
     public static final Type<CombatTimerSyncPacket> TYPE =
@@ -20,12 +20,14 @@ public record CombatTimerSyncPacket(boolean inCombat, int elapsedSeconds, String
                 buf.writeBoolean(p.inCombat);
                 buf.writeVarInt(p.elapsedSeconds);
                 buf.writeUtf(p.endMessage == null ? "" : p.endMessage);
+                buf.writeVarLong(p.battleId);
             },
             buf -> {
                 boolean inCombat = buf.readBoolean();
                 int elapsed = buf.readVarInt();
                 String msg = buf.readUtf();
-                return new CombatTimerSyncPacket(inCombat, elapsed, msg.isEmpty() ? null : msg);
+                long battleId = buf.readVarLong();
+                return new CombatTimerSyncPacket(inCombat, elapsed, msg.isEmpty() ? null : msg, battleId);
             }
     );
 
@@ -35,7 +37,7 @@ public record CombatTimerSyncPacket(boolean inCombat, int elapsedSeconds, String
     public void handle(IPayloadContext context) {
         context.enqueueWork(() -> {
             if (Minecraft.getInstance().player == null) return;
-            CombatTimerClientState.update(inCombat, elapsedSeconds, endMessage);
+            CombatTimerClientState.update(inCombat, elapsedSeconds, endMessage, battleId);
         });
     }
 }

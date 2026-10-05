@@ -11,10 +11,11 @@ import java.util.UUID;
 /**
  * CombatState
  *
- * BUGFIX (re-engaging the same mob never retriggers combat) -- endCombat()
- * now clears taggedMobs for every end reason. log is left untouched (still
- * needed by the Death Report on DEFEAT; harmless to leave on SUCCESS/ESCAPED
- * since it just gets overwritten by the next startCombat()).
+ * BUGFIX (log still lingering after battle ends/death) -- battleId was only
+ * bumped in startCombat(), so the client (which clears whenever it sees a
+ * NEW battleId) only ever cleared when a fresh fight began -- never on any
+ * end reason, including death. Now bumped on both start AND end, so ending
+ * a battle for any reason is itself a "this id changed" signal too.
  */
 public class CombatState {
 
@@ -23,12 +24,14 @@ public class CombatState {
     private boolean inCombat = false;
     private long combatStartTick = -1;
     private int currentGroup = 0;
+    private long battleId = 0;
     private final Map<UUID, Integer> taggedMobs = new HashMap<>();
     private final List<CombatLogEntry> log = new ArrayList<>();
     private EndReason lastEndReason = null;
 
     public boolean isInCombat() { return inCombat; }
     public long getCombatStartTick() { return combatStartTick; }
+    public long getBattleId() { return battleId; }
     public List<CombatLogEntry> getLog() { return log; }
     public EndReason getLastEndReason() { return lastEndReason; }
 
@@ -39,6 +42,7 @@ public class CombatState {
         taggedMobs.clear();
         log.clear();
         lastEndReason = null;
+        battleId++;
     }
 
     public boolean isTagged(UUID mobId) {
@@ -71,6 +75,7 @@ public class CombatState {
     public void endCombat(EndReason reason) {
         inCombat = false;
         lastEndReason = reason;
-        taggedMobs.clear(); // THE FIX -- see class doc comment
+        taggedMobs.clear();
+        battleId++; // THE FIX -- ending a battle now also counts as "this id changed"
     }
 }

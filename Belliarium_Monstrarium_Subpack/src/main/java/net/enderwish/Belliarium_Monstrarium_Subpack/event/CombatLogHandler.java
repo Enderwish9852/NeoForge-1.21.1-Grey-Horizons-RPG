@@ -22,27 +22,15 @@ import net.neoforged.neoforge.event.tick.LevelTickEvent;
 /**
  * CombatLogHandler
  *
- * Drives the new Combat Log HUD (kill feed + exp log). ASSUMPTION -- flagged
- * as an open question in chat, not silently guessed: this is a purely
- * session-scoped VISUAL log for now, same lifetime as CombatState/
- * PlayerCombatLogState -- no persisted running xp total exists yet. If a
- * real persisted stat is wanted later, none of this xp math needs to
- * change, only where the numbers ultimately get written to.
- *
- * Melee vs ranged: DamageSource#getEntity() already resolves to the "true"
- * attacker for both cases in vanilla's model (the shooter for an arrow, not
- * the arrow itself) -- getDirectEntity() is what tells melee and ranged
- * apart: melee has direct == the player themselves, ranged has some
- * projectile as the direct entity instead.
- *
- * COMBO_WINDOW_TICKS and DAMAGE_XP_RATIO are first-pass placeholder numbers,
- * same status as every other tuning constant in this project.
+ * BUGFIX (combo formula) -- reverted from sqrt(combo) back to combo^2, per
+ * your correction that the sqrt version was based on an out-of-date
+ * description you hadn't actually sent me the update for.
  */
 @EventBusSubscriber(modid = BelliariumMonstrariumSubpack.MODID)
 public class CombatLogHandler {
 
-    private static final int COMBO_WINDOW_TICKS = 30; // 1.5s between melee hits to keep a combo alive
-    private static final float DAMAGE_XP_RATIO = 1.0f; // 1 damage point = 1 xp, placeholder
+    private static final int COMBO_WINDOW_TICKS = 30;
+    private static final float DAMAGE_XP_RATIO = 1.0f;
     private static final float ENTER_BATTLE_XP = 10f;
     private static final float COMBAT_TIME_MILESTONE_SECONDS = 10f;
     private static final float COMBAT_TIME_XP_PER_MILESTONE = 5f;
@@ -54,7 +42,7 @@ public class CombatLogHandler {
         if (!(event.getLevel() instanceof ServerLevel level)) return;
 
         tickCounter++;
-        if (tickCounter % 20 != 0) return; // once per second
+        if (tickCounter % 20 != 0) return;
 
         for (ServerPlayer player : level.players()) {
             checkBattleTransitions(player, level);
@@ -101,7 +89,6 @@ public class CombatLogHandler {
         ModMessages.sendToPlayer(ExpLogPacket.restart(CombatLogRowType.DAMAGE, logState.getLastAttackTypeLabel()), player);
     }
 
-    /** Kill feed -- ANY mob a player kills, including passive mobs, per your spec. */
     @SubscribeEvent
     public static void onMobDeath(LivingDeathEvent event) {
         if (event.getEntity() instanceof ServerPlayer) return;
@@ -119,10 +106,9 @@ public class CombatLogHandler {
                 killer.getName().getString(), weaponId, victim.getName().getString()), killer);
     }
 
-    /** Outgoing damage tracking -- feeds the Damage xp row and melee combo. */
     @SubscribeEvent
     public static void onOutgoingDamage(LivingDamageEvent.Post event) {
-        if (event.getEntity() instanceof ServerPlayer) return; // that's incoming, handled in BodyDamageHandler
+        if (event.getEntity() instanceof ServerPlayer) return;
 
         DamageSource source = event.getSource();
         ServerPlayer attacker = resolveAttacker(source);
@@ -143,7 +129,7 @@ public class CombatLogHandler {
             logState.registerMeleeHit(gameTime, COMBO_WINDOW_TICKS);
             int combo = logState.getComboCount();
             if (combo >= 2) {
-                float comboXp = (float) Math.round(Math.sqrt(combo));
+                float comboXp = (float) (combo * combo); // THE FIX -- power of 2, not sqrt
                 ModMessages.sendToPlayer(ExpLogPacket.show(CombatLogRowType.COMBO,
                         "Combo x" + combo, comboXp, false), attacker);
             }
