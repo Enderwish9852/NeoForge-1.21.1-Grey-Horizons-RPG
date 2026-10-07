@@ -3,5 +3,13 @@
   "item.gh_belliarium_monstrarium.skill_book_slide": "Slide Skill Book",
   "item.gh_belliarium_monstrarium.skill_book_roll": "Roll Skill Book",
   "item.gh_belliarium_monstrarium.skill_book_kick": "Kick Skill Book",
-  "item.gh_belliarium_monstrarium.skill_book_parry": "Parry Skill Book"
+  "item.gh_belliarium_monstrarium.skill_book_parry": "Parry Skill Book",
+  "item.gh_belliarium_monstrarium.first_aid_kit": "First Aid Kit",
+  "item.gh_belliarium_monstrarium.bandage": "Bandage",
+  "item.gh_belliarium_monstrarium.suture_kit": "Suture Kit",
+  "item.gh_belliarium_monstrarium.splint": "Splint",
+  "item.gh_belliarium_monstrarium.painkiller": "Painkillers",
+  "item.gh_belliarium_monstrarium.adrenaline": "Adrenaline",
+  "key.categories.gh_belliarium_monstrarium": "Belliarium Monstrarium",
+  "key.gh_belliarium_monstrarium.fast_use_first_aid": "Fast-Use First Aid Kit"
 }

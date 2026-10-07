@@ -2,6 +2,7 @@ package net.enderwish.Belliarium_Monstrarium_Subpack.item;
 
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.ModDataComponents;
 import net.enderwish.Belliarium_Monstrarium_Subpack.BelliariumMonstrariumSubpack;
+import net.enderwish.Belliarium_Monstrarium_Subpack.item.medical.*;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Rarity;
 import net.neoforged.bus.api.IEventBus;
@@ -44,6 +45,19 @@ public class ModItems {
     public static final DeferredItem<Item> SKILL_BOOK_PARRY = ITEMS.register("skill_book_parry",
             () -> new SkillBookItem(new Item.Properties().stacksTo(1)
                     .component(ModDataComponents.SKILL_ID.get(), "parry")));
+
+    public static final DeferredItem<Item> FIRST_AID_KIT = ITEMS.register("first_aid_kit",
+            () -> new FirstAidKitItem(new Item.Properties().stacksTo(1)));
+    public static final DeferredItem<Item> BANDAGE = ITEMS.register("bandage",
+            () -> new BandageItem(new Item.Properties().stacksTo(16)));
+    public static final DeferredItem<Item> SUTURE_KIT = ITEMS.register("suture_kit",
+            () -> new SutureKitItem(new Item.Properties().stacksTo(8)));
+    public static final DeferredItem<Item> SPLINT = ITEMS.register("splint",
+            () -> new SplintItem(new Item.Properties().stacksTo(8)));
+    public static final DeferredItem<Item> PAINKILLER = ITEMS.register("painkiller",
+            () -> new PainkillerItem(new Item.Properties().stacksTo(8)));
+    public static final DeferredItem<Item> ADRENALINE = ITEMS.register("adrenaline",
+            () -> new AdrenalineItem(new Item.Properties().stacksTo(4)));
 
     public static void register(IEventBus modEventBus) {
         ITEMS.register(modEventBus);

@@ -1,0 +1,8 @@
+{
+  "item": "gh_farming_overhaul:knife",
+  "rarity": "COMMON",
+  "traits": [
+    { "name": "combat", "description": "Range 1" },
+    { "name": "fast", "description": "Faster draw speed, faster attack sequence." }
+  ]
+}

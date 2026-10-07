@@ -3,6 +3,7 @@ package net.enderwish.Belliarium_Monstrarium_Subpack.core;
 import com.mojang.serialization.Codec;
 import net.enderwish.Belliarium_Monstrarium_Subpack.BelliariumMonstrariumSubpack;
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.gear.RepairChargesComponent;
+import net.enderwish.Belliarium_Monstrarium_Subpack.core.medical.FirstAidKitContents;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.registries.Registries;
 import net.neoforged.bus.api.IEventBus;
@@ -29,6 +30,10 @@ public class ModDataComponents {
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<Boolean>> LEARNING_COMPLETE =
             DATA_COMPONENTS.register("learning_complete", () ->
                     DataComponentType.<Boolean>builder().persistent(Codec.BOOL).build());
+
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<FirstAidKitContents>> FIRST_AID_KIT_CONTENTS =
+            DATA_COMPONENTS.register("first_aid_kit_contents", () ->
+                    DataComponentType.<FirstAidKitContents>builder().persistent(FirstAidKitContents.CODEC).build());
 
     public static void register(IEventBus eventBus) {
         DATA_COMPONENTS.register(eventBus);

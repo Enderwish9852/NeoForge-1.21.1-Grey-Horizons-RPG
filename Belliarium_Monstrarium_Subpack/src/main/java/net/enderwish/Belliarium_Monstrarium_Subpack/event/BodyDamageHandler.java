@@ -1,12 +1,14 @@
 package net.enderwish.Belliarium_Monstrarium_Subpack.event;
 
 import net.enderwish.Belliarium_Monstrarium_Subpack.BelliariumMonstrariumSubpack;
-import net.enderwish.Belliarium_Monstrarium_Subpack.core.gear.ArmorToughnessRegistry;
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.body.BodyHealthCapability;
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.combat.CombatLogEntry;
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.combat.CombatState;
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.combat.CombatTimerManager;
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.ModAttachments;
+import net.enderwish.Belliarium_Monstrarium_Subpack.core.gear.ArmorToughnessRegistry;
+import net.enderwish.Belliarium_Monstrarium_Subpack.core.medical.AdrenalineManager;
+import net.enderwish.Belliarium_Monstrarium_Subpack.core.survival.SurvivalCapability;
 import net.enderwish.Belliarium_Monstrarium_Subpack.network.BodyHealthSyncPacket;
 import net.enderwish.Belliarium_Monstrarium_Subpack.network.DeathReportPacket;
 import net.enderwish.Belliarium_Monstrarium_Subpack.network.ModMessages;
@@ -38,17 +40,23 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * BodyDamageHandler
  *
- * BUGFIX (creative didn't actually heal, just repainted green) -- new
- * onGameModeChange heals the REAL BodyHealthCapability the instant a
- * player switches TO creative, not just the HUD's display. BodyHealthHUD's
- * old display-only creative override is removed in that file now that
- * this is real -- see its own doc comment.
+ * NEW -- Adrenaline integration. applyToBodyPart() is the single new choke
+ * point every damage path now routes through: if Adrenaline is active for
+ * the player, the (bodyPart, amount) pair is logged into AdrenalineManager
+ * INSTEAD of being applied -- no cap mutation, no fatal check, no combat-
+ * log entry, matching "all damage will be logged" / "will not take any
+ * health damage" during the window. Armor mitigation (mitigateIfApplicable)
+ * is UNCHANGED and still runs in real time either way -- armor is a
+ * physical object that still visibly wears down; only the body's own
+ * injury bookkeeping is what's deferred.
  *
- * VERIFY IF COMPILE FAILS -- PlayerEvent.PlayerChangeGameModeEvent's exact
- * getter names (getCurrentGameMode()/getNewGameMode()) are the standard,
- * long-stable Forge/NeoForge shape for this event, not confirmed against
- * source pasted in this conversation. GameType itself IS already confirmed
- * real in this project (FrontierTitleScreen already imports and uses it).
+ * resolveAdrenalineIfExpired(), called every tick, replays every logged
+ * part the instant the window ends: real cap.damageXxx() + the normal
+ * fatal check (so a lethal logged total still kills, exactly as it would
+ * have in real time, just all at once) + a combat-log entry per part so
+ * the Death Report scoreboard still shows what actually happened. Then:
+ * stamina+energy to 0, hunger to 1 (half a drumstick), and stamina locked
+ * from regenerating for a further window (see SurvivalTickHandler).
  */
 @EventBusSubscriber(modid = BelliariumMonstrariumSubpack.MODID)
 public class BodyDamageHandler {
@@ -57,6 +65,7 @@ public class BodyDamageHandler {
     private static final double SAFE_LANDING_METERS = 1.5;
     private static final double DAMAGE_PER_JOULE = 0.011;
     private static final double REFERENCE_MASS_KG = 60.0;
+    private static final int ADRENALINE_STAMINA_LOCK_TICKS = 2400;
 
     private static boolean intentionalKillInProgress = false;
 
@@ -69,30 +78,25 @@ public class BodyDamageHandler {
     @SubscribeEvent
     public static void onPlayerJoin(PlayerEvent.PlayerLoggedInEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        BodyHealthCapability cap = player.getData(ModAttachments.BODY_HEALTH);
-        sync(player, cap);
+        sync(player, player.getData(ModAttachments.BODY_HEALTH));
     }
 
     @SubscribeEvent
     public static void onPlayerRespawn(PlayerEvent.Clone event) {
         if (!(event.getEntity() instanceof ServerPlayer newPlayer)) return;
-        BodyHealthCapability cap = newPlayer.getData(ModAttachments.BODY_HEALTH);
-        cap.healAll();
+        newPlayer.getData(ModAttachments.BODY_HEALTH).healAll();
     }
 
     @SubscribeEvent
     public static void onPlayerRespawnPlaced(PlayerEvent.PlayerRespawnEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        BodyHealthCapability cap = player.getData(ModAttachments.BODY_HEALTH);
-        sync(player, cap);
+        sync(player, player.getData(ModAttachments.BODY_HEALTH));
     }
 
-    /** THE FIX -- see class doc comment. */
     @SubscribeEvent
     public static void onGameModeChange(PlayerEvent.PlayerChangeGameModeEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         if (event.getNewGameMode() != GameType.CREATIVE) return;
-
         BodyHealthCapability cap = player.getData(ModAttachments.BODY_HEALTH);
         cap.healAll();
         sync(player, cap);
@@ -104,13 +108,12 @@ public class BodyDamageHandler {
 
         UUID uuid = player.getUUID();
         if (pendingDeaths.remove(uuid)) {
-            if (player.isAlive()) {
-                killIntentionally(player);
-            } else {
-                pendingFatalInfo.remove(uuid);
-            }
+            if (player.isAlive()) killIntentionally(player);
+            else pendingFatalInfo.remove(uuid);
             return;
         }
+
+        resolveAdrenalineIfExpired(player);
 
         if (player.isCreative() || player.isSpectator()) return;
         if (player.isAlive() && player.getHealth() < player.getMaxHealth()) {
@@ -118,24 +121,42 @@ public class BodyDamageHandler {
         }
     }
 
+    private static void resolveAdrenalineIfExpired(ServerPlayer player) {
+        AdrenalineManager.ActiveAdrenaline active = AdrenalineManager.INSTANCE.get(player.getUUID());
+        if (active == null) return;
+        if (player.level().getGameTime() < active.endTick) return;
+
+        BodyHealthCapability cap = player.getData(ModAttachments.BODY_HEALTH);
+        for (Map.Entry<String, AdrenalineManager.PendingDamage> entry : active.pendingByPart.entrySet()) {
+            applyNow(player, cap, entry.getKey(), entry.getValue().amount, entry.getValue().lastSource);
+        }
+        AdrenalineManager.INSTANCE.clear(player.getUUID());
+
+        SurvivalCapability survival = player.getData(ModAttachments.SURVIVAL);
+        survival.setEnergy(0f);
+        survival.setStamina(0f);
+        player.getFoodData().setFoodLevel(1);
+        AdrenalineManager.INSTANCE.lockStaminaUntil(player.getUUID(),
+                player.level().getGameTime() + ADRENALINE_STAMINA_LOCK_TICKS);
+
+        if (player.isAlive() && player.getHealth() < player.getMaxHealth()) {
+            player.setHealth(player.getMaxHealth());
+        }
+        sync(player, cap);
+    }
+
     @SubscribeEvent
     public static void onLivingHeal(LivingHealEvent event) {
-        if (event.getEntity() instanceof ServerPlayer) {
-            event.setCanceled(true);
-        }
+        if (event.getEntity() instanceof ServerPlayer) event.setCanceled(true);
     }
 
     @SubscribeEvent
     public static void onLivingFall(LivingFallEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         if (player.isCreative()) return;
-
         event.setCanceled(true);
-
         float realDamage = calculateFallDamage(event.getDistance(), REFERENCE_MASS_KG);
-        if (realDamage > 0) {
-            player.hurt(player.damageSources().fall(), realDamage);
-        }
+        if (realDamage > 0) player.hurt(player.damageSources().fall(), realDamage);
     }
 
     @SubscribeEvent
@@ -153,41 +174,38 @@ public class BodyDamageHandler {
             handleFallDamage(player, cap, source, amount, armorApplies);
         } else if (source.is(DamageTypes.EXPLOSION)) {
             float headPortion = mitigateIfApplicable(player, EquipmentSlot.HEAD, amount * 0.7f, armorApplies);
-            damageCritical(player, cap, true, headPortion, source, "Head");
+            applyToBodyPart(player, cap, "Head", headPortion, source, true);
 
             float leftLegPortion = mitigateIfApplicable(player, EquipmentSlot.LEGS, amount * 0.15f, armorApplies);
-            cap.damageLeftLeg(leftLegPortion);
-            logCombatDamage(player, source, leftLegPortion, "Left Leg");
+            applyToBodyPart(player, cap, "Left Leg", leftLegPortion, source, false);
 
             float rightLegPortion = mitigateIfApplicable(player, EquipmentSlot.LEGS, amount * 0.15f, armorApplies);
-            cap.damageRightLeg(rightLegPortion);
-            logCombatDamage(player, source, rightLegPortion, "Right Leg");
+            applyToBodyPart(player, cap, "Right Leg", rightLegPortion, source, false);
         } else {
             double roll = RANDOM.nextDouble();
             if (roll > 0.85) {
                 float applied = mitigateIfApplicable(player, EquipmentSlot.HEAD, amount, armorApplies);
-                damageCritical(player, cap, true, applied, source, "Head");
+                applyToBodyPart(player, cap, "Head", applied, source, true);
             } else if (roll > 0.45) {
                 float applied = mitigateIfApplicable(player, EquipmentSlot.CHEST, amount, armorApplies);
-                damageCritical(player, cap, false, applied, source, "Torso");
+                applyToBodyPart(player, cap, "Torso", applied, source, true);
             } else if (roll > 0.25) {
-                if (RANDOM.nextBoolean()) { cap.damageLeftArm(amount); logCombatDamage(player, source, amount, "Left Arm"); }
-                else { cap.damageRightArm(amount); logCombatDamage(player, source, amount, "Right Arm"); }
+                String part = RANDOM.nextBoolean() ? "Left Arm" : "Right Arm";
+                applyToBodyPart(player, cap, part, amount, source, false);
             } else if (roll > 0.10) {
                 float applied = mitigateIfApplicable(player, EquipmentSlot.LEGS, amount, armorApplies);
-                if (RANDOM.nextBoolean()) { cap.damageLeftLeg(applied); logCombatDamage(player, source, applied, "Left Leg"); }
-                else { cap.damageRightLeg(applied); logCombatDamage(player, source, applied, "Right Leg"); }
+                String part = RANDOM.nextBoolean() ? "Left Leg" : "Right Leg";
+                applyToBodyPart(player, cap, part, applied, source, false);
             } else {
                 float applied = mitigateIfApplicable(player, EquipmentSlot.FEET, amount, armorApplies);
-                if (RANDOM.nextBoolean()) { cap.damageLeftFoot(applied); logCombatDamage(player, source, applied, "Left Foot"); }
-                else { cap.damageRightFoot(applied); logCombatDamage(player, source, applied, "Right Foot"); }
+                String part = RANDOM.nextBoolean() ? "Left Foot" : "Right Foot";
+                applyToBodyPart(player, cap, part, applied, source, false);
             }
         }
 
         if (player.isAlive() && player.getHealth() < player.getMaxHealth()) {
             player.setHealth(player.getMaxHealth());
         }
-
         sync(player, cap);
     }
 
@@ -200,7 +218,6 @@ public class BodyDamageHandler {
             sendDeathReport(player);
             return;
         }
-
         event.setCanceled(true);
         player.setHealth(player.getMaxHealth());
     }
@@ -212,15 +229,13 @@ public class BodyDamageHandler {
 
         float leftLegBefore = cap.getLeftLeg();
         float rightLegBefore = cap.getRightLeg();
-        cap.damageLeftLeg(mitigatedPerLeg);
-        cap.damageRightLeg(mitigatedPerLeg);
-        logCombatDamage(player, source, mitigatedPerLeg, "Left Leg (fall)");
-        logCombatDamage(player, source, mitigatedPerLeg, "Right Leg (fall)");
+        applyToBodyPart(player, cap, "Left Leg (fall)", mitigatedPerLeg, source, false);
+        applyToBodyPart(player, cap, "Right Leg (fall)", mitigatedPerLeg, source, false);
 
         float torsoOverflow = Math.max(0, mitigatedPerLeg - leftLegBefore) + Math.max(0, mitigatedPerLeg - rightLegBefore);
         if (torsoOverflow > 0) {
             float mitigatedTorso = mitigateIfApplicable(player, EquipmentSlot.CHEST, torsoOverflow, armorApplies);
-            damageCritical(player, cap, false, mitigatedTorso, source, "Torso (fall)");
+            applyToBodyPart(player, cap, "Torso (fall)", mitigatedTorso, source, true);
         }
     }
 
@@ -230,22 +245,54 @@ public class BodyDamageHandler {
         return (float) (joules * DAMAGE_PER_JOULE);
     }
 
-    private static void damageCritical(ServerPlayer player, BodyHealthCapability cap, boolean head, float amount,
-                                       DamageSource source, String bodyPart) {
-        if (head) {
-            cap.damageHead(amount);
-            logCombatDamage(player, source, amount, bodyPart);
-            if (cap.isHeadFatal()) markPendingDeath(player, source, bodyPart);
-        } else {
-            cap.damageTorso(amount);
-            logCombatDamage(player, source, amount, bodyPart);
-            if (cap.isTorsoFatal()) markPendingDeath(player, source, bodyPart);
+    /** THE adrenaline choke point -- see class doc comment. */
+    private static void applyToBodyPart(ServerPlayer player, BodyHealthCapability cap, String bodyPart,
+                                        float amount, DamageSource source, boolean isCritical) {
+        if (amount <= 0f) return;
+
+        if (AdrenalineManager.INSTANCE.isActive(player.getUUID())) {
+            AdrenalineManager.INSTANCE.logDamage(player.getUUID(), bodyPart, amount, source);
+            return;
         }
+        applyNow(player, cap, bodyPart, amount, source);
+        if (isCritical) checkFatal(player, cap, bodyPart);
+    }
+
+    /** Used both for the live (non-adrenaline) path above and for the end-of-window replay. */
+    private static void applyNow(ServerPlayer player, BodyHealthCapability cap, String bodyPart,
+                                 float amount, DamageSource source) {
+        switch (bodyPart) {
+            case "Head" -> cap.damageHead(amount);
+            case "Torso", "Torso (fall)" -> cap.damageTorso(amount);
+            case "Left Arm" -> cap.damageLeftArm(amount);
+            case "Right Arm" -> cap.damageRightArm(amount);
+            case "Left Leg", "Left Leg (fall)" -> cap.damageLeftLeg(amount);
+            case "Right Leg", "Right Leg (fall)" -> cap.damageRightLeg(amount);
+            case "Left Foot" -> cap.damageLeftFoot(amount);
+            case "Right Foot" -> cap.damageRightFoot(amount);
+            default -> { return; }
+        }
+        logCombatDamage(player, source, amount, bodyPart);
+        if (bodyPart.startsWith("Head") || bodyPart.startsWith("Torso")) checkFatal(player, cap, bodyPart);
+    }
+
+    private static void checkFatal(ServerPlayer player, BodyHealthCapability cap, String bodyPart) {
+        if (bodyPart.startsWith("Head") && cap.isHeadFatal()) markPendingDeath(player, null, bodyPart);
+        if (bodyPart.startsWith("Torso") && cap.isTorsoFatal()) markPendingDeath(player, null, bodyPart);
+    }
+
+    private static void markPendingDeath(ServerPlayer player, DamageSource source, String bodyPart) {
+        UUID uuid = player.getUUID();
+        if (pendingDeaths.contains(uuid)) return;
+
+        SourceInfo info = source != null ? describeSource(source, player) : new SourceInfo("unknown causes", -1);
+        boolean wasInCombat = CombatTimerManager.INSTANCE.isInCombat(uuid);
+        pendingFatalInfo.put(uuid, new FatalInfo(info.name(), info.distance(), bodyPart, wasInCombat));
+        pendingDeaths.add(uuid);
     }
 
     private static float mitigateIfApplicable(ServerPlayer player, EquipmentSlot slot, float rawAmount, boolean armorApplies) {
         if (!armorApplies || rawAmount <= 0f) return rawAmount;
-
         ItemStack armorStack = player.getItemBySlot(slot);
         if (armorStack.isEmpty()) return rawAmount;
         if (!(player.level() instanceof ServerLevel serverLevel)) return rawAmount;
@@ -270,23 +317,9 @@ public class BodyDamageHandler {
         }
     }
 
-    private static void markPendingDeath(ServerPlayer player, DamageSource source, String bodyPart) {
-        UUID uuid = player.getUUID();
-        if (pendingDeaths.contains(uuid)) return;
-
-        SourceInfo info = describeSource(source, player);
-        boolean wasInCombat = CombatTimerManager.INSTANCE.isInCombat(uuid);
-        pendingFatalInfo.put(uuid, new FatalInfo(info.name(), info.distance(), bodyPart, wasInCombat));
-        pendingDeaths.add(uuid);
-    }
-
     private static void killIntentionally(ServerPlayer player) {
         intentionalKillInProgress = true;
-        try {
-            player.kill();
-        } finally {
-            intentionalKillInProgress = false;
-        }
+        try { player.kill(); } finally { intentionalKillInProgress = false; }
     }
 
     private static SourceInfo describeSource(DamageSource source, ServerPlayer player) {
@@ -301,7 +334,7 @@ public class BodyDamageHandler {
     }
 
     private static void logCombatDamage(ServerPlayer player, DamageSource source, float amount, String bodyPart) {
-        if (amount <= 0f) return;
+        if (amount <= 0f || source == null) return;
         CombatState state = CombatTimerManager.INSTANCE.getOrCreate(player.getUUID());
         if (!state.isInCombat()) return;
 

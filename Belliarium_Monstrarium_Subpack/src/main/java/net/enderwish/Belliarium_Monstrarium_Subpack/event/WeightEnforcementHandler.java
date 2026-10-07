@@ -2,6 +2,7 @@ package net.enderwish.Belliarium_Monstrarium_Subpack.event;
 
 import net.enderwish.Belliarium_Monstrarium_Subpack.BelliariumMonstrariumSubpack;
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.gear.WeightRegistry;
+import net.enderwish.Belliarium_Monstrarium_Subpack.core.medical.AdrenalineManager;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
@@ -15,13 +16,11 @@ import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 /**
  * WeightEnforcementHandler
  *
- * NEW: enforceMaxWeight() fills in the "refuse item" logic. Instead of
- * guessing at one pickup-interception event (items can enter an inventory
- * via ground pickup, crafting, container transfers... catching each path
- * separately is fragile), total weight is checked every tick and whole
- * stacks are ejected from the END of the inventory backward until back
- * under the cap. Ejecting from the back keeps your hotbar safe. Effect
- * for the player: the item pops back out almost instantly with a message.
+ * NEW -- onPlayerTick returns immediately while Adrenaline is active, so
+ * neither ejection nor the weight-slowdown effects apply during the
+ * window, per "ignores weight carry limit ect." getWeightFraction() and
+ * getCurrentWeight() themselves are left untouched -- HUD/other callers
+ * should still see the real number, only enforcement is suspended.
  */
 @EventBusSubscriber(modid = BelliariumMonstrariumSubpack.MODID)
 public class WeightEnforcementHandler {
@@ -70,6 +69,7 @@ public class WeightEnforcementHandler {
         Player player = event.getEntity();
         if (player.isCreative() || player.isSpectator()) return;
         if (player.level().isClientSide()) return;
+        if (AdrenalineManager.INSTANCE.isActive(player.getUUID())) return; // THE NEW CHECK
 
         enforceMaxWeight(player);
 

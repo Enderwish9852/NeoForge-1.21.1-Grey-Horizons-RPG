@@ -27,6 +27,12 @@ public class ModMessages {
         registrar.playToClient(SkillLearningCompletePacket.TYPE, SkillLearningCompletePacket.STREAM_CODEC, SkillLearningCompletePacket::handle);
         registrar.playToClient(SkillBindResultPacket.TYPE, SkillBindResultPacket.STREAM_CODEC, SkillBindResultPacket::handle);
 
+        registrar.playToClient(FirstAidKitContentsPacket.TYPE, FirstAidKitContentsPacket.STREAM_CODEC, FirstAidKitContentsPacket::handle);
+        registrar.playToClient(OpenMedTargetFromKitPacket.TYPE, OpenMedTargetFromKitPacket.STREAM_CODEC, OpenMedTargetFromKitPacket::handle);
+        registrar.playToServer(UseKitSlotPacket.TYPE, UseKitSlotPacket.STREAM_CODEC, UseKitSlotPacket::handle);
+        registrar.playToServer(MedApplyPacket.TYPE, MedApplyPacket.STREAM_CODEC, MedApplyPacket::handle);
+        registrar.playToServer(FastUseFirstAidPacket.TYPE, FastUseFirstAidPacket.STREAM_CODEC, FastUseFirstAidPacket::handle);
+
         registrar.playToServer(SkillBookScreenStatePacket.TYPE, SkillBookScreenStatePacket.STREAM_CODEC, SkillBookScreenStatePacket::handle);
         registrar.playToServer(SkillBindKeyPacket.TYPE, SkillBindKeyPacket.STREAM_CODEC, SkillBindKeyPacket::handle);
     }

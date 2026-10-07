@@ -1,6 +1,8 @@
 package net.enderwish.Belliarium_Monstrarium_Subpack.event;
 
 import net.enderwish.Belliarium_Monstrarium_Subpack.BelliariumMonstrariumSubpack;
+import net.enderwish.Belliarium_Monstrarium_Subpack.core.body.BodyPartDebuffs;
+import net.enderwish.Belliarium_Monstrarium_Subpack.core.gear.WeightRegistry;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -22,32 +24,22 @@ import java.util.Comparator;
 /**
  * ItemPickupHandler
  *
- * Replaces vanilla's walk-over auto-suck pickup with a deliberate
- * right-click-to-collect interaction.
- *
- * onAutoPickup unconditionally blocks vanilla's magnetic pickup.
- *
- * onRightClickItem handles the case where the player actually targets the
- * ItemEntity directly (works when the crosshair lands on the tiny hitbox).
- *
- * onRightClickBlock is the fallback: item entity hitboxes are TINY
- * (~0.25 blocks), so when looking down at items the raytrace almost always
- * hits the BLOCK below instead of the entity. This handler scans for the
- * nearest ItemEntity within reach in front of the player and picks it up.
+ * NEW -- HEAVY_PICKUP_WEIGHT_KG gate added. Pickup already only ever fires
+ * off MAIN_HAND (see the hand filters below), which lines up exactly with
+ * "damaged arm -> can't pick up heavy items" being evaluated per the
+ * MAIN_HAND-mapped arm -- no extra wiring needed to connect the two.
  */
 @EventBusSubscriber(modid = BelliariumMonstrariumSubpack.MODID)
 public class ItemPickupHandler {
 
     private static final double PICKUP_REACH = 4.0;
+    private static final float HEAVY_PICKUP_WEIGHT_KG = 5.0f;
 
     @SubscribeEvent
     public static void onAutoPickup(ItemEntityPickupEvent.Pre event) {
         event.setCanPickup(TriState.FALSE);
     }
 
-    /**
-     * Direct hit on the item entity.
-     */
     @SubscribeEvent
     public static void onRightClickItem(PlayerInteractEvent.EntityInteract event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
@@ -61,10 +53,6 @@ public class ItemPickupHandler {
         }
     }
 
-    /**
-     * Fallback: clicked the block, but an item is in front of the player.
-     * Finds the nearest ItemEntity along the look ray and picks it up.
-     */
     @SubscribeEvent
     public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
@@ -80,36 +68,18 @@ public class ItemPickupHandler {
         }
     }
 
-    // ------------------------------------------------------------------
-    // Helpers
-    // ------------------------------------------------------------------
-
-    /**
-     * Finds the ItemEntity the player is looking at, within PICKUP_REACH.
-     * Uses a manual ray-vs-box test so it doesn't get fooled by the tiny
-     * vanilla hitbox the way vanilla's own raytrace does.
-     */
     private static ItemEntity findLookedAtItem(ServerPlayer player) {
         Vec3 eye = player.getEyePosition(1.0F);
         Vec3 look = player.getViewVector(1.0F);
         Vec3 end = eye.add(look.scale(PICKUP_REACH));
 
-        // Don't reach through solid blocks.
         HitResult blockHit = player.level().clip(new ClipContext(
-                eye, end,
-                ClipContext.Block.COLLIDER,
-                ClipContext.Fluid.NONE,
-                player
-        ));
+                eye, end, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player));
         if (blockHit.getType() != HitResult.Type.MISS) {
             end = blockHit.getLocation();
         }
 
-        // Grab every ItemEntity whose box the ray segment passes near,
-        // then take the closest one to the eye.
-        AABB searchBox = player.getBoundingBox()
-                .expandTowards(look.scale(PICKUP_REACH))
-                .inflate(1.0);
+        AABB searchBox = player.getBoundingBox().expandTowards(look.scale(PICKUP_REACH)).inflate(1.0);
 
         Vec3 finalEnd = end;
         return player.level()
@@ -121,12 +91,6 @@ public class ItemPickupHandler {
                 .orElse(null);
     }
 
-    /**
-     * Moves as much of the item's stack as fits into the player's inventory.
-     * Discards the entity if fully collected, otherwise updates the stack.
-     *
-     * @return true if anything was picked up.
-     */
     private static boolean tryPickup(ServerPlayer player, ItemEntity itemEntity) {
         ItemStack stack = itemEntity.getItem().copy();
         if (stack.isEmpty()) {
@@ -134,13 +98,19 @@ public class ItemPickupHandler {
             return false;
         }
 
+        // THE NEW CHECK -- heavy items need a good main-hand-side arm.
+        if (BodyPartDebuffs.isHandRedTier(player, InteractionHand.MAIN_HAND)
+                && WeightRegistry.INSTANCE.getWeightKg(stack) >= HEAVY_PICKUP_WEIGHT_KG) {
+            player.displayClientMessage(
+                    net.minecraft.network.chat.Component.literal("That's too heavy to lift with your injured arm."), true);
+            return false;
+        }
+
         int before = stack.getCount();
         player.getInventory().add(stack);
         int pickedUp = before - stack.getCount();
 
-        if (pickedUp <= 0) {
-            return false; // inventory full, nothing moved
-        }
+        if (pickedUp <= 0) return false;
 
         if (stack.isEmpty()) {
             itemEntity.discard();
@@ -148,10 +118,8 @@ public class ItemPickupHandler {
             itemEntity.setItem(stack);
         }
 
-        // Optional: play a pickup sound so it feels responsive.
         player.level().playSound(
-                null,
-                player.getX(), player.getY(), player.getZ(),
+                null, player.getX(), player.getY(), player.getZ(),
                 net.minecraft.sounds.SoundEvents.ITEM_PICKUP,
                 net.minecraft.sounds.SoundSource.PLAYERS,
                 0.2F,

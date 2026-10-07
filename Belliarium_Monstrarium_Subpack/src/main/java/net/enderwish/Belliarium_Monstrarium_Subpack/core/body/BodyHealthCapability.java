@@ -7,16 +7,9 @@ import net.minecraft.util.Mth;
 /**
  * BodyHealthCapability
  *
- * Head/torso are MAIN systems: reaching 0 kills the player outright.
- * Arms/legs/feet are SUB systems: reaching 0 doesn't kill, but disables
- * that limb (isDisabled() below) -- what "disabled" actually DOES
- * (movement/attack penalty) lives in event handlers, not here.
- *
- * Max values below are a first-pass proposal, not a cited medical
- * source -- relative sizing reasons: torso holds vital organs (biggest
- * pool, but ANY zero-out is fatal), head is small but equally fatal at
- * zero, legs are sized larger specifically because they need to absorb
- * real fall-impact energy before it reaches the torso (see BodyDamageHandler).
+ * NEW -- isXRed() helpers added, matching the same 0.4 threshold
+ * BodyPartColors already uses for the yellow/red boundary. Feeds
+ * BodyPartDebuffHandler's tier checks.
  */
 public class BodyHealthCapability {
 
@@ -28,9 +21,7 @@ public class BodyHealthCapability {
 
     private float head, torso, leftArm, rightArm, leftLeg, rightLeg, leftFoot, rightFoot;
 
-    public BodyHealthCapability() {
-        healAll();
-    }
+    public BodyHealthCapability() { healAll(); }
 
     public BodyHealthCapability(float head, float torso, float leftArm, float rightArm,
                                 float leftLeg, float rightLeg, float leftFoot, float rightFoot) {
@@ -67,15 +58,28 @@ public class BodyHealthCapability {
     public void damageLeftFoot(float a) { leftFoot = Mth.clamp(leftFoot - a, 0, FOOT_MAX); }
     public void damageRightFoot(float a){ rightFoot = Mth.clamp(rightFoot - a, 0, FOOT_MAX); }
 
+    public void healLeftArm(float a)  { leftArm = Mth.clamp(leftArm + a, 0, ARM_MAX); }
+    public void healRightArm(float a) { rightArm = Mth.clamp(rightArm + a, 0, ARM_MAX); }
+    public void healLeftLeg(float a)  { leftLeg = Mth.clamp(leftLeg + a, 0, LEG_MAX); }
+    public void healRightLeg(float a) { rightLeg = Mth.clamp(rightLeg + a, 0, LEG_MAX); }
+    public void healLeftFoot(float a) { leftFoot = Mth.clamp(leftFoot + a, 0, FOOT_MAX); }
+    public void healRightFoot(float a){ rightFoot = Mth.clamp(rightFoot + a, 0, FOOT_MAX); }
+    public void healHead(float a)     { head = Mth.clamp(head + a, 0, HEAD_MAX); }
+    public void healTorso(float a)    { torso = Mth.clamp(torso + a, 0, TORSO_MAX); }
+
     public boolean isHeadFatal()  { return head <= 0; }
     public boolean isTorsoFatal() { return torso <= 0; }
-    /** "Fatal damage" to a sub-system per your definition -- reaches zero, doesn't kill, disables. */
     public boolean isLeftArmDisabled()  { return leftArm <= 0; }
     public boolean isRightArmDisabled() { return rightArm <= 0; }
     public boolean isLeftLegDisabled()  { return leftLeg <= 0; }
     public boolean isRightLegDisabled() { return rightLeg <= 0; }
     public boolean isLeftFootDisabled() { return leftFoot <= 0; }
     public boolean isRightFootDisabled(){ return rightFoot <= 0; }
+
+    public boolean isLeftArmRed()  { return leftArm > 0f && getLeftArmPct() < 0.4f; }
+    public boolean isRightArmRed() { return rightArm > 0f && getRightArmPct() < 0.4f; }
+    public boolean isLeftLegRed()  { return leftLeg > 0f && getLeftLegPct() < 0.4f; }
+    public boolean isRightLegRed() { return rightLeg > 0f && getRightLegPct() < 0.4f; }
 
     public float getHead() { return head; }
     public float getTorso() { return torso; }

@@ -2,6 +2,7 @@ package net.enderwish.Belliarium_Monstrarium_Subpack.event;
 
 import net.enderwish.Belliarium_Monstrarium_Subpack.BelliariumMonstrariumSubpack;
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.ModAttachments;
+import net.enderwish.Belliarium_Monstrarium_Subpack.core.medical.AdrenalineManager;
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.survival.SurvivalCapability;
 import net.enderwish.Belliarium_Monstrarium_Subpack.network.ModMessages;
 import net.enderwish.Belliarium_Monstrarium_Subpack.network.SurvivalSyncPacket;
@@ -20,14 +21,12 @@ import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 /**
  * SurvivalTickHandler
  *
- * BUGFIX (energy draining faster than stamina) -- STAMINA_ENERGY_COST_RATIO
- * dropped 1.0 -> 0.1. At the boosted STAMINA_BASE_REGEN=0.35, a full 0->100
- * stamina refill now takes ~14 seconds; at a 1:1 cost ratio that alone burned
- * ~100 energy in those same 14 seconds (nearly a full bar). At 0.1, the same
- * full refill costs 10 energy -- you can fully burn-and-refill stamina
- * roughly ten times before this mechanism alone empties the energy bar,
- * which reads as "normal" rather than instantly draining. Still fully
- * adjustable.
+ * NEW -- the stamina-regen else-branch now checks
+ * AdrenalineManager.isStaminaLocked() FIRST. This is the "stamina will not
+ * replenish" aftermath window from Adrenaline's spec: once the effect
+ * ends and all logged damage/debuffs land, stamina is frozen at 0 for a
+ * further period (see BodyDamageHandler.resolveAdrenalineIfExpired()) --
+ * this branch is what actually enforces that freeze tick-by-tick.
  */
 @EventBusSubscriber(modid = BelliariumMonstrariumSubpack.MODID)
 public class SurvivalTickHandler {
@@ -47,7 +46,7 @@ public class SurvivalTickHandler {
 
     private static final float STAMINA_BASE_REGEN = 0.35f;
     private static final float SLEEPING_REGEN_MULTIPLIER = 3.0f;
-    private static final float STAMINA_ENERGY_COST_RATIO = 0.1f; // was 1.0f -- THE FIX
+    private static final float STAMINA_ENERGY_COST_RATIO = 0.1f;
     private static final float STAMINA_SPRINT_DRAIN = 0.15f;
     private static final float RECOVERY_THRESHOLD = 15.0f;
     private static final float MAXED_WEIGHT_STANDING_DRAIN = 0.03f;
@@ -121,6 +120,8 @@ public class SurvivalTickHandler {
             cap.setStamina(cap.getStamina() - MAXED_WEIGHT_STANDING_DRAIN);
         } else if (player.isSprinting()) {
             cap.setStamina(cap.getStamina() - STAMINA_SPRINT_DRAIN);
+        } else if (AdrenalineManager.INSTANCE.isStaminaLocked(player.getUUID(), player.level().getGameTime())) {
+            // THE NEW CHECK -- Adrenaline aftermath: stamina stays frozen, no regen at all while locked.
         } else {
             float weightPenalty = 1.0f - weightFraction * 0.6f;
             float regenMultiplier = player.isSleeping() ? SLEEPING_REGEN_MULTIPLIER : 1.0f;
