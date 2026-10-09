@@ -11,7 +11,6 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 
-/** Heals YELLOW fully to GREEN, per your original spec. Opens the generalized MedTargetScreen. */
 public class BandageItem extends Item implements TargetedMedItem {
 
     public BandageItem(Properties properties) { super(properties); }

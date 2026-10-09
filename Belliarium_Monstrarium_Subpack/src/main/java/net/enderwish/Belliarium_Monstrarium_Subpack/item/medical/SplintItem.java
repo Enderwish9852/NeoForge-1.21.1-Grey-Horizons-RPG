@@ -12,14 +12,6 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 
-/**
- * SplintItem
- *
- * Only usable on subsystem parts (canTreat excludes Head/Torso) -- those
- * can never actually sit at GREY in a living player since reaching 0 on
- * either is already fatal, so there's no dead-end interaction to guard
- * against, just a correctly-scoped item. Heals GREY up to mid-RED (0.2).
- */
 public class SplintItem extends Item implements TargetedMedItem {
 
     public SplintItem(Properties properties) { super(properties); }

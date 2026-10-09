@@ -10,15 +10,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
-/**
- * OpenMedTargetFromKitPacket
- *
- * Carries the actual med ItemStack rather than just a slot index, so
- * MedTargetScreen always knows exactly what it's validating against with
- * no extra client-side state tracking needed. Uses RegistryFriendlyByteBuf
- * like FirstAidKitContentsPacket since ItemStack's stream codec needs
- * registry access.
- */
 public record OpenMedTargetFromKitPacket(int handOrdinal, int kitSlotIndex, ItemStack medStack)
         implements CustomPacketPayload {
 
@@ -29,9 +20,10 @@ public record OpenMedTargetFromKitPacket(int handOrdinal, int kitSlotIndex, Item
             (buf, p) -> {
                 buf.writeVarInt(p.handOrdinal);
                 buf.writeVarInt(p.kitSlotIndex);
-                ItemStack.STREAM_CODEC.encode(buf, p.medStack);
+                ItemStack.OPTIONAL_STREAM_CODEC.encode(buf, p.medStack);
             },
-            buf -> new OpenMedTargetFromKitPacket(buf.readVarInt(), buf.readVarInt(), ItemStack.STREAM_CODEC.decode(buf))
+            buf -> new OpenMedTargetFromKitPacket(
+                    buf.readVarInt(), buf.readVarInt(), ItemStack.OPTIONAL_STREAM_CODEC.decode(buf))
     );
 
     @Override

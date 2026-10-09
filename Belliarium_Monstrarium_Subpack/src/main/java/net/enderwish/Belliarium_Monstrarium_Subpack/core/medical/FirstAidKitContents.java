@@ -6,20 +6,13 @@ import net.minecraft.world.item.ItemStack;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * FirstAidKitContents
- *
- * VERIFY IF COMPILE FAILS -- ItemStack.CODEC as the field name for a
- * full-fidelity (count + components) ItemStack codec is my best-confidence
- * read for 1.21.1; ItemStack.OPTIONAL_CODEC is the other likely candidate.
- */
 public record FirstAidKitContents(List<ItemStack> items) {
 
     public static final int MAX_SLOTS = 6;
-    public static final int ADRENALINE_SLOT_INDEX = 5; // only one Adrenaline ever allowed
+    public static final int ADRENALINE_SLOT_INDEX = 5;
 
     public static final Codec<FirstAidKitContents> CODEC =
-            ItemStack.CODEC.listOf().xmap(FirstAidKitContents::new, FirstAidKitContents::items);
+            ItemStack.OPTIONAL_CODEC.listOf().xmap(FirstAidKitContents::new, FirstAidKitContents::items);
 
     public static FirstAidKitContents empty() {
         List<ItemStack> list = new ArrayList<>();
@@ -36,5 +29,26 @@ public record FirstAidKitContents(List<ItemStack> items) {
 
     public ItemStack getSlot(int index) {
         return index < items.size() ? items.get(index) : ItemStack.EMPTY;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof FirstAidKitContents other)) return false;
+        if (items.size() != other.items.size()) return false;
+        for (int i = 0; i < items.size(); i++) {
+            if (!ItemStack.matches(items.get(i), other.items.get(i))) return false;
+        }
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int h = 0;
+        for (ItemStack s : items) {
+            h = h * 31 + s.getItem().hashCode();
+            h = h * 31 + s.getCount();
+        }
+        return h;
     }
 }

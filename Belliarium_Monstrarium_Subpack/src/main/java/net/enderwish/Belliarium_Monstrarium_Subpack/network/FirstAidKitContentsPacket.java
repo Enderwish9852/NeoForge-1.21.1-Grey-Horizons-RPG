@@ -13,15 +13,6 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * VERIFY IF COMPILE FAILS -- ItemStack.STREAM_CODEC / ItemStack.OPTIONAL_STREAM_CODEC
- * is my best-confidence guess for the network (not NBT) ItemStack codec in
- * 1.21.1; whichever one doesn't compile, the other is the fallback. Also
- * note the buffer type here is RegistryFriendlyByteBuf, not plain
- * FriendlyByteBuf, since ItemStack's stream codec needs registry access --
- * every other packet in this project uses plain FriendlyByteBuf because
- * none of them carry a real ItemStack, this is the first one that does.
- */
 public record FirstAidKitContentsPacket(int handOrdinal, List<ItemStack> slots) implements CustomPacketPayload {
 
     public static final Type<FirstAidKitContentsPacket> TYPE =
@@ -31,13 +22,13 @@ public record FirstAidKitContentsPacket(int handOrdinal, List<ItemStack> slots) 
             (buf, p) -> {
                 buf.writeVarInt(p.handOrdinal);
                 buf.writeVarInt(p.slots.size());
-                for (ItemStack stack : p.slots) ItemStack.STREAM_CODEC.encode(buf, stack);
+                for (ItemStack stack : p.slots) ItemStack.OPTIONAL_STREAM_CODEC.encode(buf, stack);
             },
             buf -> {
                 int hand = buf.readVarInt();
                 int count = buf.readVarInt();
                 List<ItemStack> slots = new ArrayList<>(count);
-                for (int i = 0; i < count; i++) slots.add(ItemStack.STREAM_CODEC.decode(buf));
+                for (int i = 0; i < count; i++) slots.add(ItemStack.OPTIONAL_STREAM_CODEC.decode(buf));
                 return new FirstAidKitContentsPacket(hand, slots);
             }
     );
