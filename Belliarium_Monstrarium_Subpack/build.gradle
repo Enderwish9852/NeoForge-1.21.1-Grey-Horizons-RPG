@@ -57,6 +57,8 @@ configurations {
 }
 
 dependencies {
+    // Atmospheric -- the Survivor's Diary restores season day, weather and wind through SeasonsAPI
+    implementation project(":Atmospheric_Overhaul_Subpack")
     // Curios API
     compileOnly "top.theillusivec4.curios:curios-neoforge:${curios_version}:api"
     runtimeOnly "top.theillusivec4.curios:curios-neoforge:${curios_version}"

@@ -6,7 +6,12 @@ import net.enderwish.Atmospheric_Overhaul_Subpack.core.season.SeasonData;
 import net.enderwish.Atmospheric_Overhaul_Subpack.core.season.SeasonTemperature;
 import net.enderwish.Atmospheric_Overhaul_Subpack.core.weather.WeatherDefinition;
 import net.enderwish.Atmospheric_Overhaul_Subpack.core.weather.WeatherRegistry;
+import net.enderwish.Atmospheric_Overhaul_Subpack.core.weather.WindDirection;
+import net.enderwish.Atmospheric_Overhaul_Subpack.network.ModMessages;
+import net.enderwish.Atmospheric_Overhaul_Subpack.network.SeasonSyncPacket;
+import net.enderwish.Atmospheric_Overhaul_Subpack.network.WindSyncPacket;
 import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 
 /**
@@ -316,5 +321,88 @@ public final class SeasonsAPI {
     /** True if wind is currently strong on the client. */
     public static boolean isClientWindy() {
         return ClientSeasonState.isWindy();
+    }
+
+    // ── Environment snapshot / restore (Survivor's Diary) ─────────────────────
+
+    /**
+     * Captures everything the Survivor's Diary needs to rewind the environment:
+     * time of day, season day, weather (with its remaining duration and
+     * intensity) and wind. Returned as an opaque tag; callers store it and hand
+     * it back to restoreEnvironment() without looking inside.
+     *
+     * Absolute game time is deliberately NOT part of this -- it only ever moves forward.
+     */
+    public static CompoundTag captureEnvironment(ServerLevel level) {
+        SeasonData data = SeasonData.get(level);
+        CompoundTag tag = new CompoundTag();
+
+        tag.putInt("total_days", data.getTotalDays());
+        tag.putInt("ticks_today", data.getTicksToday());
+        tag.putLong("day_time", level.getDayTime());
+
+        tag.putString("weather_id", data.getActiveWeatherId());
+        tag.putInt("weather_ticks", data.getWeatherTicksRemaining());
+        tag.putFloat("weather_intensity", data.getActiveIntensity());
+
+        tag.putString("wind_direction", data.getWindDirection().name());
+        tag.putFloat("wind_speed", data.getWindSpeed());
+        tag.putFloat("wind_target_speed", data.getWindTargetSpeed());
+        tag.putFloat("wind_turbulence", data.getWindTurbulence());
+        tag.putFloat("wind_gust", data.getWindGustFactor());
+        return tag;
+    }
+
+    /**
+     * Puts the environment back exactly as captured, applies the matching vanilla
+     * weather, and syncs the season and wind state to all clients.
+     * Fires no season/phase events -- this is a rewind, not a transition.
+     *
+     * VERIFY IF COMPILE FAILS -- ServerLevel#setDayTime(long) (it's what vanilla's /time set calls).
+     */
+    public static void restoreEnvironment(ServerLevel level, CompoundTag tag) {
+        if (tag == null || tag.isEmpty()) return;
+        SeasonData data = SeasonData.get(level);
+
+        data.setTotalDays(tag.getInt("total_days"));
+        data.setTicksToday(tag.getInt("ticks_today"));
+        level.setDayTime(tag.getLong("day_time"));
+
+        String weatherId = tag.getString("weather_id");
+        if (weatherId.isEmpty()) weatherId = "clear";
+        int weatherTicks = tag.getInt("weather_ticks");
+        data.setActiveWeather(weatherId, weatherTicks, tag.getFloat("weather_intensity"));
+
+        // Same vanilla-side application SeasonEventHandler uses when it rolls weather.
+        WeatherDefinition def = WeatherRegistry.INSTANCE.getByName(weatherId);
+        int vanillaDuration = Math.max(1, weatherTicks);
+        if (def.hasRain()) {
+            level.setWeatherParameters(0, vanillaDuration, true, def.hasThunder());
+        } else {
+            level.setWeatherParameters(vanillaDuration, 0, false, false);
+        }
+
+        WindDirection direction;
+        try {
+            direction = WindDirection.valueOf(tag.getString("wind_direction"));
+        } catch (IllegalArgumentException e) {
+            direction = WindDirection.SOUTHWEST;
+        }
+        data.setWindState(direction,
+                tag.getFloat("wind_speed"),
+                tag.getFloat("wind_target_speed"),
+                tag.getFloat("wind_turbulence"),
+                tag.getFloat("wind_gust"));
+
+        ModMessages.sendToAllPlayers(new SeasonSyncPacket(
+                data.getTotalDays(),
+                data.getYearDay(),
+                data.getSeason(),
+                data.getPhase(),
+                data.getActiveWeatherId(),
+                data.getActiveIntensity(),
+                data.getYear()
+        ));
+        WindSyncPacket.sendToAll(level, getWindState(level));
     }
 }

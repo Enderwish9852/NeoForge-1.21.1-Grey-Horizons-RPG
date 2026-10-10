@@ -10,19 +10,24 @@ public class PainkillerManager {
 
     private final Map<UUID, Long> activeUntilGameTime = new ConcurrentHashMap<>();
 
+    /** Keeps whichever expiry is later, so a short effect can never cut a long one short. */
     public void activate(UUID playerId, long untilGameTime) {
-        activeUntilGameTime.put(playerId, untilGameTime);
+        activeUntilGameTime.merge(playerId, untilGameTime, Math::max);
     }
 
     public boolean isActive(UUID playerId) {
-        Long until = activeUntilGameTime.get(playerId);
-        return until != null && until > 0; // tick() below clears expired entries to 0/removed
+        return activeUntilGameTime.containsKey(playerId);
     }
 
+    /** Called every server tick per player by MedicalTickHandler. */
     public void tick(UUID playerId, long currentGameTime) {
         Long until = activeUntilGameTime.get(playerId);
         if (until != null && currentGameTime >= until) {
             activeUntilGameTime.remove(playerId);
         }
+    }
+
+    public void clear(UUID playerId) {
+        activeUntilGameTime.remove(playerId);
     }
 }

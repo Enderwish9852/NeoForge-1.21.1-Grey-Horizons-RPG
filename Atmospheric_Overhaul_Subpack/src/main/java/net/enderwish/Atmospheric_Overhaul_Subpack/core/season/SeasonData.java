@@ -151,6 +151,11 @@ public class SeasonData extends SavedData{
         this.totalDays = Math.max(0, totalDays);
         setDirty();
     }
+    // Force-set how far into the current day we are (used by the Survivor's Diary rollback)
+    public void setTicksToday(int ticks) {
+        this.ticksToday = Math.max(0, Math.min(ticks, 23999));
+        setDirty();
+    }
 
     // ── Wind setters ──────────────────────────────────────────────────────────
     // Called by WindManager every tick after advancing wind state. Marks

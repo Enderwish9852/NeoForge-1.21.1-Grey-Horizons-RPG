@@ -24,3 +24,10 @@ type="required"
 versionRange="[1.21.1]"
 ordering="NONE"
 side="BOTH"
+
+[[dependencies.gh_belliarium_monstrarium]]
+modId="gh_atmospheric"
+type="required"
+versionRange="[0.0.1,)"
+ordering="AFTER"
+side="BOTH"
