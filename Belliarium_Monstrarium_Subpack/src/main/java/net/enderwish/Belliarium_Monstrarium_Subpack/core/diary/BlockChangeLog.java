@@ -18,34 +18,23 @@ import java.util.List;
 /**
  * BlockChangeLog
  *
- * Maps packed block position -> the ORIGINAL BlockState from before the first
- * change in the tracking window. Later changes to the same position are
- * ignored, so memory scales with distinct positions changed, not total changes.
- *
- * States are stored as palette indices, and the palette is saved as BlockState
- * NBT (names + properties), so saves survive other mods shifting numeric ids.
- *
- * VERIFY IF COMPILE FAILS -- BlockState.CODEC as the NBT codec for a state.
+ * position -> ORIGINAL block state from before the first change in the window (first wins).
+ * NEW: beginRestore() returns a cursor that can be stepped under a time budget, so the
+ * wake-up rewind can spread block restoration over several ticks.
  */
 public class BlockChangeLog {
 
-    // Update clients, skip neighbour shape updates, suppress drops. Neighbours are
-    // deliberately NOT notified, so restoring doesn't trigger physics cascades.
     private static final int RESTORE_FLAGS =
             Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE | Block.UPDATE_SUPPRESS_DROPS;
 
     private final Long2IntOpenHashMap originalByPos = new Long2IntOpenHashMap();
-    private final List<BlockState> palette = new ArrayList<>(); // null = state no longer exists
+    private final List<BlockState> palette = new ArrayList<>();
     private final Object2IntOpenHashMap<BlockState> paletteLookup = new Object2IntOpenHashMap<>();
 
-    public BlockChangeLog() {
-        paletteLookup.defaultReturnValue(-1);
-    }
+    public BlockChangeLog() { paletteLookup.defaultReturnValue(-1); }
 
-    /** Returns true if this position was newly recorded. */
     public boolean recordIfAbsent(long packedPos, BlockState original) {
         if (originalByPos.containsKey(packedPos)) return false;
-
         int index = paletteLookup.getInt(original);
         if (index < 0) {
             index = palette.size();
@@ -64,25 +53,52 @@ public class BlockChangeLog {
         paletteLookup.clear();
     }
 
-    /** Puts every recorded position back to its original state. Returns how many blocks actually changed. */
-    public int restoreAll(ServerLevel level) {
-        int restored = 0;
-        for (Long2IntMap.Entry entry : originalByPos.long2IntEntrySet()) {
-            int index = entry.getIntValue();
-            if (index < 0 || index >= palette.size()) continue;
-            BlockState original = palette.get(index);
-            if (original == null) continue;
+    public RestoreCursor beginRestore() { return new RestoreCursor(); }
 
-            BlockPos pos = BlockPos.of(entry.getLongKey());
-            if (level.getBlockState(pos) == original) continue;
-            if (level.setBlock(pos, original, RESTORE_FLAGS)) restored++;
+    public final class RestoreCursor {
+        private final long[] positions;
+        private final int[] indices;
+        private int next = 0;
+        private int restored = 0;
+
+        private RestoreCursor() {
+            positions = new long[originalByPos.size()];
+            indices = new int[originalByPos.size()];
+            int i = 0;
+            for (Long2IntMap.Entry e : originalByPos.long2IntEntrySet()) {
+                positions[i] = e.getLongKey();
+                indices[i] = e.getIntValue();
+                i++;
+            }
         }
-        return restored;
+
+        /** Returns true when every block has been processed. Pass Long.MAX_VALUE for "no limit". */
+        public boolean step(ServerLevel level, long deadlineNanos) {
+            int counter = 0;
+            while (next < positions.length) {
+                int index = indices[next];
+                long packed = positions[next];
+                next++;
+
+                if (index >= 0 && index < palette.size()) {
+                    BlockState original = palette.get(index);
+                    if (original != null) {
+                        BlockPos pos = BlockPos.of(packed);
+                        if (level.getBlockState(pos) != original && level.setBlock(pos, original, RESTORE_FLAGS)) {
+                            restored++;
+                        }
+                    }
+                }
+                if ((++counter & 31) == 0 && System.nanoTime() >= deadlineNanos) return next >= positions.length;
+            }
+            return true;
+        }
+
+        public int restored() { return restored; }
     }
 
     public CompoundTag save() {
         CompoundTag tag = new CompoundTag();
-
         ListTag paletteTag = new ListTag();
         for (BlockState state : palette) {
             Tag encoded = state == null
@@ -90,16 +106,14 @@ public class BlockChangeLog {
                     : BlockState.CODEC.encodeStart(NbtOps.INSTANCE, state).result().orElseGet(CompoundTag::new);
             paletteTag.add(encoded);
         }
-
         long[] positions = new long[originalByPos.size()];
         int[] indices = new int[originalByPos.size()];
         int i = 0;
-        for (Long2IntMap.Entry entry : originalByPos.long2IntEntrySet()) {
-            positions[i] = entry.getLongKey();
-            indices[i] = entry.getIntValue();
+        for (Long2IntMap.Entry e : originalByPos.long2IntEntrySet()) {
+            positions[i] = e.getLongKey();
+            indices[i] = e.getIntValue();
             i++;
         }
-
         tag.put("palette", paletteTag);
         tag.putLongArray("positions", positions);
         tag.putIntArray("palette_indices", indices);
@@ -108,20 +122,16 @@ public class BlockChangeLog {
 
     public static BlockChangeLog load(CompoundTag tag) {
         BlockChangeLog log = new BlockChangeLog();
-
         ListTag paletteTag = tag.getList("palette", Tag.TAG_COMPOUND);
         for (int i = 0; i < paletteTag.size(); i++) {
             BlockState state = BlockState.CODEC.parse(NbtOps.INSTANCE, paletteTag.getCompound(i)).result().orElse(null);
             log.palette.add(state);
             if (state != null) log.paletteLookup.put(state, i);
         }
-
         long[] positions = tag.getLongArray("positions");
         int[] indices = tag.getIntArray("palette_indices");
         int count = Math.min(positions.length, indices.length);
-        for (int i = 0; i < count; i++) {
-            log.originalByPos.put(positions[i], indices[i]);
-        }
+        for (int i = 0; i < count; i++) log.originalByPos.put(positions[i], indices[i]);
         return log;
     }
 }

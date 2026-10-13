@@ -1,8 +1,11 @@
 package net.enderwish.Belliarium_Monstrarium_Subpack.client.gui;
 
+import net.enderwish.Belliarium_Monstrarium_Subpack.client.WakeUpScreen;
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.body.BodyPartColors;
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.combat.CombatLogEntry;
 import net.enderwish.Belliarium_Monstrarium_Subpack.network.DeathReportPacket;
+import net.enderwish.Belliarium_Monstrarium_Subpack.network.DiaryWakeUpPacket;
+import net.enderwish.Belliarium_Monstrarium_Subpack.network.ModMessages;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -16,14 +19,11 @@ import java.util.List;
 /**
  * DeathReportScreen
  *
- * BUGFIX (diagram/scoreboard vanishing when the headline starts typing) --
- * render() used to `return` right after the scoreboard's own reveal window
- * ended, which meant NOTHING from renderBodyAndScoreboard() ever painted
- * again once the headline phase began. Per the original spec ("at the
- * BOTTOM of the screen" implies the diagram/scoreboard are still visible
- * above it), the diagram+scoreboard now always render once past the fade,
- * and the headline is drawn ON TOP of them once its own window arrives --
- * nothing disappears anymore.
+ * NEW -- rewind variant (data.rewindAvailable()). After the headline types out:
+ *   "Accept Fate" is shown, a line is drawn through it, it fades away, and "Wake up..."
+ *   fades in. Accept Fate is never clickable here, and ESC is disabled, since the player
+ *   is alive in limbo and this screen is their only way forward.
+ * The normal (non-rewind) flow is unchanged.
  */
 public class DeathReportScreen extends Screen {
 
@@ -44,16 +44,32 @@ public class DeathReportScreen extends Screen {
     private static final int DIAGRAM_WIDTH = 35 * DIAGRAM_SCALE;
     private static final int DIAGRAM_HEIGHT = 59 * DIAGRAM_SCALE;
 
+    // Rewind button animation (all relative to the moment the headline finished)
+    private static final long STRIKE_DELAY_MS = 1400;
+    private static final long STRIKE_MS = 700;
+    private static final long STRIKE_HOLD_MS = 300;
+    private static final long ACCEPT_FADE_MS = 500;
+    private static final long WAKE_FADE_IN_MS = 900;
+    private static final int BUTTON_W = 120;
+    private static final int BUTTON_H = 20;
+
     private final DeathReportPacket data;
     private final long openedAtMillis;
     private boolean buttonAdded = false;
     private int manualScrollOffset = 0;
+
+    private long rewindReadyAtMs = -1;
+    private boolean waking = false;
+    private int lastMouseX, lastMouseY;
 
     public DeathReportScreen(DeathReportPacket data) {
         super(Component.literal("Death Report"));
         this.data = data;
         this.openedAtMillis = System.currentTimeMillis();
     }
+
+    @Override
+    public boolean shouldCloseOnEsc() { return !data.rewindAvailable(); }
 
     @Override
     public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
@@ -65,6 +81,8 @@ public class DeathReportScreen extends Screen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        lastMouseX = mouseX;
+        lastMouseY = mouseY;
         super.render(graphics, mouseX, mouseY, partialTick);
 
         long age = System.currentTimeMillis() - openedAtMillis;
@@ -76,7 +94,6 @@ public class DeathReportScreen extends Screen {
             return;
         }
 
-        // THE FIX -- always render, never gated behind an early return.
         renderBodyAndScoreboard(graphics, mouseX, mouseY, postFade);
 
         long scoreboardWindow = totalRevealDuration() + POST_SCOREBOARD_PAUSE_MS;
@@ -104,17 +121,9 @@ public class DeathReportScreen extends Screen {
         return this.width / 2 - totalBlockWidth / 2;
     }
 
-    private int diagramOriginY() {
-        return this.height / 2 - DIAGRAM_HEIGHT / 2;
-    }
-
-    private int boardOriginX() {
-        return diagramOriginX() + DIAGRAM_WIDTH + DIAGRAM_TO_BOARD_GAP;
-    }
-
-    private int boardOriginY() {
-        return this.height / 2 - SCOREBOARD_HEIGHT / 2;
-    }
+    private int diagramOriginY() { return this.height / 2 - DIAGRAM_HEIGHT / 2; }
+    private int boardOriginX() { return diagramOriginX() + DIAGRAM_WIDTH + DIAGRAM_TO_BOARD_GAP; }
+    private int boardOriginY() { return this.height / 2 - SCOREBOARD_HEIGHT / 2; }
 
     private void renderBodyAndScoreboard(GuiGraphics graphics, int mouseX, int mouseY, long postFade) {
         renderDiagram(graphics, diagramOriginX(), diagramOriginY());
@@ -196,21 +205,91 @@ public class DeathReportScreen extends Screen {
         return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
     }
 
+    // ── Headline + buttons ────────────────────────────────────────────────────
+
+    private int headlineY() { return this.height - 60; }
+    private int buttonY() { return headlineY() + 16; }
+
     private void renderHeadline(GuiGraphics graphics, long typewriterAge) {
         String full = data.headline();
         int visibleChars = (int) Math.min(full.length(), Math.max(0, typewriterAge) / TYPEWRITER_CHAR_MS);
         String shown = full.substring(0, visibleChars);
 
         int centerX = this.width / 2;
-        int y = this.height - 60;
-        graphics.drawCenteredString(this.font, shown, centerX, y, 0xFFFFFFFF);
+        graphics.drawCenteredString(this.font, shown, centerX, headlineY(), 0xFFFFFFFF);
 
         boolean fullyTyped = visibleChars >= full.length();
         long sinceFullyTyped = typewriterAge - (long) full.length() * TYPEWRITER_CHAR_MS;
+        if (!fullyTyped || sinceFullyTyped < POST_TYPEWRITER_PAUSE_MS) return;
 
-        if (fullyTyped && sinceFullyTyped >= POST_TYPEWRITER_PAUSE_MS && !buttonAdded) {
-            addAcceptButton(centerX, y + 16);
+        if (data.rewindAvailable()) {
+            if (rewindReadyAtMs < 0) rewindReadyAtMs = System.currentTimeMillis();
+            renderRewindButtons(graphics, centerX);
+        } else if (!buttonAdded) {
+            addAcceptButton(centerX, buttonY());
         }
+    }
+
+    private long rewindElapsed() {
+        return rewindReadyAtMs < 0 ? 0 : System.currentTimeMillis() - rewindReadyAtMs;
+    }
+
+    private long acceptFadeStart() { return STRIKE_DELAY_MS + STRIKE_MS + STRIKE_HOLD_MS; }
+    private long wakeStart() { return acceptFadeStart() + ACCEPT_FADE_MS; }
+
+    private void renderRewindButtons(GuiGraphics graphics, int centerX) {
+        long t = rewindElapsed();
+        int bx = centerX - BUTTON_W / 2;
+        int by = buttonY();
+
+        float acceptAlpha = t < acceptFadeStart() ? 1f
+                : 1f - Mth.clamp((t - acceptFadeStart()) / (float) ACCEPT_FADE_MS, 0f, 1f);
+        if (acceptAlpha > 0f) {
+            drawButton(graphics, bx, by, "Accept Fate", acceptAlpha, false);
+            if (t > STRIKE_DELAY_MS) {
+                float progress = Mth.clamp((t - STRIKE_DELAY_MS) / (float) STRIKE_MS, 0f, 1f);
+                int lineWidth = (int) ((BUTTON_W - 8) * progress);
+                graphics.fill(bx + 4, by + 9, bx + 4 + lineWidth, by + 11, argb(acceptAlpha, 0xCC3333));
+            }
+        }
+
+        float wakeAlpha = t < wakeStart() ? 0f
+                : Mth.clamp((t - wakeStart()) / (float) WAKE_FADE_IN_MS, 0f, 1f);
+        if (wakeAlpha > 0f) {
+            drawButton(graphics, bx, by, "Wake up...", wakeAlpha, isOverWakeButton(lastMouseX, lastMouseY));
+        }
+    }
+
+    private void drawButton(GuiGraphics graphics, int x, int y, String label, float alpha, boolean hovered) {
+        graphics.fill(x - 1, y - 1, x + BUTTON_W + 1, y + BUTTON_H + 1, argb(alpha, hovered ? 0xFFFFFF : 0x808080));
+        graphics.fill(x, y, x + BUTTON_W, y + BUTTON_H, argb(alpha * 0.9f, hovered ? 0x404050 : 0x202028));
+        graphics.drawCenteredString(this.font, label, x + BUTTON_W / 2, y + 6, argb(alpha, 0xFFFFFF));
+    }
+
+    private static int argb(float alpha, int rgb) {
+        return ((int) (Mth.clamp(alpha, 0f, 1f) * 255) << 24) | (rgb & 0xFFFFFF);
+    }
+
+    private boolean wakeButtonClickable() {
+        return data.rewindAvailable() && rewindReadyAtMs >= 0
+                && rewindElapsed() >= wakeStart() + (long) (WAKE_FADE_IN_MS * 0.6);
+    }
+
+    private boolean isOverWakeButton(int mx, int my) {
+        int bx = this.width / 2 - BUTTON_W / 2;
+        int by = buttonY();
+        return mx >= bx && mx <= bx + BUTTON_W && my >= by && my <= by + BUTTON_H;
+    }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (!waking && wakeButtonClickable() && isOverWakeButton((int) mouseX, (int) mouseY)) {
+            waking = true;
+            ModMessages.sendToServer(new DiaryWakeUpPacket());
+            Minecraft.getInstance().setScreen(new WakeUpScreen());
+            return true;
+        }
+        return super.mouseClicked(mouseX, mouseY, button);
     }
 
     private void addAcceptButton(int centerX, int y) {
@@ -227,7 +306,5 @@ public class DeathReportScreen extends Screen {
     }
 
     @Override
-    public boolean isPauseScreen() {
-        return false;
-    }
+    public boolean isPauseScreen() { return false; }
 }

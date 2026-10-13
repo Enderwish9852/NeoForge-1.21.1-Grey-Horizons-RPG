@@ -2,6 +2,7 @@ package net.enderwish.Belliarium_Monstrarium_Subpack.core;
 
 import com.mojang.serialization.Codec;
 import net.enderwish.Belliarium_Monstrarium_Subpack.BelliariumMonstrariumSubpack;
+import net.enderwish.Belliarium_Monstrarium_Subpack.core.diary.DiaryContent;
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.gear.RepairChargesComponent;
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.medical.FirstAidKitContents;
 import net.minecraft.core.component.DataComponentType;
@@ -34,6 +35,10 @@ public class ModDataComponents {
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<FirstAidKitContents>> FIRST_AID_KIT_CONTENTS =
             DATA_COMPONENTS.register("first_aid_kit_contents", () ->
                     DataComponentType.<FirstAidKitContents>builder().persistent(FirstAidKitContents.CODEC).build());
+
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<DiaryContent>> DIARY_CONTENT =
+            DATA_COMPONENTS.register("diary_content", () ->
+                    DataComponentType.<DiaryContent>builder().persistent(DiaryContent.CODEC).build());
 
     public static void register(IEventBus eventBus) {
         DATA_COMPONENTS.register(eventBus);

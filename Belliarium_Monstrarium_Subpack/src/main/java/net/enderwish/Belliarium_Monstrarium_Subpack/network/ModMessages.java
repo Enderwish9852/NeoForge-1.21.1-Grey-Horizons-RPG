@@ -35,6 +35,14 @@ public class ModMessages {
 
         registrar.playToServer(SkillBookScreenStatePacket.TYPE, SkillBookScreenStatePacket.STREAM_CODEC, SkillBookScreenStatePacket::handle);
         registrar.playToServer(SkillBindKeyPacket.TYPE, SkillBindKeyPacket.STREAM_CODEC, SkillBindKeyPacket::handle);
+
+        registrar.playToClient(OpenDiaryPacket.TYPE, OpenDiaryPacket.STREAM_CODEC, OpenDiaryPacket::handle);
+        registrar.playToClient(DiaryWakeFinishedPacket.TYPE, DiaryWakeFinishedPacket.STREAM_CODEC, DiaryWakeFinishedPacket::handle);
+        registrar.playToServer(DiarySavePacket.TYPE, DiarySavePacket.STREAM_CODEC, DiarySavePacket::handle);
+        registrar.playToServer(DiaryWakeUpPacket.TYPE, DiaryWakeUpPacket.STREAM_CODEC, DiaryWakeUpPacket::handle);
+        registrar.playToClient(DejaVuFadePacket.TYPE, DejaVuFadePacket.STREAM_CODEC, DejaVuFadePacket::handle);
+        registrar.playToClient(DejaVuTeleportPacket.TYPE, DejaVuTeleportPacket.STREAM_CODEC, DejaVuTeleportPacket::handle);
+        registrar.playToClient(DejaVuClearPacket.TYPE, DejaVuClearPacket.STREAM_CODEC, DejaVuClearPacket::handle);
     }
 
     public static void sendToPlayer(CustomPacketPayload packet, ServerPlayer player) {

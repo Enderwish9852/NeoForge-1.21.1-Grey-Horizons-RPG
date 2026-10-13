@@ -1,0 +1,24 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "category": "equipment",
+    "pattern": [
+        "ABC",
+        "DEF",
+        "GHI"
+    ],
+    "key": {
+        "A": { "item": "minecraft:barrier" },
+        "B": { "item": "minecraft:barrier" },
+        "C": { "item": "minecraft:barrier" },
+        "D": { "item": "minecraft:barrier" },
+        "E": { "item": "minecraft:barrier" },
+        "F": { "item": "minecraft:barrier" },
+        "G": { "item": "minecraft:barrier" },
+        "H": { "item": "minecraft:barrier" },
+        "I": { "item": "minecraft:barrier" }
+    },
+    "result": {
+        "count": 1,
+        "id": "minecraft:diamond_pickaxe"
+    }
+}

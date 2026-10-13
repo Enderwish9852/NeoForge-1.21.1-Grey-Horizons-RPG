@@ -20,29 +20,16 @@ import java.util.Map;
 /**
  * ContainerBaseline
  *
- * Full NBT snapshots of every block entity (chests, furnaces, barrels, clay pots,
- * cutting boards, signs...) as they were when tracking began, or when their chunk
- * was first seen afterwards. First snapshot per position wins.
- *
- * Restore REPLACES the block entity with a fresh one built from the snapshot,
- * rather than loading into the existing instance. Some of this mod's own block
- * entities (clay pot, cutting board) don't clear their item lists before loading,
- * so loading into an old instance would leave stale slots behind.
- *
- * NEW (slice 1d) -- containers in chunks that aren't loaded at rollback time are
- * handed to PendingFixData instead of being skipped, and applied via restoreOne()
- * when the chunk loads.
+ * Block entity snapshots, first snapshot per position wins. Restore replaces the block
+ * entity with a fresh one built from the snapshot. Containers in unloaded chunks become
+ * pending fixes. NEW: stepped restore via Cursor (time-budgeted).
  */
 public class ContainerBaseline {
-
-    public record Result(int restored, int deferred) {}
 
     private final Map<Long, CompoundTag> snapshots = new HashMap<>();
     private final LongOpenHashSet capturedChunks = new LongOpenHashSet();
 
-    public boolean isChunkCaptured(long chunkKey) {
-        return capturedChunks.contains(chunkKey);
-    }
+    public boolean isChunkCaptured(long chunkKey) { return capturedChunks.contains(chunkKey); }
 
     public void captureChunk(LevelChunk chunk, HolderLookup.Provider registries) {
         capturedChunks.add(chunk.getPos().toLong());
@@ -59,37 +46,58 @@ public class ContainerBaseline {
         capturedChunks.clear();
     }
 
-    public Result restoreAll(ServerLevel level, PendingFixData pending) {
-        HolderLookup.Provider registries = level.registryAccess();
-        int restored = 0;
-        int deferred = 0;
+    public Cursor beginRestore(PendingFixData pending) { return new Cursor(pending); }
 
-        for (Map.Entry<Long, CompoundTag> entry : snapshots.entrySet()) {
-            BlockPos pos = BlockPos.of(entry.getKey());
-            int chunkX = pos.getX() >> 4;
-            int chunkZ = pos.getZ() >> 4;
+    public final class Cursor {
+        private final long[] keys;
+        private final CompoundTag[] tags;
+        private final PendingFixData pending;
+        private int next = 0, restored = 0, deferred = 0;
 
-            if (level.getChunkSource().getChunkNow(chunkX, chunkZ) == null) {
-                pending.addContainer(ChunkPos.asLong(chunkX, chunkZ), entry.getKey(), entry.getValue());
-                deferred++;
-                continue;
+        private Cursor(PendingFixData pending) {
+            this.pending = pending;
+            keys = new long[snapshots.size()];
+            tags = new CompoundTag[snapshots.size()];
+            int i = 0;
+            for (Map.Entry<Long, CompoundTag> e : snapshots.entrySet()) {
+                keys[i] = e.getKey();
+                tags[i] = e.getValue();
+                i++;
             }
-            if (restoreOne(level, pos, entry.getValue(), registries)) restored++;
         }
-        return new Result(restored, deferred);
+
+        public boolean step(ServerLevel level, long deadlineNanos) {
+            HolderLookup.Provider registries = level.registryAccess();
+            int counter = 0;
+            while (next < keys.length) {
+                long key = keys[next];
+                CompoundTag tag = tags[next];
+                next++;
+
+                BlockPos pos = BlockPos.of(key);
+                int cx = pos.getX() >> 4, cz = pos.getZ() >> 4;
+                if (level.getChunkSource().getChunkNow(cx, cz) == null) {
+                    pending.addContainer(ChunkPos.asLong(cx, cz), key, tag);
+                    deferred++;
+                } else if (restoreOne(level, pos, tag, registries)) {
+                    restored++;
+                }
+                if ((++counter & 15) == 0 && System.nanoTime() >= deadlineNanos) return next >= keys.length;
+            }
+            return true;
+        }
+
+        public int restored() { return restored; }
+        public int deferred() { return deferred; }
     }
 
-    /** Puts one container back from a snapshot. Returns true if it actually changed anything. */
-    public static boolean restoreOne(ServerLevel level, BlockPos pos, CompoundTag tag,
-                                     HolderLookup.Provider registries) {
+    public static boolean restoreOne(ServerLevel level, BlockPos pos, CompoundTag tag, HolderLookup.Provider registries) {
         BlockEntity existing = level.getBlockEntity(pos);
-        if (existing != null && existing.saveWithFullMetadata(registries).equals(tag)) {
-            return false; // already identical
-        }
+        if (existing != null && existing.saveWithFullMetadata(registries).equals(tag)) return false;
 
         BlockState state = level.getBlockState(pos);
         BlockEntity fresh = BlockEntity.loadStatic(pos, state, tag, registries);
-        if (fresh == null) return false; // block there no longer fits this block entity type
+        if (fresh == null) return false;
 
         level.setBlockEntity(fresh);
         level.sendBlockUpdated(pos, state, state, Block.UPDATE_ALL);
@@ -117,9 +125,7 @@ public class ContainerBaseline {
             CompoundTag e = list.getCompound(i);
             baseline.snapshots.put(e.getLong("pos"), e.getCompound("data"));
         }
-        for (long key : tag.getLongArray("captured_chunks")) {
-            baseline.capturedChunks.add(key);
-        }
+        for (long key : tag.getLongArray("captured_chunks")) baseline.capturedChunks.add(key);
         return baseline;
     }
 }

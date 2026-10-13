@@ -1,5 +1,6 @@
 package net.enderwish.Belliarium_Monstrarium_Subpack.core.diary;
 
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
@@ -26,6 +27,8 @@ public class DayTrackerData extends SavedData {
     private BlockChangeLog blockLog = new BlockChangeLog();
     private ContainerBaseline containers = new ContainerBaseline();
     private EntityBaseline entities = new EntityBaseline();
+    private DayStats stats = new DayStats();
+    private final LongOpenHashSet lootedContainers = new LongOpenHashSet();
 
     public static DayTrackerData get(ServerLevel overworld) {
         return overworld.getDataStorage().computeIfAbsent(
@@ -42,6 +45,10 @@ public class DayTrackerData extends SavedData {
     public BlockChangeLog getBlockLog() { return blockLog; }
     public ContainerBaseline getContainers() { return containers; }
     public EntityBaseline getEntities() { return entities; }
+    public DayStats getStats() { return stats; }
+    public LongOpenHashSet getLootedContainers() { return lootedContainers; }
+    public void markLooted(long posKey) { lootedContainers.add(posKey); }
+    public boolean isLooted(long posKey) { return lootedContainers.contains(posKey); }
 
     public void begin(long gameTime, UUID owner, CompoundTag playerSnapshot, CompoundTag environment) {
         clearAll();
@@ -66,6 +73,8 @@ public class DayTrackerData extends SavedData {
         blockLog.clear();
         containers.clear();
         entities.clear();
+        stats.clear();
+        lootedContainers.clear();
     }
 
     @Override
@@ -78,6 +87,8 @@ public class DayTrackerData extends SavedData {
         tag.put("block_log", blockLog.save());
         tag.put("containers", containers.save());
         tag.put("entities", entities.save());
+        tag.put("stats", stats.save());
+        tag.putLongArray("looted_containers", lootedContainers.toLongArray());
         return tag;
     }
 
@@ -91,6 +102,8 @@ public class DayTrackerData extends SavedData {
         data.blockLog = BlockChangeLog.load(tag.getCompound("block_log"));
         data.containers = ContainerBaseline.load(tag.getCompound("containers"));
         data.entities = EntityBaseline.load(tag.getCompound("entities"));
+        data.stats = DayStats.load(tag.getCompound("stats"));
+        for (long key : tag.getLongArray("looted_containers")) data.lootedContainers.add(key);
         return data;
     }
 }

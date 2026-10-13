@@ -8,8 +8,11 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.enderwish.Belliarium_Monstrarium_Subpack.network.DiaryWakeFinishedPacket;
+import net.enderwish.Belliarium_Monstrarium_Subpack.network.ModMessages;
+import net.enderwish.Belliarium_Monstrarium_Subpack.core.status.StatusManager;
+import net.enderwish.Belliarium_Monstrarium_Subpack.core.status.StatusType;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.state.BlockState;
@@ -59,13 +62,19 @@ public final class DayTracker {
                                  int entitiesDiscarded, int entitiesDeferred,
                                  boolean environmentRestored, boolean playerRestored) {}
 
-    private record EntityResult(int restored, int recreated, int discarded, int deferred) {}
+    /** Per-tick time budget for the wake-up rewind, so it plays out under the black screen instead of freezing a tick. */
+    private static final long WAKE_UP_NANOS_PER_TICK = 10_000_000L; // 10ms
 
     private static volatile DayTrackerData current = null; // null = not tracking
     private static volatile boolean rollingBack = false;   // also true while pending fixes are applied
     private static MinecraftServer owner = null;
     private static PendingFixData pending = null;
     private static final List<Entity> queuedEntityFixes = new ArrayList<>();
+
+    private static volatile RollbackJob wakeUpJob = null;
+    private static DayTrackerData wakeUpData = null;
+    private static UUID wakeUpOwner = null;
+    private static long wakeUpSurvivedTicks = 0L;
 
     // ── Hot path (called from LevelSetBlockMixin for every setBlock) ──────────
 
@@ -157,36 +166,18 @@ public final class DayTracker {
         if (data != null) data.deactivate();
     }
 
-    /** Rewinds the world, environment and player, and ends tracking. Returns null if not tracking. */
+    /** Rewinds the world, environment and player IMMEDIATELY, and ends tracking. Returns null if not tracking.
+     *  Used by the debug command. The real wake-up flow uses {@link #beginWakeUp} instead, which spreads
+     *  the same work over several ticks via the shared {@link RollbackJob}. */
     public static RollbackReport rollback(ServerLevel overworld) {
         ensureLoaded(overworld);
         DayTrackerData data = current;
         if (data == null) return null;
 
-        int blocks;
-        ContainerBaseline.Result containerResult;
-        EntityResult entityResult;
-        boolean environmentRestored = false;
-        boolean playerRestored = false;
-
+        RollbackJob job = new RollbackJob(overworld, data, pending, null);
         rollingBack = true; // stops our own restore writes from being logged
         try {
-            blocks = data.getBlockLog().restoreAll(overworld);
-            containerResult = data.getContainers().restoreAll(overworld, pending);
-            entityResult = restoreEntities(overworld, data.getEntities());
-
-            if (!data.getEnvironment().isEmpty()) {
-                SeasonsAPI.restoreEnvironment(overworld, data.getEnvironment());
-                environmentRestored = true;
-            }
-
-            ServerPlayer player = data.getOwner() == null
-                    ? null
-                    : overworld.getServer().getPlayerList().getPlayer(data.getOwner());
-            if (player != null && !data.getPlayerSnapshot().isEmpty()) {
-                PlayerSnapshot.restore(player, overworld, data.getPlayerSnapshot());
-                playerRestored = true;
-            }
+            job.step(Long.MAX_VALUE);
         } finally {
             rollingBack = false;
         }
@@ -194,14 +185,66 @@ public final class DayTracker {
         current = null;
         data.deactivate();
 
-        return new RollbackReport(blocks, containerResult.restored(), containerResult.deferred(),
-                entityResult.restored(), entityResult.recreated(),
-                entityResult.discarded(), entityResult.deferred(),
-                environmentRestored, playerRestored);
+        RollbackJob.Report r = job.report();
+        return new RollbackReport(r.blocks(), r.containers(), r.containersDeferred(),
+                r.entitiesRestored(), r.entitiesRecreated(), r.entitiesDiscarded(), r.entitiesDeferred(),
+                r.environmentRestored(), r.playerRestored());
+    }
+
+    // ── Wake-up (the real rewind: spread over ticks under a black screen) ─────
+
+    public static boolean isWakingUp() { return wakeUpJob != null; }
+
+    /** Starts rewinding this player's active day. Validated by DiaryLimbo.canRewind before this is called. */
+    public static void beginWakeUp(ServerPlayer player) {
+        ServerLevel overworld = player.getServer().overworld();
+        ensureLoaded(overworld);
+        DayTrackerData data = current;
+        if (data == null || wakeUpJob != null || !player.getUUID().equals(data.getOwner())) return;
+
+        wakeUpData = data;
+        wakeUpOwner = player.getUUID();
+        wakeUpSurvivedTicks = overworld.getGameTime() - data.getStartGameTime();
+        current = null; // the window is over the instant the rewind starts
+        rollingBack = true; // suppress our own restore writes for the whole rewind, not just one tick
+        wakeUpJob = new RollbackJob(overworld, data, pending, null);
+    }
+
+    private static void stepWakeUp(ServerLevel overworld) {
+        RollbackJob job = wakeUpJob;
+        if (job == null) return;
+
+        boolean finished = job.step(System.nanoTime() + WAKE_UP_NANOS_PER_TICK);
+        if (!finished) return;
+
+        DayTrackerData data = wakeUpData;
+        UUID ownerId = wakeUpOwner;
+        long survivedTicks = wakeUpSurvivedTicks;
+        it.unimi.dsi.fastutil.longs.LongOpenHashSet looted = new it.unimi.dsi.fastutil.longs.LongOpenHashSet(data.getLootedContainers());
+        wakeUpJob = null;
+        wakeUpData = null;
+        wakeUpOwner = null;
+        rollingBack = false;
+        data.deactivate();
+
+        ServerPlayer player = ownerId == null ? null : overworld.getServer().getPlayerList().getPlayer(ownerId);
+        if (player != null) {
+            DiaryBook.finishDayAfterWake(player, data);
+            DejaVuMemory.INSTANCE.set(ownerId, looted);
+            StatusManager.INSTANCE.apply(ownerId, StatusType.DEJA_VU, overworld.getGameTime(), survivedTicks);
+            DiaryLimbo.leave(ownerId);
+            ModMessages.sendToPlayer(new DiaryWakeFinishedPacket(), player);
+        }
     }
 
     public static void tick(ServerLevel overworld) {
         ensureLoaded(overworld);
+
+        if (wakeUpJob != null) {
+            stepWakeUp(overworld);
+            return; // no normal tracking activity while a rewind is in progress
+        }
+
         long now = overworld.getGameTime();
 
         // Pending fixes first, so a chunk's containers are fixed BEFORE a new window captures them.
@@ -221,56 +264,6 @@ public final class DayTracker {
     }
 
     public static DayTrackerData getActiveData() { return current; }
-
-    // ── Entity restore (immediate part of a rollback) ─────────────────────────
-
-    private static EntityResult restoreEntities(ServerLevel level, EntityBaseline entities) {
-        int restored = 0, recreated = 0, discarded = 0, deferred = 0;
-
-        // 1. Remove everything that appeared during the window.
-        for (UUID id : new ArrayList<>(entities.getSpawned())) {
-            Entity live = level.getEntity(id);
-            if (live != null) {
-                live.discard();
-                discarded++;
-            } else {
-                pending.addEntityDiscard(id); // sitting in an unloaded chunk
-                deferred++;
-            }
-        }
-
-        // 2. Restore or recreate entities that existed at the start.
-        for (Map.Entry<UUID, CompoundTag> entry : new ArrayList<>(entities.getBaseline().entrySet())) {
-            UUID id = entry.getKey();
-            CompoundTag tag = entry.getValue();
-
-            Entity live = level.getEntity(id);
-            boolean wasDying = false;
-            if (live instanceof LivingEntity living && living.isDeadOrDying()) {
-                // Mid death animation: remove it so a clean copy can take its UUID.
-                live.discard();
-                live = null;
-                wasDying = true;
-            }
-
-            if (live != null) {
-                EntityRestorer.restoreInPlace(level, live, tag);
-                restored++;
-            } else if (wasDying || entities.isDestroyed(id)) {
-                if (EntityRestorer.isChunkLoadedAt(level, tag) && EntityRestorer.recreate(level, tag) != null) {
-                    recreated++;
-                } else {
-                    pending.addEntityRecreate(EntityRestorer.chunkKeyAt(tag), id, tag);
-                    deferred++;
-                }
-            } else {
-                pending.addEntityRestore(id, tag); // alive but in an unloaded chunk
-                deferred++;
-            }
-        }
-
-        return new EntityResult(restored, recreated, discarded, deferred);
-    }
 
     // ── Deferred fixes (applied later, from tick) ─────────────────────────────
 

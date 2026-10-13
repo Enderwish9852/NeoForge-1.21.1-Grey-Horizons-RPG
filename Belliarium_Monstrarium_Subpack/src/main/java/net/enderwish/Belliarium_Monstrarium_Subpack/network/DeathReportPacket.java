@@ -2,6 +2,7 @@ package net.enderwish.Belliarium_Monstrarium_Subpack.network;
 
 import net.enderwish.Belliarium_Monstrarium_Subpack.BelliariumMonstrariumSubpack;
 import net.enderwish.Belliarium_Monstrarium_Subpack.client.DeathReportClientState;
+import net.enderwish.Belliarium_Monstrarium_Subpack.client.gui.DeathReportScreen;
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.combat.CombatLogEntry;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.FriendlyByteBuf;
@@ -16,19 +17,16 @@ import java.util.List;
 /**
  * DeathReportPacket
  *
- * Sent once, right as the deferred kill's real LivingDeathEvent goes through
- * (see BodyDamageHandler.sendDeathReport) -- carries everything the client-side
- * DeathReportScreen needs in one shot, since the screen itself has no server
- * access. combatDeath=false means "log" is empty and "headline" is already the
- * full simple cause-of-death line (fall/starve/etc.) -- the screen skips the
- * body diagram/scoreboard phase entirely in that case.
+ * NEW -- rewindAvailable. When true the player is NOT dead (they're in limbo), so the
+ * report screen opens immediately instead of waiting for vanilla's DeathScreen.
  */
 public record DeathReportPacket(
         boolean combatDeath,
         String headline,
         float headPct, float torsoPct, float leftArmPct, float rightArmPct,
         float leftLegPct, float rightLegPct, float leftFootPct, float rightFootPct,
-        List<CombatLogEntry> log
+        List<CombatLogEntry> log,
+        boolean rewindAvailable
 ) implements CustomPacketPayload {
 
     public static final Type<DeathReportPacket> TYPE =
@@ -50,6 +48,7 @@ public record DeathReportPacket(
                     buf.writeFloat(entry.amount());
                     buf.writeUtf(entry.bodyPart());
                 }
+                buf.writeBoolean(p.rewindAvailable);
             },
             buf -> {
                 boolean combatDeath = buf.readBoolean();
@@ -68,7 +67,9 @@ public record DeathReportPacket(
                     String bodyPart = buf.readUtf();
                     log.add(new CombatLogEntry(seconds, source, distance, amount, bodyPart));
                 }
-                return new DeathReportPacket(combatDeath, headline, head, torso, lArm, rArm, lLeg, rLeg, lFoot, rFoot, log);
+                boolean rewindAvailable = buf.readBoolean();
+                return new DeathReportPacket(combatDeath, headline, head, torso, lArm, rArm,
+                        lLeg, rLeg, lFoot, rFoot, log, rewindAvailable);
             }
     );
 
@@ -78,7 +79,11 @@ public record DeathReportPacket(
     public void handle(IPayloadContext context) {
         context.enqueueWork(() -> {
             if (Minecraft.getInstance().player == null) return;
-            DeathReportClientState.setPending(this);
+            if (rewindAvailable) {
+                Minecraft.getInstance().setScreen(new DeathReportScreen(this));
+            } else {
+                DeathReportClientState.setPending(this);
+            }
         });
     }
 }

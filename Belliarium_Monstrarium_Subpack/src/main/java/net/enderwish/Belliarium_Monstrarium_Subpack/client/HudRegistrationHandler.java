@@ -3,6 +3,7 @@ package net.enderwish.Belliarium_Monstrarium_Subpack.client;
 import net.enderwish.Belliarium_Monstrarium_Subpack.client.gui.BodyHealthHUD;
 import net.enderwish.Belliarium_Monstrarium_Subpack.client.gui.CombatLogHUD;
 import net.enderwish.Belliarium_Monstrarium_Subpack.client.gui.CombatTimerHUD;
+import net.enderwish.Belliarium_Monstrarium_Subpack.client.gui.DejaVuOverlayHUD;
 import net.enderwish.Belliarium_Monstrarium_Subpack.client.gui.SurvivalBarsHUD;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
@@ -21,5 +22,8 @@ public class HudRegistrationHandler {
         event.registerAboveAll(
                 ResourceLocation.fromNamespaceAndPath("gh_belliarium_monstrarium", "combat_log"),
                 CombatLogHUD.LAYER);
+        event.registerAboveAll(
+                ResourceLocation.fromNamespaceAndPath("gh_belliarium_monstrarium", "deja_vu_overlay"),
+                DejaVuOverlayHUD.LAYER);
     }
 }

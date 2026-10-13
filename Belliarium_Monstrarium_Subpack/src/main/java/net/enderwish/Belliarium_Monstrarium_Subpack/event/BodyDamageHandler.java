@@ -5,6 +5,7 @@ import net.enderwish.Belliarium_Monstrarium_Subpack.core.body.BodyHealthCapabili
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.combat.CombatLogEntry;
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.combat.CombatState;
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.combat.CombatTimerManager;
+import net.enderwish.Belliarium_Monstrarium_Subpack.core.diary.DiaryLimbo;
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.ModAttachments;
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.gear.ArmorToughnessRegistry;
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.medical.AdrenalineManager;
@@ -26,6 +27,7 @@ import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.living.LivingFallEvent;
 import net.neoforged.neoforge.event.entity.living.LivingHealEvent;
+import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.EntityTickEvent;
 
@@ -108,8 +110,15 @@ public class BodyDamageHandler {
 
         UUID uuid = player.getUUID();
         if (pendingDeaths.remove(uuid)) {
-            if (player.isAlive()) killIntentionally(player);
-            else pendingFatalInfo.remove(uuid);
+            if (player.isAlive()) {
+                if (DiaryLimbo.canRewind(player)) {
+                    DiaryLimbo.enter(player, buildDeathReportPacket(player, true));
+                } else {
+                    killIntentionally(player);
+                }
+            } else {
+                pendingFatalInfo.remove(uuid);
+            }
             return;
         }
 
@@ -150,10 +159,19 @@ public class BodyDamageHandler {
         if (event.getEntity() instanceof ServerPlayer) event.setCanceled(true);
     }
 
+    /** Earliest cancellable point in the damage pipeline -- blocks the hit entirely so a limbo player can't be
+     *  attacked at all (no knockback, no armor wear, no re-triggering a fatal check mid-rewind). */
+    @SubscribeEvent
+    public static void onIncomingDamage(LivingIncomingDamageEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        if (DiaryLimbo.isInLimbo(player.getUUID())) event.setCanceled(true);
+    }
+
     @SubscribeEvent
     public static void onLivingFall(LivingFallEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         if (player.isCreative()) return;
+        if (DiaryLimbo.isInLimbo(player.getUUID())) { event.setCanceled(true); return; }
         event.setCanceled(true);
         float realDamage = calculateFallDamage(event.getDistance(), REFERENCE_MASS_KG);
         if (realDamage > 0) player.hurt(player.damageSources().fall(), realDamage);
@@ -344,6 +362,11 @@ public class BodyDamageHandler {
     }
 
     private static void sendDeathReport(ServerPlayer player) {
+        ModMessages.sendToPlayer(buildDeathReportPacket(player, false), player);
+    }
+
+    /** rewindAvailable=true means the player is NOT dead -- they're going into diary limbo instead. */
+    private static DeathReportPacket buildDeathReportPacket(ServerPlayer player, boolean rewindAvailable) {
         UUID uuid = player.getUUID();
         FatalInfo info = pendingFatalInfo.remove(uuid);
         CombatState state = CombatTimerManager.INSTANCE.getOrCreate(uuid);
@@ -360,12 +383,12 @@ public class BodyDamageHandler {
             headline = player.getCombatTracker().getDeathMessage().getString();
         }
 
-        ModMessages.sendToPlayer(new DeathReportPacket(
+        return new DeathReportPacket(
                 combatDeath, headline,
                 cap.getHeadPct(), cap.getTorsoPct(), cap.getLeftArmPct(), cap.getRightArmPct(),
                 cap.getLeftLegPct(), cap.getRightLegPct(), cap.getLeftFootPct(), cap.getRightFootPct(),
-                log
-        ), player);
+                log, rewindAvailable
+        );
     }
 
     private static void sync(ServerPlayer player, BodyHealthCapability cap) {

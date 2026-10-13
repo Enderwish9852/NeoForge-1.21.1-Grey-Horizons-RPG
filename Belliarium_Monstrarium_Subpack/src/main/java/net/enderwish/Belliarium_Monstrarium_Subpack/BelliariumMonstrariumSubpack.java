@@ -3,6 +3,7 @@ package net.enderwish.Belliarium_Monstrarium_Subpack;
 import net.enderwish.Belliarium_Monstrarium_Subpack.client.HudRegistrationHandler;
 import net.enderwish.Belliarium_Monstrarium_Subpack.command.DiaryDebugCommand;
 import net.enderwish.Belliarium_Monstrarium_Subpack.command.SkillCommand;
+import net.enderwish.Belliarium_Monstrarium_Subpack.command.StatusCommand;
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.gear.ArmorToughnessRegistry;
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.ModAttachments;
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.ModDataComponents;
@@ -45,6 +46,7 @@ public class BelliariumMonstrariumSubpack {
         NeoForge.EVENT_BUS.addListener((RegisterCommandsEvent e) -> {
             SkillCommand.register(e.getDispatcher());
             DiaryDebugCommand.register(e.getDispatcher());
+            StatusCommand.register(e.getDispatcher());
         });
     }
 

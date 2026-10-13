@@ -59,6 +59,10 @@ public class ModItems {
     public static final DeferredItem<Item> ADRENALINE = ITEMS.register("adrenaline",
             () -> new AdrenalineItem(new Item.Properties().stacksTo(4)));
 
+    public static final DeferredItem<Item> SURVIVORS_DIARY = ITEMS.register("survivors_diary",
+            () -> new net.enderwish.Belliarium_Monstrarium_Subpack.item.SurvivorsDiaryItem(
+                    new Item.Properties().stacksTo(1).rarity(Rarity.EPIC)));
+
     public static void register(IEventBus modEventBus) {
         ITEMS.register(modEventBus);
     }
