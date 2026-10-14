@@ -38,6 +38,7 @@ public class BelliariumMonstrariumSubpack {
 
         NeoForge.EVENT_BUS.addListener((AddReloadListenerEvent e) -> {
             e.addListener(WeightRegistry.INSTANCE);
+            e.addListener(net.enderwish.Belliarium_Monstrarium_Subpack.core.gear.backpack.BackpackRegistry.INSTANCE);
             e.addListener(ToolProfileRegistry.INSTANCE);
             e.addListener(ArmorToughnessRegistry.INSTANCE);
             e.addListener(SkillRegistry.INSTANCE);

@@ -24,6 +24,10 @@ public class ModDataComponents {
             DATA_COMPONENTS.register("skill_id", () ->
                     DataComponentType.<String>builder().persistent(Codec.STRING).build());
 
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<String>> BACKPACK_ID =
+            DATA_COMPONENTS.register("backpack_id", () ->
+                    DataComponentType.<String>builder().persistent(Codec.STRING).build());
+
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<Integer>> LEARNING_PROGRESS =
             DATA_COMPONENTS.register("learning_progress_ticks", () ->
                     DataComponentType.<Integer>builder().persistent(Codec.INT).build());

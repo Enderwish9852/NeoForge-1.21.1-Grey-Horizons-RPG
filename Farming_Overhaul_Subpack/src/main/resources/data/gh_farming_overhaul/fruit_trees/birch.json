@@ -6,22 +6,24 @@
 
   "trunk": {
     "thickness_level":    5,
-    "height_min":         7,
-    "height_max":         10,
+    "height_min":         8,
+    "height_max":         11,
     "split_fraction_min": 0.55,
-    "split_fraction_max": 0.70
+    "split_fraction_max": 0.7,
+    "taper":              0.8
   },
 
   "primary_limbs": {
     "thickness_level":  4,
     "count_min":        3,
-    "count_max":        5,
-    "length_min":       2,
-    "length_max":       4,
-    "spread_min":       0.4,
-    "spread_max":       0.7,
-    "upward_lift_min":  0.7,
-    "upward_lift_max":  1.1
+    "count_max":        4,
+    "length_min":       3,
+    "length_max":       5,
+    "spread_min":       0.5,
+    "spread_max":       0.9,
+    "upward_lift_min":  0.9,
+    "upward_lift_max":  1.3,
+    "taper":            0.6
   },
 
   "secondary_branches": {
@@ -29,13 +31,14 @@
     "count_per_parent_min": 2,
     "count_per_parent_max": 3,
     "length_min":           2,
-    "length_max":           3,
+    "length_max":           4,
     "inward_pull_min":      0.1,
     "inward_pull_max":      0.3,
     "upward_lift_min":      0.5,
-    "upward_lift_max":      0.8,
+    "upward_lift_max":      0.9,
     "zigzag_min":           0.1,
-    "zigzag_max":           0.3
+    "zigzag_max":           0.3,
+    "taper":                0.5
   },
 
   "twigs": {
@@ -52,8 +55,8 @@
   "canopy": {
     "cluster_radius_min": 2,
     "cluster_radius_max": 3,
-    "leaf_density_min":   0.80,
-    "leaf_density_max":   0.90,
+    "leaf_density_min":   0.78,
+    "leaf_density_max":   0.86,
     "top_bias":           0.55
   },
 

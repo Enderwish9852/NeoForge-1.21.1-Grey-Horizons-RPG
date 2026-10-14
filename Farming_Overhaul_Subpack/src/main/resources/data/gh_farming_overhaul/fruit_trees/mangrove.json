@@ -6,10 +6,11 @@
 
   "trunk": {
     "thickness_level":    4,
-    "height_min":         3,
-    "height_max":         5,
-    "split_fraction_min": 0.75,
-    "split_fraction_max": 0.90
+    "height_min":         4,
+    "height_max":         6,
+    "split_fraction_min": 0.7,
+    "split_fraction_max": 0.85,
+    "taper":              0.8
   },
 
   "primary_limbs": {
@@ -20,8 +21,9 @@
     "length_max":       5,
     "spread_min":       1.2,
     "spread_max":       1.8,
-    "upward_lift_min":  0.2,
-    "upward_lift_max":  0.5
+    "upward_lift_min":  0.3,
+    "upward_lift_max":  0.6,
+    "taper":            0.6
   },
 
   "secondary_branches": {
@@ -35,7 +37,8 @@
     "upward_lift_min":      0.3,
     "upward_lift_max":      0.6,
     "zigzag_min":           0.2,
-    "zigzag_max":           0.4
+    "zigzag_max":           0.4,
+    "taper":                0.5
   },
 
   "twigs": {
@@ -51,9 +54,9 @@
   "canopy": {
     "cluster_radius_min": 2,
     "cluster_radius_max": 3,
-    "leaf_density_min":   0.82,
-    "leaf_density_max":   0.92,
-    "top_bias":           0.60
+    "leaf_density_min":   0.8,
+    "leaf_density_max":   0.88,
+    "top_bias":           0.6
   },
 
   "biome_tags": ["gh_terraforma:has_mangrove_trees"]

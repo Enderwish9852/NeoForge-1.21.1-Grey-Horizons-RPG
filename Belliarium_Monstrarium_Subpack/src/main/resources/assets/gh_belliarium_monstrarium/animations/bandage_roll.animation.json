@@ -1,0 +1,17 @@
+{
+  "format_version": "1.8.0",
+  "animations": {
+    "spin": {
+      "loop": "hold_on_last_frame",
+      "animation_length": 3.0,
+      "bones": {
+        "core": {
+          "rotation": {
+            "0.0": [0, 0, 0],
+            "3.0": [720, 0, 0]
+          }
+        }
+      }
+    }
+  }
+}

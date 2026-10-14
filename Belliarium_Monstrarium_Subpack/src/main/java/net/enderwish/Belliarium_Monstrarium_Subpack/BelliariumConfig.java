@@ -9,9 +9,18 @@ public class BelliariumConfig {
     public static final ModConfigSpec.BooleanValue WORLD_TRACKING_ENABLED;
     public static final ModConfigSpec.DoubleValue BOOK_LOSS_CHANCE_START;
     public static final ModConfigSpec.DoubleValue BOOK_LOSS_CHANCE_STEP;
+    public static final ModConfigSpec.DoubleValue SANITY_DRAIN_PER_MINUTE;
     public static final ModConfigSpec SPEC;
 
     static {
+        BUILDER.push("sanity");
+
+        SANITY_DRAIN_PER_MINUTE = BUILDER
+                .comment("Sanity drained per real-time minute while Hive Mind Influence is active. 1.0 = ~1h40m from full to death.")
+                .defineInRange("drainPerMinute", 1.0, 0.0, 100.0);
+
+        BUILDER.pop();
+
         BUILDER.push("survivors_diary");
 
         WORLD_TRACKING_ENABLED = BUILDER

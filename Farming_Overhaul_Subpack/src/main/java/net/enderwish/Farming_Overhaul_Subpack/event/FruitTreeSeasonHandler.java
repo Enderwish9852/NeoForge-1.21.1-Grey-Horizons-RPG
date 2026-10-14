@@ -1,15 +1,23 @@
 package net.enderwish.Farming_Overhaul_Subpack.event;
 
+import net.enderwish.Atmospheric_Overhaul_Subpack.api.SeasonsAPI;
+import net.enderwish.Atmospheric_Overhaul_Subpack.core.season.SeasonCalendar;
 import net.enderwish.Farming_Overhaul_Subpack.FarmingOverhaulSubpack;
 import net.enderwish.Farming_Overhaul_Subpack.block.tree.FruitTreeLeavesBlock;
+import net.enderwish.Farming_Overhaul_Subpack.core.tree.TreeGrowthManager;
 import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.level.ChunkEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * FruitTreeSeasonHandler
@@ -38,9 +46,32 @@ public class FruitTreeSeasonHandler {
     // Check every 1200 ticks = 60 seconds
     private static final int CHECK_INTERVAL = 1200;
 
+    /**
+     * Last season seen per dimension. Checked EVERY tick so season changes
+     * are caught instantly — including command-driven jumps (/season set,
+     * /season setday, /season skipphase), which bypass natural time flow
+     * and fire no event.
+     */
+    private static final Map<ResourceKey<Level>, SeasonCalendar.Season> LAST_SEASON =
+            new HashMap<>();
+
     @SubscribeEvent
     public static void onLevelTick(LevelTickEvent.Post event) {
         if (!(event.getLevel() instanceof ServerLevel level)) return;
+
+        // ── Season rollover → trees grow one stage (planted trees take a year) ──
+        // Runs every tick; the compare is a single cheap API read.
+        // First tick after load only primes the map (no growth), so re-
+        // joining a world doesn't double-grow.
+        SeasonCalendar.Season current = SeasonsAPI.getSeason(level);
+        SeasonCalendar.Season previous =
+                LAST_SEASON.put(level.dimension(), current);
+        if (previous != null && previous != current) {
+            TreeGrowthManager mgr = TreeGrowthManager.get(level);
+            mgr.onSeasonChanged(level);      // grow non-mature trees one stage
+            mgr.updateAllLeafStages(level);  // instant leaf recolor (no 60s wait)
+        }
+
         if (level.getGameTime() % CHECK_INTERVAL != 0) return;
 
         // Safe approach — iterate players and scan chunks around them

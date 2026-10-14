@@ -8,6 +8,7 @@ import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.LayeredDraw;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
 
@@ -22,6 +23,10 @@ import net.minecraft.world.entity.player.Player;
 public class SurvivalBarsHUD {
 
     public static final LayeredDraw.Layer LAYER = SurvivalBarsHUD::render;
+
+    private static final ResourceLocation BRAIN_ICON =
+            ResourceLocation.fromNamespaceAndPath("gh_belliarium_monstrarium",
+                    "textures/gui/brain_icon.png");
 
     private static final int BAR_WIDTH = 81;
     private static final int BAR_HEIGHT = 5;
@@ -45,6 +50,13 @@ public class SurvivalBarsHUD {
         drawBar(graphics, x, baseY - ROW_GAP * 2, staminaPct, 0xFF3399FF);
         drawBar(graphics, x, baseY - ROW_GAP, energyPct, 0xFFFFAA33);
 
+        // Sanity meter (brain icon), watch-gated like the other bars
+        var sanity = player.getData(ModAttachments.SANITY);
+        float sanityPct = sanity.get() / 100f;
+        graphics.blit(BRAIN_ICON, x - 11, baseY - ROW_GAP * 3 - 1,
+                0f, 0f, 9, 9, 9, 9);
+        drawBar(graphics, x, baseY - ROW_GAP * 3, sanityPct, sanityColor(sanityPct));
+
         if (!creative) {
             float weightFraction = WeightEnforcementHandler.getWeightFraction(player);
             drawBar(graphics, x, baseY, weightFraction, weightColor(weightFraction));
@@ -56,6 +68,12 @@ public class SurvivalBarsHUD {
         if (fraction >= 0.50f) return 0xFFCC7A33;
         if (fraction >= 0.25f) return 0xFFCCAA33;
         return 0xFF996633;
+    }
+
+    private static int sanityColor(float pct) {
+        if (pct <= 0.25f) return 0xFFCC3366;   // critical: sickly red-pink
+        if (pct <= 0.50f) return 0xFFB45BB0;   // frayed purple
+        return 0xFF9F7FD6;                      // healthy lavender
     }
 
     private static void drawBar(GuiGraphics graphics, int x, int y, float pct, int color) {

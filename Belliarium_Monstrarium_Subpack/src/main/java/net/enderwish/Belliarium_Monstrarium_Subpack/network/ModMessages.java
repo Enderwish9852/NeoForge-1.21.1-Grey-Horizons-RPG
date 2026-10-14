@@ -20,6 +20,7 @@ public class ModMessages {
 
         registrar.playToClient(BodyHealthSyncPacket.TYPE, BodyHealthSyncPacket.STREAM_CODEC, BodyHealthSyncPacket::handle);
         registrar.playToClient(SurvivalSyncPacket.TYPE, SurvivalSyncPacket.STREAM_CODEC, SurvivalSyncPacket::handle);
+        registrar.playToClient(SanitySyncPacket.TYPE, SanitySyncPacket.STREAM_CODEC, SanitySyncPacket::handle);
         registrar.playToClient(CombatTimerSyncPacket.TYPE, CombatTimerSyncPacket.STREAM_CODEC, CombatTimerSyncPacket::handle);
         registrar.playToClient(DeathReportPacket.TYPE, DeathReportPacket.STREAM_CODEC, DeathReportPacket::handle);
         registrar.playToClient(KillFeedPacket.TYPE, KillFeedPacket.STREAM_CODEC, KillFeedPacket::handle);
@@ -29,8 +30,14 @@ public class ModMessages {
 
         registrar.playToClient(FirstAidKitContentsPacket.TYPE, FirstAidKitContentsPacket.STREAM_CODEC, FirstAidKitContentsPacket::handle);
         registrar.playToClient(OpenMedTargetFromKitPacket.TYPE, OpenMedTargetFromKitPacket.STREAM_CODEC, OpenMedTargetFromKitPacket::handle);
+        registrar.playToClient(MedPendingNotifyPacket.TYPE, MedPendingNotifyPacket.STREAM_CODEC, MedPendingNotifyPacket::handle);
+        registrar.playToClient(BackpackContentsPacket.TYPE, BackpackContentsPacket.STREAM_CODEC, BackpackContentsPacket::handle);
+        registrar.playToServer(BackpackOpenPacket.TYPE, BackpackOpenPacket.STREAM_CODEC, BackpackOpenPacket::handle);
+        registrar.playToServer(BackpackMovePacket.TYPE, BackpackMovePacket.STREAM_CODEC, BackpackMovePacket::handle);
         registrar.playToServer(UseKitSlotPacket.TYPE, UseKitSlotPacket.STREAM_CODEC, UseKitSlotPacket::handle);
         registrar.playToServer(MedApplyPacket.TYPE, MedApplyPacket.STREAM_CODEC, MedApplyPacket::handle);
+        registrar.playToClient(MedicalAnimPacket.TYPE, MedicalAnimPacket.STREAM_CODEC, MedicalAnimPacket::handle);
+        registrar.playToServer(KitSelectNotifyPacket.TYPE, KitSelectNotifyPacket.STREAM_CODEC, KitSelectNotifyPacket::handle);
         registrar.playToServer(FastUseFirstAidPacket.TYPE, FastUseFirstAidPacket.STREAM_CODEC, FastUseFirstAidPacket::handle);
 
         registrar.playToServer(SkillBookScreenStatePacket.TYPE, SkillBookScreenStatePacket.STREAM_CODEC, SkillBookScreenStatePacket::handle);

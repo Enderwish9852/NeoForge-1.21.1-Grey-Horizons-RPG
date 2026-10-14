@@ -6,32 +6,34 @@
 
   "trunk": {
     "thickness_level":    6,
-    "height_min":         10,
-    "height_max":         14,
+    "height_min":         12,
+    "height_max":         16,
     "split_fraction_min": 1.0,
-    "split_fraction_max": 1.0
+    "split_fraction_max": 1.0,
+    "taper":              0.7
   },
 
   "whorls": {
     "thickness_level":    4,
     "spacing_min":        2,
     "spacing_max":        3,
-    "branch_count_min":   4,
-    "branch_count_max":   5,
-    "base_length_min":    5,
-    "base_length_max":    7,
-    "length_taper":       0.82,
-    "spread":             0.92,
+    "branch_count_min":   5,
+    "branch_count_max":   6,
+    "base_length_min":    6,
+    "base_length_max":    8,
+    "length_taper":       0.78,
+    "spread":             0.95,
     "droop":              true,
-    "sub_branch_thickness": 2
+    "sub_branch_thickness": 2,
+    "taper":              0.45
   },
 
   "canopy": {
-    "cluster_radius_min":    1,
+    "cluster_radius_min":    2,
     "cluster_radius_max":    2,
-    "leaf_density_min":      0.80,
-    "leaf_density_max":      0.90,
-    "top_bias":              0.60,
+    "leaf_density_min":      0.82,
+    "leaf_density_max":      0.9,
+    "top_bias":              0.5,
     "covers_full_branch":    true
   },
 

@@ -6,13 +6,16 @@ import net.enderwish.TerraForma_Subpack.core.biome.GHBiomeSource;
 import net.enderwish.TerraForma_Subpack.core.climate.ClimateMap;
 import net.enderwish.TerraForma_Subpack.core.worldgen.noise.BiomeTerrainProfile;
 import net.enderwish.TerraForma_Subpack.core.worldgen.noise.GHNoiseRouter;
+import net.enderwish.TerraForma_Subpack.core.worldgen.noise.SurfacePalette;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.WorldGenRegion;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.LevelHeightAccessor;
 import net.minecraft.world.level.NoiseColumn;
 import net.minecraft.world.level.StructureManager;
+import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.BiomeManager;
 import net.minecraft.world.level.biome.BiomeSource;
 import net.minecraft.world.level.block.Blocks;
@@ -65,9 +68,13 @@ public class GHChunkGenerator extends ChunkGenerator {
         return super.createState(structureSetLookup, randomState, seed);
     }
 
-    private BiomeTerrainProfile profileAt(int x, int z) {
+    private ResourceKey<Biome> biomeKeyAt(int x, int z) {
         int roughHeight = noiseRouter.getSurfaceHeight(x, z, BiomeTerrainProfile.NEUTRAL);
-        return BiomeTerrainRegistry.get(GHBiomeSource.getBiomeKeyAt(x, roughHeight, z));
+        return GHBiomeSource.getBiomeKeyAt(x, roughHeight, z);
+    }
+
+    private BiomeTerrainProfile profileAt(int x, int z) {
+        return BiomeTerrainRegistry.get(biomeKeyAt(x, z));
     }
 
     @Override
@@ -101,14 +108,13 @@ public class GHChunkGenerator extends ChunkGenerator {
         int minX = chunkPos.getMinBlockX();
         int minZ = chunkPos.getMinBlockZ();
 
-        BlockState stoneState = Blocks.STONE.defaultBlockState();
-        BlockState dirtState  = Blocks.DIRT.defaultBlockState();
-        BlockState grassState = Blocks.GRASS_BLOCK.defaultBlockState();
         BlockState waterState = Blocks.WATER.defaultBlockState();
 
         for (int x = minX; x < minX + 16; x++) {
             for (int z = minZ; z < minZ + 16; z++) {
-                BiomeTerrainProfile profile = profileAt(x, z);
+                ResourceKey<Biome> biomeKey = biomeKeyAt(x, z);
+                BiomeTerrainProfile profile = BiomeTerrainRegistry.get(biomeKey);
+                SurfacePalette palette = SurfacePaletteRegistry.get(biomeKey);
                 int surfaceY = noiseRouter.getSurfaceHeight(x, z, profile);
 
                 for (int y = GHNoiseRouter.MIN_HEIGHT; y <= Math.max(surfaceY, GHNoiseRouter.SEA_LEVEL); y++) {
@@ -126,11 +132,11 @@ public class GHChunkGenerator extends ChunkGenerator {
                     }
 
                     if (y == surfaceY) {
-                        chunk.setBlockState(pos, grassState, false);
-                    } else if (y > surfaceY - 4) {
-                        chunk.setBlockState(pos, dirtState, false);
+                        chunk.setBlockState(pos, palette.top(), false);
+                    } else if (y > surfaceY - palette.subDepth()) {
+                        chunk.setBlockState(pos, palette.sub(), false);
                     } else {
-                        chunk.setBlockState(pos, stoneState, false);
+                        chunk.setBlockState(pos, palette.deep(), false);
                     }
                 }
             }
@@ -156,7 +162,9 @@ public class GHChunkGenerator extends ChunkGenerator {
 
     @Override
     public NoiseColumn getBaseColumn(int x, int z, LevelHeightAccessor level, RandomState randomState) {
-        BiomeTerrainProfile profile = profileAt(x, z);
+        ResourceKey<Biome> biomeKey = biomeKeyAt(x, z);
+        BiomeTerrainProfile profile = BiomeTerrainRegistry.get(biomeKey);
+        SurfacePalette palette = SurfacePaletteRegistry.get(biomeKey);
         int surfaceY = noiseRouter.getSurfaceHeight(x, z, profile);
         BlockState[] states = new BlockState[level.getHeight()];
 
@@ -167,11 +175,11 @@ public class GHChunkGenerator extends ChunkGenerator {
             } else if (noiseRouter.isCave(x, y, z, profile)) {
                 states[i] = Blocks.AIR.defaultBlockState();
             } else if (y == surfaceY) {
-                states[i] = Blocks.GRASS_BLOCK.defaultBlockState();
-            } else if (y > surfaceY - 4) {
-                states[i] = Blocks.DIRT.defaultBlockState();
+                states[i] = palette.top();
+            } else if (y > surfaceY - palette.subDepth()) {
+                states[i] = palette.sub();
             } else {
-                states[i] = Blocks.STONE.defaultBlockState();
+                states[i] = palette.deep();
             }
         }
 

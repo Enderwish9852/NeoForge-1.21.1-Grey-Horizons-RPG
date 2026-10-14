@@ -70,6 +70,8 @@ public class BodyDamageHandler {
     private static final int ADRENALINE_STAMINA_LOCK_TICKS = 2400;
 
     private static boolean intentionalKillInProgress = false;
+    /** Set while a sanity-zero kill runs: real death, NO diary rewind, custom report headline. */
+    private static boolean insanityKillInProgress = false;
 
     private static final Set<UUID> pendingDeaths = ConcurrentHashMap.newKeySet();
     private static final Map<UUID, FatalInfo> pendingFatalInfo = new ConcurrentHashMap<>();
@@ -232,6 +234,16 @@ public class BodyDamageHandler {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         if (player.isCreative()) return;
 
+        if (insanityKillInProgress) {
+            // real death (never canceled, never rewound) + custom headline
+            BodyHealthCapability cap = player.getData(ModAttachments.BODY_HEALTH);
+            ModMessages.sendToPlayer(new DeathReportPacket(
+                    false, "You went insane.",
+                    cap.getHeadPct(), cap.getTorsoPct(), cap.getLeftArmPct(), cap.getRightArmPct(),
+                    cap.getLeftLegPct(), cap.getRightLegPct(), cap.getLeftFootPct(), cap.getRightFootPct(),
+                    List.of(), false), player);
+            return;
+        }
         if (intentionalKillInProgress) {
             sendDeathReport(player);
             return;
@@ -338,6 +350,16 @@ public class BodyDamageHandler {
     private static void killIntentionally(ServerPlayer player) {
         intentionalKillInProgress = true;
         try { player.kill(); } finally { intentionalKillInProgress = false; }
+    }
+
+    /**
+     * Insanity death (sanity reached 0): a REAL death -- the Survivor's
+     * Diary never offers a rewind for it (the book can save the body,
+     * not the mind). The death report's headline reads "You went insane."
+     */
+    public static void killByInsanity(ServerPlayer player) {
+        insanityKillInProgress = true;
+        try { player.kill(); } finally { insanityKillInProgress = false; }
     }
 
     private static SourceInfo describeSource(DamageSource source, ServerPlayer player) {

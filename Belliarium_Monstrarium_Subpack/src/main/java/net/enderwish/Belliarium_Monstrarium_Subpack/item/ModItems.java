@@ -2,6 +2,7 @@ package net.enderwish.Belliarium_Monstrarium_Subpack.item;
 
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.ModDataComponents;
 import net.enderwish.Belliarium_Monstrarium_Subpack.BelliariumMonstrariumSubpack;
+import net.enderwish.Belliarium_Monstrarium_Subpack.item.gear.BackpackItem;
 import net.enderwish.Belliarium_Monstrarium_Subpack.item.medical.*;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Rarity;
@@ -25,6 +26,23 @@ public class ModItems {
 
     public static final DeferredItem<Item> SURVIVAL_WATCH = ITEMS.register("survival_watch",
             () -> new Item(new Item.Properties().stacksTo(1).rarity(Rarity.EPIC)));
+
+    // ── Backpacks (Curios "back" slot; tuning in data/backpacks/*.json) ──────
+    public static final DeferredItem<Item> SATCHEL = ITEMS.register("satchel",
+            () -> new BackpackItem(new Item.Properties().stacksTo(1)
+                    .component(ModDataComponents.BACKPACK_ID.get(), "satchel")));
+    public static final DeferredItem<Item> FIELD_PACK = ITEMS.register("field_pack",
+            () -> new BackpackItem(new Item.Properties().stacksTo(1)
+                    .component(ModDataComponents.BACKPACK_ID.get(), "field_pack")));
+    public static final DeferredItem<Item> FRAME_PACK = ITEMS.register("frame_pack",
+            () -> new BackpackItem(new Item.Properties().stacksTo(1)
+                    .component(ModDataComponents.BACKPACK_ID.get(), "frame_pack")));
+    public static final DeferredItem<Item> MEDICAL_SATCHEL = ITEMS.register("medical_satchel",
+            () -> new BackpackItem(new Item.Properties().stacksTo(1)
+                    .component(ModDataComponents.BACKPACK_ID.get(), "medical_satchel")));
+    public static final DeferredItem<Item> SCAVENGER_RIG = ITEMS.register("scavenger_rig",
+            () -> new BackpackItem(new Item.Properties().stacksTo(1)
+                    .component(ModDataComponents.BACKPACK_ID.get(), "scavenger_rig")));
 
     public static final DeferredItem<Item> SKILL_BOOK_DASH = ITEMS.register("skill_book_dash",
             () -> new SkillBookItem(new Item.Properties().stacksTo(1)

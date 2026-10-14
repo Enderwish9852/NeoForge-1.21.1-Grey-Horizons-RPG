@@ -1,0 +1,6 @@
+{
+  "slots": 12,
+  "selfWeightKg": 2.0,
+  "carryCapBonusPct": 0.10,
+  "heavyLoadReliefPct": 0.05
+}

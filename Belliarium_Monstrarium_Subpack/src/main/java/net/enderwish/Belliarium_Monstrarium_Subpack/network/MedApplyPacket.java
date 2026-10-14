@@ -6,6 +6,7 @@ import net.enderwish.Belliarium_Monstrarium_Subpack.core.ModDataComponents;
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.body.BodyHealthCapability;
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.body.BodyPart;
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.body.BodyPartTier;
+import net.enderwish.Belliarium_Monstrarium_Subpack.core.medical.BandagePending;
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.medical.FirstAidKitContents;
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.medical.TargetedMedItem;
 import net.minecraft.network.FriendlyByteBuf;
@@ -57,6 +58,20 @@ public record MedApplyPacket(int handOrdinal, int kitSlotIndex, String bodyPartN
 
             if (currentTier != med.treatsTier() || !med.canTreat(part)) {
                 player.displayClientMessage(Component.literal("That treatment won't help there."), true);
+                return;
+            }
+
+            // Bandages are hold-to-use: remember the choice; the actual
+            // heal happens in BandageItem.finishUsingItem once the player
+            // has held right-click through the wrap animation.
+            if (med instanceof net.enderwish.Belliarium_Monstrarium_Subpack.item.medical.BandageItem) {
+                BandagePending.set(player, new BandagePending.Pending(
+                        bodyPartName, handOrdinal, kitSlotIndex));
+                // mirror the choice to the client so its next right-click
+                // starts the hold instead of re-opening the picker screen
+                ModMessages.sendToPlayer(new MedPendingNotifyPacket(
+                        handOrdinal, kitSlotIndex, bodyPartName), player);
+                player.displayClientMessage(Component.literal("Hold right-click to wrap."), true);
                 return;
             }
 

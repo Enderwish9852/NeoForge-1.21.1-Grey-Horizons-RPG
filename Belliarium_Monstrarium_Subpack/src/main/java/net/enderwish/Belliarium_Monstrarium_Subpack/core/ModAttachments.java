@@ -33,6 +33,12 @@ public class ModAttachments {
                             .serialize(LearnedSkillsCapability.CODEC)
                             .build());
 
+    public static final DeferredHolder<AttachmentType<?>, AttachmentType<net.enderwish.Belliarium_Monstrarium_Subpack.core.survival.SanityCapability>> SANITY =
+            ATTACHMENT_TYPES.register("sanity", () ->
+                    AttachmentType.builder(() -> new net.enderwish.Belliarium_Monstrarium_Subpack.core.survival.SanityCapability())
+                            .serialize(net.enderwish.Belliarium_Monstrarium_Subpack.core.survival.SanityCapability.CODEC)
+                            .build());
+
     public static void register(IEventBus modEventBus) {
         ATTACHMENT_TYPES.register(modEventBus);
     }

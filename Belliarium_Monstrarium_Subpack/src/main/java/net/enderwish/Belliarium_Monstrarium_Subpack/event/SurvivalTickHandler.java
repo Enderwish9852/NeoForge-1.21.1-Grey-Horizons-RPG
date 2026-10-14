@@ -1,6 +1,7 @@
 package net.enderwish.Belliarium_Monstrarium_Subpack.event;
 
 import net.enderwish.Belliarium_Monstrarium_Subpack.BelliariumMonstrariumSubpack;
+import net.enderwish.Belliarium_Monstrarium_Subpack.core.gear.backpack.BackpackHandler;
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.ModAttachments;
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.medical.AdrenalineManager;
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.survival.SurvivalCapability;
@@ -117,9 +118,12 @@ public class SurvivalTickHandler {
         if (cap.getEnergy() <= 0) {
             cap.setStamina(0);
         } else if (weightFraction >= MAXED_THRESHOLD) {
-            cap.setStamina(cap.getStamina() - MAXED_WEIGHT_STANDING_DRAIN);
+            // heavy-load relief: good packs soften weight-driven drain
+            cap.setStamina(cap.getStamina() - MAXED_WEIGHT_STANDING_DRAIN
+                    * BackpackHandler.getHeavyLoadRelief(player, weightFraction));
         } else if (player.isSprinting()) {
-            cap.setStamina(cap.getStamina() - STAMINA_SPRINT_DRAIN);
+            cap.setStamina(cap.getStamina() - STAMINA_SPRINT_DRAIN
+                    * BackpackHandler.getHeavyLoadRelief(player, weightFraction));
         } else if (AdrenalineManager.INSTANCE.isStaminaLocked(player.getUUID(), player.level().getGameTime())) {
             // THE NEW CHECK -- Adrenaline aftermath: stamina stays frozen, no regen at all while locked.
         } else {

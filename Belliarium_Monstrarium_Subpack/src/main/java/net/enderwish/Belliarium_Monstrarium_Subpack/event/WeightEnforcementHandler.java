@@ -2,6 +2,7 @@ package net.enderwish.Belliarium_Monstrarium_Subpack.event;
 
 import net.enderwish.Belliarium_Monstrarium_Subpack.BelliariumMonstrariumSubpack;
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.gear.WeightRegistry;
+import net.enderwish.Belliarium_Monstrarium_Subpack.core.gear.backpack.BackpackHandler;
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.medical.AdrenalineManager;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -38,12 +39,13 @@ public class WeightEnforcementHandler {
     }
 
     public static float getWeightFraction(Player player) {
-        return getCurrentWeight(player) / MAX_CARRY_KG;
+        // per-player cap: equipped backpack's carryCapBonusPct raises it
+        return getCurrentWeight(player) / BackpackHandler.getMaxCarryKg(player);
     }
 
     private static void enforceMaxWeight(Player player) {
         float total = getCurrentWeight(player);
-        if (total <= MAX_CARRY_KG) return;
+        if (total <= BackpackHandler.getMaxCarryKg(player)) return;
 
         Inventory inventory = player.getInventory();
         boolean ejectedAny = false;

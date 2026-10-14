@@ -1,0 +1,25 @@
+{
+  "name": "kit_inspect",
+  "version": 3,
+  "author": "Grey Horizons",
+  "description": "Right hand lifts the first aid kit to mid-chest, left palm slides under to support it, right hand brushes the lid twice, arms lower.",
+  "emote": {
+    "beginTick": 0,
+    "endTick": 56,
+    "isLoop": false,
+    "returnTick": 56,
+    "degrees": true,
+    "moves": [
+      { "tick": 0,  "head": { "pitch": 0 },  "rightArm": { "pitch": 0, "yaw": 0, "roll": 0 },  "leftArm": { "pitch": 0, "yaw": 0, "roll": 0 },  "torso": { "pitch": 0 } },
+      { "tick": 10, "head": { "pitch": 12 }, "rightArm": { "pitch": -55, "yaw": -8 },          "leftArm": { "pitch": -35, "yaw": 30 },          "torso": { "pitch": 3 } },
+      { "tick": 18, "head": { "pitch": 20 }, "rightArm": { "pitch": -72, "yaw": 0, "roll": 4 },"leftArm": { "pitch": -85, "yaw": 42 },          "torso": { "pitch": 5 } },
+      { "tick": 24, "head": { "pitch": 22 }, "rightArm": { "pitch": -80, "yaw": 2 },           "leftArm": { "pitch": -88, "yaw": 40, "roll": 6 } },
+      { "tick": 30, "rightArm": { "pitch": -95, "yaw": 8, "roll": 2 }, "leftArm": { "pitch": -88, "yaw": 42 } },
+      { "tick": 34, "rightArm": { "pitch": -74, "yaw": -2, "roll": 8 } },
+      { "tick": 38, "rightArm": { "pitch": -95, "yaw": 8, "roll": 2 }, "head": { "pitch": 24 } },
+      { "tick": 42, "rightArm": { "pitch": -76, "yaw": -2, "roll": 8 } },
+      { "tick": 48, "head": { "pitch": 10 }, "rightArm": { "pitch": -60, "yaw": 0 },  "leftArm": { "pitch": -60, "yaw": 30 },  "torso": { "pitch": 2 } },
+      { "tick": 56, "head": { "pitch": 0 },  "rightArm": { "pitch": 0, "yaw": 0, "roll": 0 }, "leftArm": { "pitch": 0, "yaw": 0, "roll": 0 }, "torso": { "pitch": 0 } }
+    ]
+  }
+}

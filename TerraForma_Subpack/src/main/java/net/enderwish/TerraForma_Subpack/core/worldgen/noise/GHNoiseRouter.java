@@ -42,6 +42,16 @@ public class GHNoiseRouter {
     private static final int OCEAN_BASIN_DEPTH = 25;
     private static final double OCEAN_BASIN_THRESHOLD = -0.55;
 
+    /**
+     * Flat land-bias added to every column's height. The old formula was
+     * perfectly centered on SEA_LEVEL with nothing nudging it upward, so flat
+     * low-hilliness biomes (Wetlands, Rolling Meadows, Frozen Tundra, Ash
+     * Plains, Mangrove Coast) sat right on the sea-level line and half their
+     * noise swing dipped underwater -- the direct cause of "90% ocean".
+     * Tunable; raise/lower to taste.
+     */
+    private static final double LAND_BIAS = 14.0;
+
     private long lastSeed = Long.MIN_VALUE;
 
     private NoiseLayer continental;
@@ -101,6 +111,7 @@ public class GHNoiseRouter {
         double effectiveEros = Mth.clamp(eros + profile.erosionBias(), 0.0, 1.0);
 
         double baseHeight = SEA_LEVEL
+                + LAND_BIAS
                 + cont * (1.0 - effectiveEros)
                 + pv * profile.hilliness() * (1.0 - effectiveEros);
 

@@ -17,6 +17,11 @@ repositories {
         name = "GeckoLib"
         url = "https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/"
     }
+    maven {
+        name = "Modrinth maven"
+        url = "https://api.modrinth.com/maven"
+        content { includeGroup "maven.modrinth" }
+    }
 }
 
 base {
@@ -62,7 +67,21 @@ dependencies {
     // Curios API
     compileOnly "top.theillusivec4.curios:curios-neoforge:${curios_version}:api"
     runtimeOnly "top.theillusivec4.curios:curios-neoforge:${curios_version}"
-    implementation "software.bernie.geckolib:geckolib-neoforge-1.21.1:4.9.2"
+    // GeckoLib + PlayerAnimator, bundled INTO the mod jar (Jar-in-Jar, per
+    // ModDevGradle docs) so the mod is self-contained in a real instance —
+    // otherwise launch crashes with NoClassDefFoundError.
+    jarJar(implementation("software.bernie.geckolib:geckolib-neoforge-1.21.1")) {
+        version {
+            strictly "[4.9.2,5.0)"
+            prefer "4.9.2"
+        }
+    }
+    jarJar(implementation("maven.modrinth:playeranimator")) {
+        version {
+            strictly "[2.0.4+1.21.1-forge]"
+            prefer "2.0.4+1.21.1-forge"
+        }
+    }
 }
 
 // Logic for replacing variables in mods.toml

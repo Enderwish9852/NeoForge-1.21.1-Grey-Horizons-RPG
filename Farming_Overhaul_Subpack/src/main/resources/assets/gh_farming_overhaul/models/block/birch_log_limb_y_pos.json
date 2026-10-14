@@ -1,0 +1,118 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "bark": "minecraft:block/birch_log",
+    "top": "minecraft:block/birch_log_top"
+  },
+  "elements": [
+    {
+      "from": [
+        2,
+        0,
+        2
+      ],
+      "to": [
+        14,
+        16,
+        14
+      ],
+      "faces": {
+        "west": {
+          "uv": [
+            2,
+            0,
+            14,
+            16
+          ],
+          "texture": "#bark"
+        },
+        "east": {
+          "uv": [
+            2,
+            0,
+            14,
+            16
+          ],
+          "texture": "#bark"
+        },
+        "south": {
+          "uv": [
+            2,
+            0,
+            14,
+            16
+          ],
+          "texture": "#bark"
+        },
+        "north": {
+          "uv": [
+            2,
+            0,
+            14,
+            16
+          ],
+          "texture": "#bark"
+        },
+        "down": {
+          "uv": [
+            2,
+            2,
+            14,
+            14
+          ],
+          "texture": "#top"
+        }
+      }
+    },
+    {
+      "from": [
+        2.25,
+        16,
+        2.25
+      ],
+      "to": [
+        13.75,
+        24,
+        13.75
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            8
+          ],
+          "texture": "#bark"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            16,
+            8
+          ],
+          "texture": "#bark"
+        },
+        "east": {
+          "uv": [
+            0,
+            0,
+            16,
+            8
+          ],
+          "texture": "#bark"
+        },
+        "west": {
+          "uv": [
+            0,
+            0,
+            16,
+            8
+          ],
+          "texture": "#bark"
+        }
+      }
+    }
+  ]
+}

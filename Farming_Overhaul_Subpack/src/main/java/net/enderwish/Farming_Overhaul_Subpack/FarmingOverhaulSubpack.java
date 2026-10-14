@@ -13,18 +13,25 @@ import net.enderwish.Farming_Overhaul_Subpack.core.cutting_board.CuttingBoardRec
 import net.enderwish.Farming_Overhaul_Subpack.core.food.FoodRegistry;
 import net.enderwish.Farming_Overhaul_Subpack.core.spoilage.ModDataComponents;
 import net.enderwish.Farming_Overhaul_Subpack.core.spoilage.SpoilageHandler;
+import net.enderwish.Farming_Overhaul_Subpack.core.tree.TreeDefinition;
 import net.enderwish.Farming_Overhaul_Subpack.core.tree.TreeGenerator;
+import net.enderwish.Farming_Overhaul_Subpack.core.tree.TreeGrowthManager;
 import net.enderwish.Farming_Overhaul_Subpack.core.tree.TreeRegistry;
+import net.enderwish.Farming_Overhaul_Subpack.core.tree.TreeStage;
 import net.enderwish.Farming_Overhaul_Subpack.event.*;
 import net.enderwish.Farming_Overhaul_Subpack.init.ModBlockEntities;
 import net.enderwish.Farming_Overhaul_Subpack.init.ModMenuTypes;
 import net.enderwish.Farming_Overhaul_Subpack.item.ModItems;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.commands.SharedSuggestionProvider;
+import net.minecraft.commands.arguments.coordinates.BlockPosArgument;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.IEventBus;
@@ -38,8 +45,12 @@ import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Mod(FarmingOverhaulSubpack.MODID)
 public class FarmingOverhaulSubpack {
+
     public static final String MODID = "gh_farming_overhaul";
 
     public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS =
@@ -268,9 +279,28 @@ public class FarmingOverhaulSubpack {
         event.getDispatcher().register(
                 Commands.literal("spawntree")
                         .then(Commands.argument("species", StringArgumentType.word())
+                                .suggests((ctx, b) -> SharedSuggestionProvider.suggest(
+                                        TreeRegistry.INSTANCE.getAllSpecies(), b))
                                 .executes(ctx -> spawnTree(ctx, true))  // default = with leaves
                                 .then(Commands.literal("noleaves")
-                                        .executes(ctx -> spawnTree(ctx, false)))));  // no leaves
+                                        .executes(ctx -> spawnTree(ctx, false)))  // no leaves
+                                .then(Commands.argument("stage", StringArgumentType.word())
+                                        .suggests((ctx, b) -> SharedSuggestionProvider.suggest(
+                                                List.of("sapling", "young", "semi_mature", "mature"), b))
+                                        .executes(FarmingOverhaulSubpack::spawnTreeStaged))));
+        // Growth-stage control for tracked (staged) trees:
+        //   /treestage advance|regress|get <x> <y> <z>
+        event.getDispatcher().register(
+                Commands.literal("treestage")
+                        .then(Commands.literal("advance")
+                                .then(Commands.argument("pos", BlockPosArgument.blockPos())
+                                        .executes(ctx -> changeStage(ctx, 1))))
+                        .then(Commands.literal("regress")
+                                .then(Commands.argument("pos", BlockPosArgument.blockPos())
+                                        .executes(ctx -> changeStage(ctx, -1))))
+                        .then(Commands.literal("get")
+                                .then(Commands.argument("pos", BlockPosArgument.blockPos())
+                                        .executes(FarmingOverhaulSubpack::showStage))));
     }
 
     private static int spawnTree(
@@ -279,12 +309,26 @@ public class FarmingOverhaulSubpack {
 
         String species = StringArgumentType.getString(ctx, "species");
         ServerPlayer player = ctx.getSource().getPlayerOrException();
+        ServerLevel level = player.serverLevel();
         BlockPos pos = player.blockPosition();
 
-        boolean result = TreeGenerator.generate(
-                player.serverLevel(), pos, species,
-                player.serverLevel().getRandom(),
-                true, withLeaves);
+        TreeDefinition def = TreeRegistry.INSTANCE.getBySpecies(species)
+                .orElse(null);
+        if (def == null) {
+            ctx.getSource().sendFailure(Component.literal(
+                    "Failed — check species name"));
+            return 0;
+        }
+
+        // tracked at MATURE so season changes recolor its leaves instantly
+        List<BlockPos> placed = new ArrayList<>();
+        long seed = level.getRandom().nextLong();
+        boolean result = TreeGenerator.generate(level, pos, def,
+                RandomSource.create(seed), withLeaves, TreeStage.MATURE, placed);
+        if (result) {
+            TreeGrowthManager.get(level).track(level, pos, species,
+                    TreeStage.MATURE, seed, placed);
+        }
 
         ctx.getSource().sendSuccess(() ->
                         Component.literal(result
@@ -292,6 +336,115 @@ public class FarmingOverhaulSubpack {
                                 + (withLeaves ? "" : " (no leaves)")
                                 : "Failed — check species name"),
                 false);
+        return result ? 1 : 0;
+    }
+
+    /**
+     * /spawntree <species> <stage> — grows a tree at a given growth stage
+     * AND tracks it, so /treestage and season rollover can grow it further.
+     */
+    private static int spawnTreeStaged(CommandContext<CommandSourceStack> ctx)
+            throws CommandSyntaxException {
+
+        String species = StringArgumentType.getString(ctx, "species");
+        String stageArg = StringArgumentType.getString(ctx, "stage");
+        TreeStage stage = TreeStage.byName(stageArg);
+        if (stage == null) {
+            ctx.getSource().sendFailure(Component.literal(
+                    "Unknown stage '" + stageArg
+                            + "' — use sapling, young, semi_mature or mature"));
+            return 0;
+        }
+
+        ServerPlayer player = ctx.getSource().getPlayerOrException();
+        ServerLevel level = player.serverLevel();
+        BlockPos pos = player.blockPosition();
+
+        TreeDefinition def = TreeRegistry.INSTANCE.getBySpecies(species)
+                .orElse(null);
+        if (def == null) {
+            ctx.getSource().sendFailure(Component.literal(
+                    "Unknown species: " + species));
+            return 0;
+        }
+
+        List<BlockPos> placed = new ArrayList<>();
+        // pick a growth seed ONCE and store it: every future stage regrow
+        // replays this seed, so the tree keeps its identity as it ages
+        long seed = level.getRandom().nextLong();
+        boolean result = TreeGenerator.generate(level, pos, def,
+                RandomSource.create(seed), true, stage, placed);
+        if (result) {
+            TreeGrowthManager.get(level)
+                    .track(level, pos, species, stage, seed, placed);
+            ctx.getSource().sendSuccess(() -> Component.literal(
+                    "Spawned " + species + " tree (" + stage.displayName
+                            + ") at " + pos.toShortString()
+                            + " — tracked; it will grow one stage per season, or use /treestage"),
+                    false);
+        } else {
+            ctx.getSource().sendFailure(Component.literal(
+                    "Failed to spawn " + species));
+        }
+        return result ? 1 : 0;
+    }
+
+    /** /treestage advance|regress <pos> — steps a tracked tree a stage. */
+    private static int changeStage(CommandContext<CommandSourceStack> ctx, int dir)
+            throws CommandSyntaxException {
+
+        BlockPos raw = BlockPosArgument.getLoadedBlockPos(ctx, "pos");
+        ServerLevel level = ctx.getSource().getLevel();
+        TreeGrowthManager mgr = TreeGrowthManager.get(level);
+
+        BlockPos origin = mgr.findNearest(raw);
+        if (origin == null) {
+            ctx.getSource().sendFailure(Component.literal(
+                    "No tracked tree within 8 blocks of "
+                            + raw.toShortString()
+                            + " — only staged /spawntree trees are tracked"));
+            return 0;
+        }
+
+        TreeGrowthManager.TreeRecord rec = mgr.get(origin);
+        TreeStage target = dir > 0 ? rec.stage().next() : rec.stage().previous();
+        if (target == rec.stage()) {
+            ctx.getSource().sendFailure(Component.literal(
+                    "Tree at " + origin.toShortString() + " is already "
+                            + rec.stage().displayName));
+            return 0;
+        }
+
+        boolean ok = mgr.setStage(level, origin, target);
+        TreeStage shown = ok ? target : rec.stage();
+        ctx.getSource().sendSuccess(() -> Component.literal(
+                ok ? "Tree at " + origin.toShortString() + ": "
+                        + rec.stage().displayName + " → " + shown.displayName
+                   : "Failed to regrow tree at " + origin.toShortString()),
+                false);
+        return ok ? 1 : 0;
+    }
+
+    /** /treestage get <pos> — reports the tracked stage of a tree. */
+    private static int showStage(CommandContext<CommandSourceStack> ctx)
+            throws CommandSyntaxException {
+
+        BlockPos raw = BlockPosArgument.getLoadedBlockPos(ctx, "pos");
+        ServerLevel level = ctx.getSource().getLevel();
+        TreeGrowthManager mgr = TreeGrowthManager.get(level);
+
+        BlockPos origin = mgr.findNearest(raw);
+        if (origin == null) {
+            ctx.getSource().sendFailure(Component.literal(
+                    "No tracked tree within 8 blocks of "
+                            + raw.toShortString()));
+            return 0;
+        }
+        TreeGrowthManager.TreeRecord rec = mgr.get(origin);
+        ctx.getSource().sendSuccess(() -> Component.literal(
+                "Tree at " + origin.toShortString() + ": " + rec.species()
+                        + ", stage " + rec.stage().displayName
+                        + " (" + rec.voxels().length + " blocks)"), false);
         return 1;
     }
 
@@ -306,7 +459,10 @@ public class FarmingOverhaulSubpack {
         event.registerReloadListener(FoodRegistry.INSTANCE);
         event.registerReloadListener(ClayPotRecipeRegistry.INSTANCE);
         event.registerReloadListener(CuttingBoardRecipeRegistry.INSTANCE);
-        event.registerReloadListener(TreeRegistry.INSTANCE);
+        // NOTE: TreeRegistry deliberately NOT registered here — it loads
+        // data/* JSONs, which the CLIENT resource manager never contains.
+        // A client reload (F3+T) used to wipe its definitions to empty,
+        // making every /spawntree report "Unknown species".
     }
 
     private static void onAddReloadListeners(AddReloadListenerEvent event) {

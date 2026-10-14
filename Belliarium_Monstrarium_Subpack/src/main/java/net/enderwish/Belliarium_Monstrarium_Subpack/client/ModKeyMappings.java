@@ -35,8 +35,17 @@ public class ModKeyMappings {
             CATEGORY
     );
 
+    public static final KeyMapping OPEN_BACKPACK = new KeyMapping(
+            "key." + BelliariumMonstrariumSubpack.MODID + ".open_backpack",
+            KeyConflictContext.IN_GAME,
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_B,
+            CATEGORY
+    );
+
     @SubscribeEvent
     public static void onRegisterKeyMappings(RegisterKeyMappingsEvent event) {
         event.register(FAST_USE_FIRST_AID);
+        event.register(OPEN_BACKPACK);
     }
 }

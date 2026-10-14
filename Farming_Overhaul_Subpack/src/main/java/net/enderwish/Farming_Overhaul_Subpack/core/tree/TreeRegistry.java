@@ -43,13 +43,20 @@ public class TreeRegistry implements ResourceManagerReloadListener {
 
     @Override
     public void onResourceManagerReload(ResourceManager manager) {
-        definitions.clear();
-        LOGGER.info("TreeRegistry reloading...");
-
         Map<ResourceLocation, Resource> resources = manager.listResources(
                 FOLDER,
                 path -> path.getNamespace().equals(NAMESPACE)
                         && path.getPath().endsWith(".json"));
+        if (resources.isEmpty() && !definitions.isEmpty()) {
+            // defensive: a manager that finds nothing (e.g. the client
+            // resource manager, which has no data/* files) must not wipe
+            // definitions loaded from the real data pack
+            LOGGER.warn("TreeRegistry reload found 0 definitions in {} — keeping existing {}",
+                    manager, definitions.size());
+            return;
+        }
+        definitions.clear();
+        LOGGER.info("TreeRegistry reloading...");
 
         for (Map.Entry<ResourceLocation, Resource> entry :
                 resources.entrySet()) {

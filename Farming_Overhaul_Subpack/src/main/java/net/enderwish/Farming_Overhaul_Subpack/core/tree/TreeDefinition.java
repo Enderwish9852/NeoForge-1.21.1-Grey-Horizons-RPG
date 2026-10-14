@@ -42,6 +42,8 @@ public class TreeDefinition {
     private final int trunkHeightMax;
     private final float trunkSplitFractionMin;
     private final float trunkSplitFractionMax;
+    private final float trunkTaper;
+    private final boolean trunkRootFlare;
 
     // ── Primary limbs (DELIQUESCENT only) ────────────────────────────────────
     private final int primaryThicknessLevel;
@@ -53,6 +55,7 @@ public class TreeDefinition {
     private final float primarySpreadMax;
     private final float primaryUpwardLiftMin;
     private final float primaryUpwardLiftMax;
+    private final float primaryTaper;
 
     // ── Secondary branches (DELIQUESCENT only) ────────────────────────────────
     private final int secondaryThicknessLevel;
@@ -66,6 +69,7 @@ public class TreeDefinition {
     private final float secondaryUpwardLiftMax;
     private final float secondaryZigzagMin;
     private final float secondaryZigzagMax;
+    private final float secondaryTaper;
 
     // ── Twigs (DELIQUESCENT only) ─────────────────────────────────────────────
     private final int twigThicknessLevel;
@@ -76,6 +80,7 @@ public class TreeDefinition {
     private final float twigVerticalityMin;
     private final float twigVerticalityMax;
     private final boolean twigsDroop;
+    private final float twigTaper;
 
     // ── Whorl parameters (EXCURRENT only) ────────────────────────────────────
     // Whorls = horizontal branch sets at regular intervals up the trunk.
@@ -91,6 +96,7 @@ public class TreeDefinition {
     private final float whorlSpread;           // 1.0=horizontal, 0.0=vertical
     private final boolean whorlDroop;          // tips droop downward
     private final int whorlSubBranchThickness;
+    private final float whorlTaper;
 
     // ── Canopy ────────────────────────────────────────────────────────────────
     private final int canopyClusterRadiusMin;
@@ -122,6 +128,8 @@ public class TreeDefinition {
         this.trunkHeightMax           = b.trunkHeightMax;
         this.trunkSplitFractionMin    = b.trunkSplitFractionMin;
         this.trunkSplitFractionMax    = b.trunkSplitFractionMax;
+        this.trunkTaper               = b.trunkTaper;
+        this.trunkRootFlare           = b.trunkRootFlare;
         this.primaryThicknessLevel    = b.primaryThicknessLevel;
         this.primaryCountMin          = b.primaryCountMin;
         this.primaryCountMax          = b.primaryCountMax;
@@ -131,6 +139,7 @@ public class TreeDefinition {
         this.primarySpreadMax         = b.primarySpreadMax;
         this.primaryUpwardLiftMin     = b.primaryUpwardLiftMin;
         this.primaryUpwardLiftMax     = b.primaryUpwardLiftMax;
+        this.primaryTaper             = b.primaryTaper;
         this.secondaryThicknessLevel  = b.secondaryThicknessLevel;
         this.secondaryCountMin        = b.secondaryCountMin;
         this.secondaryCountMax        = b.secondaryCountMax;
@@ -140,8 +149,9 @@ public class TreeDefinition {
         this.secondaryInwardPullMax   = b.secondaryInwardPullMax;
         this.secondaryUpwardLiftMin   = b.secondaryUpwardLiftMin;
         this.secondaryUpwardLiftMax   = b.secondaryUpwardLiftMax;
-        this.secondaryZigzagMin       = b.secondaryZigzagMin;
-        this.secondaryZigzagMax       = b.secondaryZigzagMax;
+        this.secondaryZigzagMin      = b.secondaryZigzagMin;
+        this.secondaryZigzagMax      = b.secondaryZigzagMax;
+        this.secondaryTaper          = b.secondaryTaper;
         this.twigThicknessLevel       = b.twigThicknessLevel;
         this.twigCountMin             = b.twigCountMin;
         this.twigCountMax             = b.twigCountMax;
@@ -149,7 +159,8 @@ public class TreeDefinition {
         this.twigLengthMax            = b.twigLengthMax;
         this.twigVerticalityMin       = b.twigVerticalityMin;
         this.twigVerticalityMax       = b.twigVerticalityMax;
-        this.twigsDroop               = b.twigsDroop;
+        this.twigsDroop              = b.twigsDroop;
+        this.twigTaper               = b.twigTaper;
         this.whorlThicknessLevel      = b.whorlThicknessLevel;
         this.whorlSpacingMin          = b.whorlSpacingMin;
         this.whorlSpacingMax          = b.whorlSpacingMax;
@@ -161,6 +172,7 @@ public class TreeDefinition {
         this.whorlSpread              = b.whorlSpread;
         this.whorlDroop               = b.whorlDroop;
         this.whorlSubBranchThickness  = b.whorlSubBranchThickness;
+        this.whorlTaper               = b.whorlTaper;
         this.canopyClusterRadiusMin   = b.canopyClusterRadiusMin;
         this.canopyClusterRadiusMax   = b.canopyClusterRadiusMax;
         this.leafDensityMin           = b.leafDensityMin;
@@ -195,6 +207,8 @@ public class TreeDefinition {
         b.trunkHeightMax        = trunk.get("height_max").getAsInt();
         b.trunkSplitFractionMin = trunk.get("split_fraction_min").getAsFloat();
         b.trunkSplitFractionMax = trunk.get("split_fraction_max").getAsFloat();
+        b.trunkTaper     = trunk.has("taper") ? trunk.get("taper").getAsFloat() : 0.8f;
+        b.trunkRootFlare = trunk.has("root_flare") && trunk.get("root_flare").getAsBoolean();
 
         if (b.architecture == TreeArchitecture.DELIQUESCENT) {
             JsonObject primary = json.getAsJsonObject("primary_limbs");
@@ -207,6 +221,7 @@ public class TreeDefinition {
             b.primarySpreadMax      = primary.get("spread_max").getAsFloat();
             b.primaryUpwardLiftMin  = primary.get("upward_lift_min").getAsFloat();
             b.primaryUpwardLiftMax  = primary.get("upward_lift_max").getAsFloat();
+            b.primaryTaper = primary.has("taper") ? primary.get("taper").getAsFloat() : 0.55f;
 
             JsonObject secondary = json.getAsJsonObject("secondary_branches");
             b.secondaryThicknessLevel = secondary.get("thickness_level").getAsInt();
@@ -220,6 +235,7 @@ public class TreeDefinition {
             b.secondaryUpwardLiftMax  = secondary.get("upward_lift_max").getAsFloat();
             b.secondaryZigzagMin      = secondary.get("zigzag_min").getAsFloat();
             b.secondaryZigzagMax      = secondary.get("zigzag_max").getAsFloat();
+            b.secondaryTaper = secondary.has("taper") ? secondary.get("taper").getAsFloat() : 0.5f;
 
             JsonObject twigs = json.getAsJsonObject("twigs");
             b.twigThicknessLevel  = twigs.get("thickness_level").getAsInt();
@@ -230,6 +246,7 @@ public class TreeDefinition {
             b.twigVerticalityMin  = twigs.get("verticality_min").getAsFloat();
             b.twigVerticalityMax  = twigs.get("verticality_max").getAsFloat();
             b.twigsDroop          = twigs.has("droop") && twigs.get("droop").getAsBoolean();
+            b.twigTaper = twigs.has("taper") ? twigs.get("taper").getAsFloat() : 0.5f;
         } else {
             JsonObject whorl = json.getAsJsonObject("whorls");
             b.whorlThicknessLevel     = whorl.get("thickness_level").getAsInt();
@@ -244,6 +261,7 @@ public class TreeDefinition {
             b.whorlDroop              = whorl.has("droop") && whorl.get("droop").getAsBoolean();
             b.whorlSubBranchThickness = whorl.has("sub_branch_thickness")
                     ? whorl.get("sub_branch_thickness").getAsInt() : 1;
+            b.whorlTaper = whorl.has("taper") ? whorl.get("taper").getAsFloat() : 0.45f;
         }
 
         JsonObject canopy = json.getAsJsonObject("canopy");
@@ -319,6 +337,12 @@ public class TreeDefinition {
     public float getWhorlSpread()           { return whorlSpread; }
     public boolean whorlDroop()             { return whorlDroop; }
     public int getWhorlSubBranchThickness() { return whorlSubBranchThickness; }
+    public float getTrunkTaper()            { return trunkTaper; }
+    public boolean hasRootFlare()           { return trunkRootFlare; }
+    public float getPrimaryTaper()          { return primaryTaper; }
+    public float getSecondaryTaper()        { return secondaryTaper; }
+    public float getTwigTaper()             { return twigTaper; }
+    public float getWhorlTaper()            { return whorlTaper; }
 
     public boolean isEvergreen()  { return seasonalType == SeasonalType.MEDITERRANEAN || seasonalType == SeasonalType.TROPICAL; }
     public boolean hasBlossoms()  { return seasonalType == SeasonalType.TEMPERATE; }
@@ -343,6 +367,12 @@ public class TreeDefinition {
         int trunkThicknessLevel = 6;
         int trunkHeightMin = 3, trunkHeightMax = 5;
         float trunkSplitFractionMin = 0.85f, trunkSplitFractionMax = 1.0f;
+        float trunkTaper = 0.8f;
+        boolean trunkRootFlare = false;
+        float primaryTaper = 0.55f;
+        float secondaryTaper = 0.5f;
+        float twigTaper = 0.5f;
+        float whorlTaper = 0.45f;
         int primaryThicknessLevel = 5;
         int primaryCountMin = 3, primaryCountMax = 5;
         int primaryLengthMin = 3, primaryLengthMax = 4;

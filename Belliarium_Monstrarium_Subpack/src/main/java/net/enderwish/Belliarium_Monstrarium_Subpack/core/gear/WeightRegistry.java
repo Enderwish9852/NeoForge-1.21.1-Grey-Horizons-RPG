@@ -59,6 +59,12 @@ public class WeightRegistry implements ResourceManagerReloadListener {
 
     public float getWeightKg(ItemStack stack) {
         if (stack.isEmpty()) return 0f;
+        // backpacks weigh self + contents (loot in a bag is not weightless)
+        if (stack.getItem() instanceof net.enderwish.Belliarium_Monstrarium_Subpack.item.gear.BackpackItem bp) {
+            float total = bp.config(stack).selfWeightKg();
+            for (ItemStack s : bp.getContents(stack)) total += getWeightKg(s);
+            return total;
+        }
         String id = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
         return weights.getOrDefault(id, DEFAULT_WEIGHT_KG) * stack.getCount();
     }

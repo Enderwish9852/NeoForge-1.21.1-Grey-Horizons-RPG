@@ -1,24 +1,220 @@
 {
   "variants": {
-    "axis=x,thickness=1": { "model": "gh_farming_overhaul:block/oak_log_sprig",     "x": 90, "y": 90 },
-    "axis=x,thickness=2": { "model": "gh_farming_overhaul:block/oak_log_twig",      "x": 90, "y": 90 },
-    "axis=x,thickness=3": { "model": "gh_farming_overhaul:block/oak_log_branchlet", "x": 90, "y": 90 },
-    "axis=x,thickness=4": { "model": "gh_farming_overhaul:block/oak_log_branch",    "x": 90, "y": 90 },
-    "axis=x,thickness=5": { "model": "gh_farming_overhaul:block/oak_log_limb",      "x": 90, "y": 90 },
-    "axis=x,thickness=6": { "model": "gh_farming_overhaul:block/oak_log_trunk",     "x": 90, "y": 90 },
-
-    "axis=y,thickness=1": { "model": "gh_farming_overhaul:block/oak_log_sprig" },
-    "axis=y,thickness=2": { "model": "gh_farming_overhaul:block/oak_log_twig" },
-    "axis=y,thickness=3": { "model": "gh_farming_overhaul:block/oak_log_branchlet" },
-    "axis=y,thickness=4": { "model": "gh_farming_overhaul:block/oak_log_branch" },
-    "axis=y,thickness=5": { "model": "gh_farming_overhaul:block/oak_log_limb" },
-    "axis=y,thickness=6": { "model": "gh_farming_overhaul:block/oak_log_trunk" },
-
-    "axis=z,thickness=1": { "model": "gh_farming_overhaul:block/oak_log_sprig",     "x": 90 },
-    "axis=z,thickness=2": { "model": "gh_farming_overhaul:block/oak_log_twig",      "x": 90 },
-    "axis=z,thickness=3": { "model": "gh_farming_overhaul:block/oak_log_branchlet", "x": 90 },
-    "axis=z,thickness=4": { "model": "gh_farming_overhaul:block/oak_log_branch",    "x": 90 },
-    "axis=z,thickness=5": { "model": "gh_farming_overhaul:block/oak_log_limb",      "x": 90 },
-    "axis=z,thickness=6": { "model": "gh_farming_overhaul:block/oak_log_trunk",     "x": 90 }
+    "axis=x,capped=false,parent=neg,thickness=1": {
+      "model": "gh_farming_overhaul:block/oak_log_sprig_x_neg_false"
+    },
+    "axis=x,capped=true,parent=neg,thickness=1": {
+      "model": "gh_farming_overhaul:block/oak_log_sprig_x_neg_true"
+    },
+    "axis=x,capped=false,parent=pos,thickness=1": {
+      "model": "gh_farming_overhaul:block/oak_log_sprig_x_pos_false"
+    },
+    "axis=x,capped=true,parent=pos,thickness=1": {
+      "model": "gh_farming_overhaul:block/oak_log_sprig_x_pos_true"
+    },
+    "axis=y,capped=false,parent=neg,thickness=1": {
+      "model": "gh_farming_overhaul:block/oak_log_sprig_y_neg_false"
+    },
+    "axis=y,capped=true,parent=neg,thickness=1": {
+      "model": "gh_farming_overhaul:block/oak_log_sprig_y_neg_true"
+    },
+    "axis=y,capped=false,parent=pos,thickness=1": {
+      "model": "gh_farming_overhaul:block/oak_log_sprig_y_pos_false"
+    },
+    "axis=y,capped=true,parent=pos,thickness=1": {
+      "model": "gh_farming_overhaul:block/oak_log_sprig_y_pos_true"
+    },
+    "axis=z,capped=false,parent=neg,thickness=1": {
+      "model": "gh_farming_overhaul:block/oak_log_sprig_z_neg_false"
+    },
+    "axis=z,capped=true,parent=neg,thickness=1": {
+      "model": "gh_farming_overhaul:block/oak_log_sprig_z_neg_true"
+    },
+    "axis=z,capped=false,parent=pos,thickness=1": {
+      "model": "gh_farming_overhaul:block/oak_log_sprig_z_pos_false"
+    },
+    "axis=z,capped=true,parent=pos,thickness=1": {
+      "model": "gh_farming_overhaul:block/oak_log_sprig_z_pos_true"
+    },
+    "axis=x,capped=false,parent=neg,thickness=2": {
+      "model": "gh_farming_overhaul:block/oak_log_twig_x_neg_false"
+    },
+    "axis=x,capped=true,parent=neg,thickness=2": {
+      "model": "gh_farming_overhaul:block/oak_log_twig_x_neg_true"
+    },
+    "axis=x,capped=false,parent=pos,thickness=2": {
+      "model": "gh_farming_overhaul:block/oak_log_twig_x_pos_false"
+    },
+    "axis=x,capped=true,parent=pos,thickness=2": {
+      "model": "gh_farming_overhaul:block/oak_log_twig_x_pos_true"
+    },
+    "axis=y,capped=false,parent=neg,thickness=2": {
+      "model": "gh_farming_overhaul:block/oak_log_twig_y_neg_false"
+    },
+    "axis=y,capped=true,parent=neg,thickness=2": {
+      "model": "gh_farming_overhaul:block/oak_log_twig_y_neg_true"
+    },
+    "axis=y,capped=false,parent=pos,thickness=2": {
+      "model": "gh_farming_overhaul:block/oak_log_twig_y_pos_false"
+    },
+    "axis=y,capped=true,parent=pos,thickness=2": {
+      "model": "gh_farming_overhaul:block/oak_log_twig_y_pos_true"
+    },
+    "axis=z,capped=false,parent=neg,thickness=2": {
+      "model": "gh_farming_overhaul:block/oak_log_twig_z_neg_false"
+    },
+    "axis=z,capped=true,parent=neg,thickness=2": {
+      "model": "gh_farming_overhaul:block/oak_log_twig_z_neg_true"
+    },
+    "axis=z,capped=false,parent=pos,thickness=2": {
+      "model": "gh_farming_overhaul:block/oak_log_twig_z_pos_false"
+    },
+    "axis=z,capped=true,parent=pos,thickness=2": {
+      "model": "gh_farming_overhaul:block/oak_log_twig_z_pos_true"
+    },
+    "axis=x,capped=false,parent=neg,thickness=3": {
+      "model": "gh_farming_overhaul:block/oak_log_branchlet_x_neg_false"
+    },
+    "axis=x,capped=true,parent=neg,thickness=3": {
+      "model": "gh_farming_overhaul:block/oak_log_branchlet_x_neg_true"
+    },
+    "axis=x,capped=false,parent=pos,thickness=3": {
+      "model": "gh_farming_overhaul:block/oak_log_branchlet_x_pos_false"
+    },
+    "axis=x,capped=true,parent=pos,thickness=3": {
+      "model": "gh_farming_overhaul:block/oak_log_branchlet_x_pos_true"
+    },
+    "axis=y,capped=false,parent=neg,thickness=3": {
+      "model": "gh_farming_overhaul:block/oak_log_branchlet_y_neg_false"
+    },
+    "axis=y,capped=true,parent=neg,thickness=3": {
+      "model": "gh_farming_overhaul:block/oak_log_branchlet_y_neg_true"
+    },
+    "axis=y,capped=false,parent=pos,thickness=3": {
+      "model": "gh_farming_overhaul:block/oak_log_branchlet_y_pos_false"
+    },
+    "axis=y,capped=true,parent=pos,thickness=3": {
+      "model": "gh_farming_overhaul:block/oak_log_branchlet_y_pos_true"
+    },
+    "axis=z,capped=false,parent=neg,thickness=3": {
+      "model": "gh_farming_overhaul:block/oak_log_branchlet_z_neg_false"
+    },
+    "axis=z,capped=true,parent=neg,thickness=3": {
+      "model": "gh_farming_overhaul:block/oak_log_branchlet_z_neg_true"
+    },
+    "axis=z,capped=false,parent=pos,thickness=3": {
+      "model": "gh_farming_overhaul:block/oak_log_branchlet_z_pos_false"
+    },
+    "axis=z,capped=true,parent=pos,thickness=3": {
+      "model": "gh_farming_overhaul:block/oak_log_branchlet_z_pos_true"
+    },
+    "axis=x,capped=false,parent=neg,thickness=4": {
+      "model": "gh_farming_overhaul:block/oak_log_branch_x_neg_false"
+    },
+    "axis=x,capped=true,parent=neg,thickness=4": {
+      "model": "gh_farming_overhaul:block/oak_log_branch_x_neg_true"
+    },
+    "axis=x,capped=false,parent=pos,thickness=4": {
+      "model": "gh_farming_overhaul:block/oak_log_branch_x_pos_false"
+    },
+    "axis=x,capped=true,parent=pos,thickness=4": {
+      "model": "gh_farming_overhaul:block/oak_log_branch_x_pos_true"
+    },
+    "axis=y,capped=false,parent=neg,thickness=4": {
+      "model": "gh_farming_overhaul:block/oak_log_branch_y_neg_false"
+    },
+    "axis=y,capped=true,parent=neg,thickness=4": {
+      "model": "gh_farming_overhaul:block/oak_log_branch_y_neg_true"
+    },
+    "axis=y,capped=false,parent=pos,thickness=4": {
+      "model": "gh_farming_overhaul:block/oak_log_branch_y_pos_false"
+    },
+    "axis=y,capped=true,parent=pos,thickness=4": {
+      "model": "gh_farming_overhaul:block/oak_log_branch_y_pos_true"
+    },
+    "axis=z,capped=false,parent=neg,thickness=4": {
+      "model": "gh_farming_overhaul:block/oak_log_branch_z_neg_false"
+    },
+    "axis=z,capped=true,parent=neg,thickness=4": {
+      "model": "gh_farming_overhaul:block/oak_log_branch_z_neg_true"
+    },
+    "axis=z,capped=false,parent=pos,thickness=4": {
+      "model": "gh_farming_overhaul:block/oak_log_branch_z_pos_false"
+    },
+    "axis=z,capped=true,parent=pos,thickness=4": {
+      "model": "gh_farming_overhaul:block/oak_log_branch_z_pos_true"
+    },
+    "axis=x,capped=false,parent=neg,thickness=5": {
+      "model": "gh_farming_overhaul:block/oak_log_limb_x_neg_false"
+    },
+    "axis=x,capped=true,parent=neg,thickness=5": {
+      "model": "gh_farming_overhaul:block/oak_log_limb_x_neg_true"
+    },
+    "axis=x,capped=false,parent=pos,thickness=5": {
+      "model": "gh_farming_overhaul:block/oak_log_limb_x_pos_false"
+    },
+    "axis=x,capped=true,parent=pos,thickness=5": {
+      "model": "gh_farming_overhaul:block/oak_log_limb_x_pos_true"
+    },
+    "axis=y,capped=false,parent=neg,thickness=5": {
+      "model": "gh_farming_overhaul:block/oak_log_limb_y_neg_false"
+    },
+    "axis=y,capped=true,parent=neg,thickness=5": {
+      "model": "gh_farming_overhaul:block/oak_log_limb_y_neg_true"
+    },
+    "axis=y,capped=false,parent=pos,thickness=5": {
+      "model": "gh_farming_overhaul:block/oak_log_limb_y_pos_false"
+    },
+    "axis=y,capped=true,parent=pos,thickness=5": {
+      "model": "gh_farming_overhaul:block/oak_log_limb_y_pos_true"
+    },
+    "axis=z,capped=false,parent=neg,thickness=5": {
+      "model": "gh_farming_overhaul:block/oak_log_limb_z_neg_false"
+    },
+    "axis=z,capped=true,parent=neg,thickness=5": {
+      "model": "gh_farming_overhaul:block/oak_log_limb_z_neg_true"
+    },
+    "axis=z,capped=false,parent=pos,thickness=5": {
+      "model": "gh_farming_overhaul:block/oak_log_limb_z_pos_false"
+    },
+    "axis=z,capped=true,parent=pos,thickness=5": {
+      "model": "gh_farming_overhaul:block/oak_log_limb_z_pos_true"
+    },
+    "axis=x,capped=false,parent=neg,thickness=6": {
+      "model": "gh_farming_overhaul:block/oak_log_trunk_x_neg_false"
+    },
+    "axis=x,capped=true,parent=neg,thickness=6": {
+      "model": "gh_farming_overhaul:block/oak_log_trunk_x_neg_true"
+    },
+    "axis=x,capped=false,parent=pos,thickness=6": {
+      "model": "gh_farming_overhaul:block/oak_log_trunk_x_pos_false"
+    },
+    "axis=x,capped=true,parent=pos,thickness=6": {
+      "model": "gh_farming_overhaul:block/oak_log_trunk_x_pos_true"
+    },
+    "axis=y,capped=false,parent=neg,thickness=6": {
+      "model": "gh_farming_overhaul:block/oak_log_trunk_y_neg_false"
+    },
+    "axis=y,capped=true,parent=neg,thickness=6": {
+      "model": "gh_farming_overhaul:block/oak_log_trunk_y_neg_true"
+    },
+    "axis=y,capped=false,parent=pos,thickness=6": {
+      "model": "gh_farming_overhaul:block/oak_log_trunk_y_pos_false"
+    },
+    "axis=y,capped=true,parent=pos,thickness=6": {
+      "model": "gh_farming_overhaul:block/oak_log_trunk_y_pos_true"
+    },
+    "axis=z,capped=false,parent=neg,thickness=6": {
+      "model": "gh_farming_overhaul:block/oak_log_trunk_z_neg_false"
+    },
+    "axis=z,capped=true,parent=neg,thickness=6": {
+      "model": "gh_farming_overhaul:block/oak_log_trunk_z_neg_true"
+    },
+    "axis=z,capped=false,parent=pos,thickness=6": {
+      "model": "gh_farming_overhaul:block/oak_log_trunk_z_pos_false"
+    },
+    "axis=z,capped=true,parent=pos,thickness=6": {
+      "model": "gh_farming_overhaul:block/oak_log_trunk_z_pos_true"
+    }
   }
 }

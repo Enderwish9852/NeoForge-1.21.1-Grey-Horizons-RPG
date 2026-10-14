@@ -1,22 +1,28 @@
 package net.enderwish.TerraForma_Subpack.core.biome;
 
+import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.enderwish.TerraForma_Subpack.core.climate.ClimateMap;
 import net.enderwish.TerraForma_Subpack.core.climate.ClimateSettings;
 import net.enderwish.TerraForma_Subpack.core.climate.ClimateZone;
 import net.enderwish.TerraForma_Subpack.core.worldgen.noise.GHNoiseRouter;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.Holder;
 import net.minecraft.core.QuartPos;
 import net.minecraft.core.Registry;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.BiomeSource;
 import net.minecraft.world.level.biome.Climate;
 
 import java.util.List;
+import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -51,6 +57,16 @@ public class GHBiomeSource extends BiomeSource {
     private static final int GLACIAL_PEAKS_ALTITUDE_MARGIN = 20;
     private static final float VOLCANIC_DRYNESS_MARGIN = 0.10f;
     private static final float CRACKED_BADLANDS_MIN_TEMP = 0.45f;
+
+    /**
+     * /locate biome hardcodes radius 6400 / step 32 in LocateCommand -- far too
+     * short for biome patches that are thousands of blocks across here. Since
+     * biome selection is a pure (x, z) function (see getNoiseBiome's doc above),
+     * we don't need vanilla's per-column vertical scan at all, so we can afford
+     * a much larger radius at a coarser step without it getting slow.
+     */
+    private static final int LOCATE_MIN_RADIUS = 60_000;
+    private static final int LOCATE_MIN_STEP = 64;
 
     public static final MapCodec<GHBiomeSource> CODEC = RecordCodecBuilder.mapCodec(instance ->
             instance.group(
@@ -92,6 +108,29 @@ public class GHBiomeSource extends BiomeSource {
         int blockZ = QuartPos.toBlock(quartZ);
         int surfaceY = GHNoiseRouter.INSTANCE.getSurfaceHeight(blockX, blockZ);
         return findHolder(getBiomeKeyAt(blockX, surfaceY, blockZ));
+    }
+
+    @Override
+    public Pair<BlockPos, Holder<Biome>> findClosestBiome3d(BlockPos pos, int radius, int horizontalStep,
+                                                             int verticalStep, Predicate<Holder<Biome>> predicate,
+                                                             Climate.Sampler sampler, LevelReader level) {
+        Set<Holder<Biome>> candidates = possibleBiomes().stream().filter(predicate).collect(Collectors.toUnmodifiableSet());
+        if (candidates.isEmpty()) return null;
+
+        int effectiveRadius = Math.max(radius, LOCATE_MIN_RADIUS);
+        int step = Math.max(horizontalStep, LOCATE_MIN_STEP);
+        int steps = Math.floorDiv(effectiveRadius, step);
+
+        for (BlockPos.MutableBlockPos spiral : BlockPos.spiralAround(BlockPos.ZERO, steps, Direction.EAST, Direction.SOUTH)) {
+            int x = pos.getX() + spiral.getX() * step;
+            int z = pos.getZ() + spiral.getZ() * step;
+            int surfaceY = GHNoiseRouter.INSTANCE.getSurfaceHeight(x, z);
+            Holder<Biome> holder = getNoiseBiome(QuartPos.fromBlock(x), QuartPos.fromBlock(surfaceY), QuartPos.fromBlock(z), sampler);
+            if (candidates.contains(holder)) {
+                return Pair.of(new BlockPos(x, surfaceY, z), holder);
+            }
+        }
+        return null;
     }
 
     public static ResourceKey<Biome> getBiomeKeyAt(int x, int y, int z) {

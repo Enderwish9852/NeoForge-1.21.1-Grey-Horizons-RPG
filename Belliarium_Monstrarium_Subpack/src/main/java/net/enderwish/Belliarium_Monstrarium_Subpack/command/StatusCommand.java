@@ -30,13 +30,38 @@ public class StatusCommand {
                 .then(Commands.literal("clear").executes(StatusCommand::clear))
                 .then(Commands.literal("remove")
                         .then(Commands.argument("name", StringArgumentType.word())
-                                .executes(StatusCommand::remove))));
+                                .executes(StatusCommand::remove)))
+                .then(Commands.literal("apply")
+                        .then(Commands.argument("name", StringArgumentType.word())
+                                .suggests((ctx, b) -> net.minecraft.commands.SharedSuggestionProvider.suggest(
+                                        java.util.Arrays.stream(StatusType.values())
+                                                .map(Enum::name).map(String::toLowerCase), b))
+                                .executes(StatusCommand::apply))));
+    }
+
+    /** /status apply <name> -- testing helper; duration = permanent (conditional ones only expire on their own). */
+    private static int apply(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        ServerPlayer player = ctx.getSource().getPlayerOrException();
+        String name = StringArgumentType.getString(ctx, "name").toUpperCase(Locale.ROOT);
+        StatusType type;
+        try {
+            type = StatusType.valueOf(name);
+        } catch (IllegalArgumentException e) {
+            ctx.getSource().sendFailure(Component.literal("§cUnknown status '" + name + "'."));
+            return 0;
+        }
+        StatusManager.INSTANCE.apply(player.getUUID(), type,
+                player.level().getGameTime(), -1L);
+        ctx.getSource().sendSuccess(() -> Component.literal(
+                "§6[Status]§r Applied " + type.displayName() + "."), false);
+        return 1;
     }
 
     private static int list(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
         ServerPlayer player = ctx.getSource().getPlayerOrException();
         Set<StatusType> active = EnumSet.noneOf(StatusType.class);
         active.addAll(StatusManager.INSTANCE.activeBodyStatuses(player));
+        active.addAll(StatusManager.INSTANCE.activePermanent(player.getUUID()));
         active.addAll(StatusManager.INSTANCE.activeConditional(player.getUUID()));
 
         if (active.isEmpty()) {

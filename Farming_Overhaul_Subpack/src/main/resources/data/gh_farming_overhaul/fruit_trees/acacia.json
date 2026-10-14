@@ -6,26 +6,29 @@
 
   "trunk": {
     "thickness_level":    5,
-    "height_min":         3,
-    "height_max":         5,
-    "split_fraction_min": 0.85,
-    "split_fraction_max": 1.0
+    "height_min":         5,
+    "height_max":         6,
+    "split_fraction_min": 0.9,
+    "split_fraction_max": 1.0,
+    "taper":              0.8,
+    "root_flare":         true
   },
 
   "primary_limbs": {
     "thickness_level":  4,
-    "count_min":        3,
+    "count_min":        4,
     "count_max":        6,
-    "length_min":       4,
+    "length_min":       5,
     "length_max":       7,
-    "spread_min":       2.0,
-    "spread_max":       3.0,
+    "spread_min":       2.2,
+    "spread_max":       2.8,
     "upward_lift_min":  0.05,
-    "upward_lift_max":  0.15
+    "upward_lift_max":  0.25,
+    "taper":            0.7
   },
 
   "secondary_branches": {
-    "thickness_level":      3,
+    "thickness_level":      2,
     "count_per_parent_min": 2,
     "count_per_parent_max": 3,
     "length_min":           2,
@@ -33,27 +36,28 @@
     "inward_pull_min":      0.0,
     "inward_pull_max":      0.05,
     "upward_lift_min":      0.0,
-    "upward_lift_max":      0.1,
+    "upward_lift_max":      0.2,
     "zigzag_min":           0.1,
-    "zigzag_max":           0.3
+    "zigzag_max":           0.3,
+    "taper":                0.5
   },
 
   "twigs": {
-    "thickness_level":      2,
+    "thickness_level":      1,
     "count_per_parent_min": 2,
-    "count_per_parent_max": 4,
+    "count_per_parent_max": 3,
     "length_min":           1,
     "length_max":           2,
     "verticality_min":      0.0,
-    "verticality_max":      0.1
+    "verticality_max":      0.15
   },
 
   "canopy": {
-    "cluster_radius_min": 2,
+    "cluster_radius_min": 3,
     "cluster_radius_max": 3,
-    "leaf_density_min":   0.80,
-    "leaf_density_max":   0.90,
-    "top_bias":           0.50
+    "leaf_density_min":   0.8,
+    "leaf_density_max":   0.88,
+    "top_bias":           0.45
   },
 
   "biome_tags": ["gh_terraforma:has_acacia_trees"]

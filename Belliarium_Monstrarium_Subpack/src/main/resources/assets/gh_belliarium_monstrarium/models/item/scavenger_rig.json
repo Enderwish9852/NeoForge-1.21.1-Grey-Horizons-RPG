@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "gh_belliarium_monstrarium:item/scavenger_rig"
+  }
+}

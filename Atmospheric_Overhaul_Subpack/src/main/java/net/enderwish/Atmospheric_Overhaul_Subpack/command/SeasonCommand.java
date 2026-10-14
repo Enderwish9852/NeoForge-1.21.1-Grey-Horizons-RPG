@@ -56,6 +56,7 @@ public class SeasonCommand {
                         int yearOffset = data.getYear() * SeasonCalendar.DAYS_PER_YEAR;
                         int seasonStart = season.ordinal() * SeasonCalendar.DAYS_PER_SEASON;
                         data.setTotalDays(yearOffset + seasonStart);
+                        syncVanillaDayTime(level, data);
 
                         syncToClients(level, data);
 
@@ -78,6 +79,7 @@ public class SeasonCommand {
 
                             int yearOffset = data.getYear() * SeasonCalendar.DAYS_PER_YEAR;
                             data.setTotalDays(yearOffset + day);
+                            syncVanillaDayTime(level, data);
 
                             syncToClients(level, data);
 
@@ -111,6 +113,8 @@ public class SeasonCommand {
                     };
 
                     data.setTotalDays(yearOffset + nextPhaseDay);
+                    syncVanillaDayTime(level, data);
+
                     syncToClients(level, data);
 
                     context.getSource().sendSuccess(() -> Component.literal(
@@ -124,6 +128,18 @@ public class SeasonCommand {
     }
 
     // ── Helper ────────────────────────────────────────────────────────────────
+
+    /**
+     * Keeps vanilla's debug-screen day counter (F3 "Day: N", which is
+     * dayTime / 24000) in step with the season calendar. Without this,
+     * /season set, setday and skipphase move the season but F3 keeps
+     * counting the old vanilla day. The time of day (sun position) is
+     * preserved.
+     */
+    private static void syncVanillaDayTime(ServerLevel level, SeasonData data) {
+        long timeOfDay = level.getDayTime() % 24000L;
+        level.setDayTime((long) data.getTotalDays() * 24000L + timeOfDay);
+    }
 
     private static void syncToClients(ServerLevel level, SeasonData data) {
         ModMessages.sendToAllPlayers(new SeasonSyncPacket(

@@ -27,15 +27,30 @@ public final class StatusManager {
 
     private final Map<UUID, Map<StatusType, Long>> conditional = new ConcurrentHashMap<>();
 
-    /** Applies a conditional status until {@code currentGameTime + durationTicks}. Permanent types are rejected. */
+    /** Stored PERMANENT statuses (e.g. HIVE_MIND_INFLUENCE): never expire,
+     * never removable. Distinct from the DERIVED body statuses, which are
+     * computed live off BodyHealthCapability in activeBodyStatuses(). */
+    private final Map<UUID, Set<StatusType>> permanent = new ConcurrentHashMap<>();
+
+    /**
+     * Applies a status. Permanent types go into the permanent store (they
+     * never expire and can't be removed). Conditional ones last
+     * {@code currentGameTime + durationTicks}; a negative duration means
+     * "no expiry" (indefinite until removed).
+     */
     public void apply(UUID playerId, StatusType type, long currentGameTime, long durationTicks) {
-        if (!type.isConditional()) return;
+        if (!type.isConditional()) {
+            permanent.computeIfAbsent(playerId, k -> EnumSet.noneOf(StatusType.class)).add(type);
+            return;
+        }
+        long expiry = durationTicks < 0 ? Long.MAX_VALUE : currentGameTime + durationTicks;
         conditional.computeIfAbsent(playerId, k -> new EnumMap<>(StatusType.class))
-                .put(type, currentGameTime + durationTicks);
+                .put(type, expiry);
     }
 
     public boolean has(UUID playerId, StatusType type) {
-        if (!type.isConditional()) return false;
+        Set<StatusType> perm = permanent.get(playerId);
+        if (perm != null && perm.contains(type)) return true;
         Map<StatusType, Long> map = conditional.get(playerId);
         return map != null && map.containsKey(type);
     }
@@ -62,6 +77,12 @@ public final class StatusManager {
     public Set<StatusType> activeConditional(UUID playerId) {
         Map<StatusType, Long> map = conditional.get(playerId);
         return map == null ? EnumSet.noneOf(StatusType.class) : EnumSet.copyOf(map.keySet());
+    }
+
+    /** Stored permanent statuses for /status listing (derived body ones come separately). */
+    public Set<StatusType> activePermanent(UUID playerId) {
+        Set<StatusType> set = permanent.get(playerId);
+        return set == null ? EnumSet.noneOf(StatusType.class) : EnumSet.copyOf(set);
     }
 
     /** The permanent body-part statuses currently true for this player, read live off BodyHealthCapability. */

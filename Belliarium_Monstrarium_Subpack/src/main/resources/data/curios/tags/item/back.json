@@ -1,0 +1,10 @@
+{
+  "replace": false,
+  "values": [
+    "gh_belliarium_monstrarium:satchel",
+    "gh_belliarium_monstrarium:field_pack",
+    "gh_belliarium_monstrarium:frame_pack",
+    "gh_belliarium_monstrarium:medical_satchel",
+    "gh_belliarium_monstrarium:scavenger_rig"
+  ]
+}

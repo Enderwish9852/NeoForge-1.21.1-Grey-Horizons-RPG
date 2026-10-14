@@ -19,7 +19,10 @@ public enum StatusType {
     RIGHT_LEG_INJURED(false),
     LEFT_LEG_BROKEN(false),
     RIGHT_LEG_BROKEN(false),
-    DEJA_VU(true);
+    DEJA_VU(true),
+    /** PERMANENT: granted on first join, never expires, never removable.
+     * Slowly drains Sanity (see SanityTickHandler). */
+    HIVE_MIND_INFLUENCE(false);
 
     private final boolean conditional;
 

@@ -1,5 +1,6 @@
 package net.enderwish.Farming_Overhaul_Subpack.block.tree;
 
+import net.minecraft.util.StringRepresentable;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.context.BlockPlaceContext;
@@ -9,6 +10,7 @@ import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.phys.shapes.CollisionContext;
@@ -31,9 +33,12 @@ import net.minecraft.world.phys.shapes.VoxelShape;
  * generations use via TreeDefinition JSON — not every species needs
  * every size.
  *
- * NOTE: the CONNECTOR transition system is deferred — junctions
- * currently show a small natural seam. Revisit later with a
- * neighbor-detection post-pass.
+ * NOTE: joints are welded Dynamic-Trees-style — each log's model extends
+ * 8px flush into its parent voxel (PARENT side; every branch starts
+ * strictly thinner than its parent). Known tradeoff: two extensions
+ * entering the same parent voxel can z-fight inside the joint. End caps
+ * (CAPPED) render on tips, bends and shoulders; straight equal-thickness
+ * runs stay open.
  */
 public class FruitTreeLogBlock extends Block {
 
@@ -42,6 +47,39 @@ public class FruitTreeLogBlock extends Block {
 
     public static final EnumProperty<Direction.Axis> AXIS =
             BlockStateProperties.AXIS;
+
+    /**
+     * Which side (along AXIS) the parent voxel lies on. The block model
+     * extends ~8px into the parent voxel so joints between different
+     * thicknesses stay visually welded (Dynamic-Trees-style connections).
+     */
+    public static final EnumProperty<ParentSide> PARENT =
+            EnumProperty.create("parent", ParentSide.class);
+
+    /**
+     * True when this voxel ends in its +AXIS direction (branch tip or a
+     * shoulder where the next voxel is thinner): the model renders the
+     * ring-textured end cap. Interior/bending voxels are open on that side
+     * so no pale cap quad shows through joints.
+     */
+    public static final BooleanProperty CAPPED =
+            BooleanProperty.create("capped");
+
+    public enum ParentSide implements StringRepresentable {
+        NEG("neg"), POS("pos");
+        private final String name;
+        ParentSide(String name) { this.name = name; }
+        @Override public String getSerializedName() { return name; }
+    }
+
+    public static ParentSide sideOf(Direction parentDir, Direction.Axis axis) {
+        boolean positive = switch (axis) {
+            case X -> parentDir == Direction.EAST;
+            case Y -> parentDir == Direction.UP;
+            case Z -> parentDir == Direction.SOUTH;
+        };
+        return positive ? ParentSide.POS : ParentSide.NEG;
+    }
 
     private static final int[] PIXEL_SIZE = {0, 2, 4, 6, 8, 12, 16};
 
@@ -67,19 +105,23 @@ public class FruitTreeLogBlock extends Block {
         this.registerDefaultState(
                 this.stateDefinition.any()
                         .setValue(THICKNESS, 6)
-                        .setValue(AXIS, Direction.Axis.Y));
+                        .setValue(AXIS, Direction.Axis.Y)
+                        .setValue(PARENT, ParentSide.NEG)
+                        .setValue(CAPPED, true));
     }
 
     @Override
     protected void createBlockStateDefinition(
             StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(THICKNESS, AXIS);
+        builder.add(THICKNESS, AXIS, PARENT, CAPPED);
     }
 
     @Override
     public BlockState getStateForPlacement(BlockPlaceContext context) {
+        Direction clicked = context.getClickedFace();
         return this.defaultBlockState()
-                .setValue(AXIS, context.getClickedFace().getAxis());
+                .setValue(AXIS, clicked.getAxis())
+                .setValue(PARENT, sideOf(clicked.getOpposite(), clicked.getAxis()));
     }
 
     @Override

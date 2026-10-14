@@ -31,9 +31,18 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public final class CuriosHooks {
 
-    private static final List<String> OWNED_SLOT_IDS = List.of("wrist");
+    private static final List<String> OWNED_SLOT_IDS = List.of("wrist", "back");
 
     private CuriosHooks() {}
+
+    /** The stack in the Curios "back" slot (the equipped backpack), or EMPTY. */
+    public static ItemStack getBackpack(Player player) {
+        return CuriosApi.getCuriosInventory(player)
+                .map(inv -> inv.getStacksHandler("back")
+                        .map(h -> h.getStacks().getStackInSlot(0))
+                        .orElse(ItemStack.EMPTY))
+                .orElse(ItemStack.EMPTY);
+    }
 
     public static boolean hasWatchEquipped(Player player) {
         AtomicBoolean found = new AtomicBoolean(false);
