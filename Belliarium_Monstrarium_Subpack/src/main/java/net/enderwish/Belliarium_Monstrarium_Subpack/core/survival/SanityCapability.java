@@ -21,15 +21,31 @@ public class SanityCapability {
 
     private float sanity = MAX;
 
+    /** True once ADVENTURERS_HEART has been granted on this world's first
+     * join — prevents re-granting the 7-day grace after it expires (or
+     * after death/respawn). Persisted with the capability. */
+    private boolean adventurersHeartGranted = false;
+
     public SanityCapability() {}
 
     public SanityCapability(float sanity) { this.sanity = sanity; }
 
+    public SanityCapability(float sanity, boolean heartGranted) {
+        this.sanity = sanity;
+        this.adventurersHeartGranted = heartGranted;
+    }
+
     public static final Codec<SanityCapability> CODEC = RecordCodecBuilder.create(inst -> inst.group(
-            Codec.FLOAT.fieldOf("sanity").forGetter(SanityCapability::get)
+            Codec.FLOAT.fieldOf("sanity").forGetter(SanityCapability::get),
+            Codec.BOOL.optionalFieldOf("adventurers_heart_granted", false)
+                    .forGetter(SanityCapability::isAdventurersHeartGranted)
     ).apply(inst, SanityCapability::new));
 
     public float get() { return sanity; }
+
+    public boolean isAdventurersHeartGranted() { return adventurersHeartGranted; }
+
+    public void markAdventurersHeartGranted() { adventurersHeartGranted = true; }
 
     public void set(float v) { sanity = Mth.clamp(v, 0, MAX); }
 

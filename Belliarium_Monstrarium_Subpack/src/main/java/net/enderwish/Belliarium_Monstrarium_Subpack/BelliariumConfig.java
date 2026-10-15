@@ -10,6 +10,8 @@ public class BelliariumConfig {
     public static final ModConfigSpec.DoubleValue BOOK_LOSS_CHANCE_START;
     public static final ModConfigSpec.DoubleValue BOOK_LOSS_CHANCE_STEP;
     public static final ModConfigSpec.DoubleValue SANITY_DRAIN_PER_MINUTE;
+    public static final ModConfigSpec.DoubleValue ADVENTURERS_HEART_DURATION_DAYS;
+    public static final ModConfigSpec.DoubleValue ADVENTURERS_HEART_GAIN_PER_MINUTE;
     public static final ModConfigSpec SPEC;
 
     static {
@@ -18,6 +20,14 @@ public class BelliariumConfig {
         SANITY_DRAIN_PER_MINUTE = BUILDER
                 .comment("Sanity drained per real-time minute while Hive Mind Influence is active. 1.0 = ~1h40m from full to death.")
                 .defineInRange("drainPerMinute", 1.0, 0.0, 100.0);
+
+        ADVENTURERS_HEART_DURATION_DAYS = BUILDER
+                .comment("How many in-game days Adventurers Heart lasts after first join. 0 disables the grace period.")
+                .defineInRange("adventurersHeartDurationDays", 7.0, 0.0, 365.0);
+
+        ADVENTURERS_HEART_GAIN_PER_MINUTE = BUILDER
+                .comment("Sanity restored per real-time minute while Adventurers Heart is active.")
+                .defineInRange("adventurersHeartGainPerMinute", 2.0, 0.0, 100.0);
 
         BUILDER.pop();
 

@@ -28,6 +28,9 @@ public class ModParticles {
     public static final DeferredHolder<ParticleType<?>, SimpleParticleType> FOG_WISP =
             PARTICLE_TYPES.register("fog_wisp", () -> new SimpleParticleType(false));
 
+    public static final DeferredHolder<ParticleType<?>, SimpleParticleType> WATER_RIPPLE =
+            PARTICLE_TYPES.register("water_ripple", () -> new SimpleParticleType(false));
+
     public static void register(IEventBus modEventBus) {
         PARTICLE_TYPES.register(modEventBus);
     }

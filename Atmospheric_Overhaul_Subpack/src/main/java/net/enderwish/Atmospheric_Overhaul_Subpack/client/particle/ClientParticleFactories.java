@@ -16,5 +16,6 @@ public class ClientParticleFactories {
         event.registerSpriteSet(ModParticles.SWIRLING_LEAVES.get(), SwirlingLeavesParticle.Provider::new);
         event.registerSpriteSet(ModParticles.DUST_MOTE.get(), DustMoteParticle.Provider::new);
         event.registerSpriteSet(ModParticles.FOG_WISP.get(), FogWispParticle.Provider::new);
+        event.registerSpriteSet(ModParticles.WATER_RIPPLE.get(), WaterRippleParticle.Provider::new);
     }
 }

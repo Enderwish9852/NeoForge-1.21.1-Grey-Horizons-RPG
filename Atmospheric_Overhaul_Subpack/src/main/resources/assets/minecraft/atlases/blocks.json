@@ -1,0 +1,12 @@
+{
+  "sources": [
+    {
+      "type": "single",
+      "resource": "gh_atmospheric:block/glass_borderless"
+    },
+    {
+      "type": "single",
+      "resource": "gh_atmospheric:block/glass_edge"
+    }
+  ]
+}

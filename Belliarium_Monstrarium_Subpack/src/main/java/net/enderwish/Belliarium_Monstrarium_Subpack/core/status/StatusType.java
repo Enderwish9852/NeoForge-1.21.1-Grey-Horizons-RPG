@@ -22,7 +22,12 @@ public enum StatusType {
     DEJA_VU(true),
     /** PERMANENT: granted on first join, never expires, never removable.
      * Slowly drains Sanity (see SanityTickHandler). */
-    HIVE_MIND_INFLUENCE(false);
+    HIVE_MIND_INFLUENCE(false),
+    /** CONDITIONAL/durational: new-player grace — grants +2 sanity/minute
+     * for the first 7 in-game days (config), so beginners can set up
+     * before the Hive Mind drain starts biting. Granted once, on first
+     * world join; never re-granted after it expires. */
+    ADVENTURERS_HEART(true);
 
     private final boolean conditional;
 

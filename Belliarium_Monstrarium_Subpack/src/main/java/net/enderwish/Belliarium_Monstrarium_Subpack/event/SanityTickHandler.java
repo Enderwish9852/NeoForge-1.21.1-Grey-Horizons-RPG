@@ -54,7 +54,21 @@ public class SanityTickHandler {
         StatusManager.INSTANCE.apply(player.getUUID(), StatusType.HIVE_MIND_INFLUENCE,
                 player.level().getGameTime(), -1L);
 
-        sync(player);
+        // Adventurers Heart: 7-day sanity grace, granted ONCE per world
+        // (the flag persists through death and expiry, so it can never
+        // be re-earned by relogging).
+        SanityCapability cap = player.getData(ModAttachments.SANITY);
+        if (!cap.isAdventurersHeartGranted()) {
+            long days = BelliariumConfig.ADVENTURERS_HEART_DURATION_DAYS.get().longValue();
+            if (days > 0) {
+                StatusManager.INSTANCE.apply(player.getUUID(), StatusType.ADVENTURERS_HEART,
+                        player.level().getGameTime(), days * 24000L);
+            }
+            cap.markAdventurersHeartGranted();
+            sync(player);
+        } else {
+            sync(player);
+        }
     }
 
     @SubscribeEvent
@@ -63,7 +77,11 @@ public class SanityTickHandler {
         if (!event.isWasDeath()) return; // end-portal travel keeps sanity
 
         // Death wipes the mind clean: fresh 100, drain starts over.
-        newPlayer.setData(ModAttachments.SANITY, new SanityCapability());
+        // The Adventurers Heart grant-flag carries over (it's once per
+        // world, not once per life).
+        SanityCapability fresh = new SanityCapability();
+        fresh.markAdventurersHeartGranted(); // it was granted at first join, always
+        newPlayer.setData(ModAttachments.SANITY, fresh);
         sync(newPlayer);
     }
 
@@ -80,10 +98,20 @@ public class SanityTickHandler {
         SanityCapability sanity = player.getData(ModAttachments.SANITY);
         float before = sanity.get();
 
+        // expiry driver: culls any durational status whose time is up
+        // (Adventurers Heart after 7 days, Deja Vu after its window)
+        StatusManager.INSTANCE.tick(player.getUUID(), player.level().getGameTime());
+
         // ── Status-driven drain (Hive Mind Influence) ────────────────────
         if (StatusManager.INSTANCE.has(player.getUUID(), StatusType.HIVE_MIND_INFLUENCE)) {
             double perMinute = BelliariumConfig.SANITY_DRAIN_PER_MINUTE.get();
             sanity.add((float) (-perMinute / 60.0)); // per second
+        }
+
+        // ── Status-driven recovery (Adventurers Heart, first 7 days) ─────
+        if (StatusManager.INSTANCE.has(player.getUUID(), StatusType.ADVENTURERS_HEART)) {
+            double perMinute = BelliariumConfig.ADVENTURERS_HEART_GAIN_PER_MINUTE.get();
+            sanity.add((float) (perMinute / 60.0)); // per second
         }
 
         // ── Milestones (crossing detection, effects TODO) ────────────────
