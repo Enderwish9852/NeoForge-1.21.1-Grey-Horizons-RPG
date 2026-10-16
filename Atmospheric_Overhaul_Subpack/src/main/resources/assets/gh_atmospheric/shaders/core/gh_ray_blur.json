@@ -1,0 +1,15 @@
+{
+    "vertex": "gh_atmospheric:gh_rays_full",
+    "fragment": "gh_atmospheric:gh_ray_blur",
+    "samplers": [
+        { "name": "DiffuseSampler" }
+    ],
+    "uniforms": [
+        { "name": "ModelViewMat", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+        { "name": "ProjMat", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+        { "name": "SunScreen", "type": "float", "count": 2, "values": [ 0.5, 0.5 ] },
+        { "name": "RayDensity", "type": "float", "count": 1, "values": [ 1.0 ] },
+        { "name": "RayDecay", "type": "float", "count": 1, "values": [ 0.95 ] },
+        { "name": "RayExposure", "type": "float", "count": 1, "values": [ 1.0 ] }
+    ]
+}

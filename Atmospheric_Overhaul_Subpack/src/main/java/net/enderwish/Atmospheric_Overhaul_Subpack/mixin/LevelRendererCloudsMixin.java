@@ -1,6 +1,7 @@
 package net.enderwish.Atmospheric_Overhaul_Subpack.mixin;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import net.enderwish.Atmospheric_Overhaul_Subpack.client.sky.GodRayRenderer;
 import net.enderwish.Atmospheric_Overhaul_Subpack.client.sky.VoxelCloudEngine;
 import net.minecraft.client.renderer.LevelRenderer;
 import org.joml.Matrix4f;
@@ -45,6 +46,7 @@ public class LevelRendererCloudsMixin {
             }
             ci.cancel();
             VoxelCloudEngine.render(frustumMatrix, projectionMatrix, camX, camY, camZ);
+            GodRayRenderer.render(frustumMatrix, projectionMatrix, camX, camY, camZ, partialTick);
         }
     }
 }
