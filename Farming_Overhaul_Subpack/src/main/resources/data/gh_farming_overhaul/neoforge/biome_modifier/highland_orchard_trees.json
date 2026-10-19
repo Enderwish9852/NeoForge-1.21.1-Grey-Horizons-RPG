@@ -1,0 +1,6 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": ["gh_terraforma:highland_orchard"],
+  "features": ["gh_farming_overhaul:oak_normal", "gh_farming_overhaul:cherry_normal"],
+  "step": "vegetal_decoration"
+}

@@ -1,5 +1,6 @@
 package net.enderwish.Belliarium_Monstrarium_Subpack;
 
+import net.enderwish.Belliarium_Monstrarium_Subpack.client.BackpackScreen;
 import net.enderwish.Belliarium_Monstrarium_Subpack.client.HudRegistrationHandler;
 import net.enderwish.Belliarium_Monstrarium_Subpack.command.DiaryDebugCommand;
 import net.enderwish.Belliarium_Monstrarium_Subpack.command.SkillCommand;
@@ -10,12 +11,14 @@ import net.enderwish.Belliarium_Monstrarium_Subpack.core.ModDataComponents;
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.skills.SkillRegistry;
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.gear.ToolProfileRegistry;
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.gear.WeightRegistry;
+import net.enderwish.Belliarium_Monstrarium_Subpack.init.ModMenuTypes;
 import net.enderwish.Belliarium_Monstrarium_Subpack.item.ModItems;
 import net.enderwish.Belliarium_Monstrarium_Subpack.network.ModMessages;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
+import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.AddReloadListenerEvent;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
@@ -30,11 +33,13 @@ public class BelliariumMonstrariumSubpack {
         ModAttachments.register(modEventBus);
         ModDataComponents.register(modEventBus);
         ModItems.register(modEventBus);
+        ModMenuTypes.register(modEventBus);
 
         container.registerConfig(ModConfig.Type.COMMON, BelliariumConfig.SPEC);
 
         modEventBus.addListener(this::registerNetworking);
         modEventBus.addListener(HudRegistrationHandler::onRegisterGuiLayers);
+        modEventBus.addListener(BelliariumMonstrariumSubpack::onRegisterScreens);
 
         NeoForge.EVENT_BUS.addListener((AddReloadListenerEvent e) -> {
             e.addListener(WeightRegistry.INSTANCE);
@@ -53,5 +58,9 @@ public class BelliariumMonstrariumSubpack {
 
     private void registerNetworking(RegisterPayloadHandlersEvent event) {
         ModMessages.register(event);
+    }
+
+    private static void onRegisterScreens(RegisterMenuScreensEvent event) {
+        event.register(ModMenuTypes.BACKPACK.get(), BackpackScreen::new);
     }
 }

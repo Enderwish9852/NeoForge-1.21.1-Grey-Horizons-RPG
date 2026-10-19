@@ -21,8 +21,8 @@ import java.util.Optional;
  *
  * Loads every backpack tier from data/gh_belliarium_monstrarium/backpacks/.
  * Same reload pattern as WeightRegistry. Registered SERVER-side only —
- * the client learns slot counts from BackpackContentsPacket, never from
- * this registry (a client reload would find zero data files).
+ * the client's menus receive their full config in the menu-open buffer,
+ * never from this registry (a client reload would find zero data files).
  */
 public class BackpackRegistry implements ResourceManagerReloadListener {
 
@@ -52,10 +52,19 @@ public class BackpackRegistry implements ResourceManagerReloadListener {
                         id,
                         GsonHelper.getAsInt(obj, "slots", 6),
                         GsonHelper.getAsFloat(obj, "selfWeightKg", 1.0f),
-                        GsonHelper.getAsFloat(obj, "carryCapBonusPct", 0f),
-                        GsonHelper.getAsFloat(obj, "heavyLoadReliefPct", 0f)));
+                        GsonHelper.getAsFloat(obj, "carryCapBonusKg", 0f),
+                        GsonHelper.getAsFloat(obj, "speedBonusPct", 0f),
+                        GsonHelper.getAsFloat(obj, "staminaEfficiencyPct", 0f),
+                        optionalCategory(obj, "specialLeft"),
+                        optionalCategory(obj, "specialRight")));
             } catch (IOException ignored) {}
         }
+    }
+
+    /** Reads an optional category string — JSON null or missing -> null. */
+    private static String optionalCategory(JsonObject obj, String key) {
+        if (!obj.has(key) || obj.get(key).isJsonNull()) return null;
+        return GsonHelper.getAsString(obj, key);
     }
 
     public Optional<BackpackConfig> get(String id) {
@@ -64,6 +73,6 @@ public class BackpackRegistry implements ResourceManagerReloadListener {
 
     /** Config or a 6-slot fallback so a missing JSON can't crash the game. */
     public BackpackConfig getOrFallback(String id) {
-        return get(id).orElse(new BackpackConfig(id, 6, 1.0f, 0f, 0f));
+        return get(id).orElse(new BackpackConfig(id, 6, 1.0f, 0f, 0f, 0f, null, null));
     }
 }

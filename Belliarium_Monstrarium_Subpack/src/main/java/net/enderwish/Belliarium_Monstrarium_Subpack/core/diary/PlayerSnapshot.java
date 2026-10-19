@@ -104,7 +104,8 @@ public final class PlayerSnapshot {
         if (survival != null) {
             player.setData(ModAttachments.SURVIVAL, survival);
             ModMessages.sendToPlayer(new SurvivalSyncPacket(
-                    survival.getEnergy(), survival.getStamina(), survival.isCollapsed()), player);
+                    survival.getEnergy(), survival.getStamina(), survival.isCollapsed(),
+                    survival.getThirst(), survival.getBodyTemp()), player);
         }
 
         LearnedSkillsCapability skills = getCodec(tag, "learned_skills", LearnedSkillsCapability.CODEC);

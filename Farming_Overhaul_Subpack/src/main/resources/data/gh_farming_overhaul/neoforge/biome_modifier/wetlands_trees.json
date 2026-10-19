@@ -1,0 +1,6 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": ["gh_terraforma:wetlands"],
+  "features": ["gh_farming_overhaul:oak_sparse"],
+  "step": "vegetal_decoration"
+}

@@ -72,6 +72,8 @@ public class BodyDamageHandler {
     private static boolean intentionalKillInProgress = false;
     /** Set while a sanity-zero kill runs: real death, NO diary rewind, custom report headline. */
     private static boolean insanityKillInProgress = false;
+    private static boolean dehydrationKillInProgress = false;
+    private static boolean starvationKillInProgress = false;
 
     private static final Set<UUID> pendingDeaths = ConcurrentHashMap.newKeySet();
     private static final Map<UUID, FatalInfo> pendingFatalInfo = new ConcurrentHashMap<>();
@@ -244,6 +246,26 @@ public class BodyDamageHandler {
                     List.of(), false), player);
             return;
         }
+        if (dehydrationKillInProgress) {
+            // thirst death (thirst reached 0): same real-death pattern as insanity
+            BodyHealthCapability cap = player.getData(ModAttachments.BODY_HEALTH);
+            ModMessages.sendToPlayer(new DeathReportPacket(
+                    false, "You died of dehydration.",
+                    cap.getHeadPct(), cap.getTorsoPct(), cap.getLeftArmPct(), cap.getRightArmPct(),
+                    cap.getLeftLegPct(), cap.getRightLegPct(), cap.getLeftFootPct(), cap.getRightFootPct(),
+                    List.of(), false), player);
+            return;
+        }
+        if (starvationKillInProgress) {
+            // starvation death (hunger 0 AND energy 0): same real-death pattern
+            BodyHealthCapability cap = player.getData(ModAttachments.BODY_HEALTH);
+            ModMessages.sendToPlayer(new DeathReportPacket(
+                    false, "You starved to death.",
+                    cap.getHeadPct(), cap.getTorsoPct(), cap.getLeftArmPct(), cap.getRightArmPct(),
+                    cap.getLeftLegPct(), cap.getRightLegPct(), cap.getLeftFootPct(), cap.getRightFootPct(),
+                    List.of(), false), player);
+            return;
+        }
         if (intentionalKillInProgress) {
             sendDeathReport(player);
             return;
@@ -321,6 +343,17 @@ public class BodyDamageHandler {
         pendingDeaths.add(uuid);
     }
 
+    /** Fatal-injury pending-death marker for the survival kills (dehydration,
+     *  starvation): no damage source, never counted as a combat death, and
+     *  the bodyPart doubles as the death-cause key buildDeathReportPacket
+     *  turns into the report headline. */
+    private static void markPendingSurvivalDeath(ServerPlayer player, String cause) {
+        UUID uuid = player.getUUID();
+        if (pendingDeaths.contains(uuid)) return;
+        pendingFatalInfo.put(uuid, new FatalInfo("unknown causes", -1, cause, false));
+        pendingDeaths.add(uuid);
+    }
+
     private static float mitigateIfApplicable(ServerPlayer player, EquipmentSlot slot, float rawAmount, boolean armorApplies) {
         if (!armorApplies || rawAmount <= 0f) return rawAmount;
         ItemStack armorStack = player.getItemBySlot(slot);
@@ -362,6 +395,39 @@ public class BodyDamageHandler {
         try { player.kill(); } finally { insanityKillInProgress = false; }
     }
 
+    /**
+     * Thirst death (thirst reached 0): goes through the same pending-death
+     * flow as a fatal head/torso injury -- if a rewind is available the
+     * player enters diary limbo with a "You died of dehydration." report
+     * (the snapshot restores thirst and body temp); if not, a REAL death
+     * with that headline and no rewind offered, same pattern as the
+     * insanity kill.
+     */
+    public static void killByDehydration(ServerPlayer player) {
+        if (DiaryLimbo.isInLimbo(player.getUUID())) return;
+        if (DiaryLimbo.canRewind(player)) {
+            markPendingSurvivalDeath(player, "Dehydration");
+            return;
+        }
+        dehydrationKillInProgress = true;
+        try { player.kill(); } finally { dehydrationKillInProgress = false; }
+    }
+
+    /**
+     * Starvation death (hunger 0 AND energy 0): same pending-death flow as
+     * dehydration -- diary limbo with a "You starved to death." report when
+     * a rewind is available, else a real death with that headline.
+     */
+    public static void killByStarvation(ServerPlayer player) {
+        if (DiaryLimbo.isInLimbo(player.getUUID())) return;
+        if (DiaryLimbo.canRewind(player)) {
+            markPendingSurvivalDeath(player, "Starvation");
+            return;
+        }
+        starvationKillInProgress = true;
+        try { player.kill(); } finally { starvationKillInProgress = false; }
+    }
+
     private static SourceInfo describeSource(DamageSource source, ServerPlayer player) {
         if (source.getEntity() != null) {
             return new SourceInfo(source.getEntity().getName().getString(),
@@ -401,6 +467,10 @@ public class BodyDamageHandler {
         if (combatDeath) {
             headline = player.getName().getString() + " was killed by " + info.sourceName()
                     + ". Cause of death: " + info.bodyPart() + ".";
+        } else if (info != null && "Dehydration".equals(info.bodyPart())) {
+            headline = "You died of dehydration.";
+        } else if (info != null && "Starvation".equals(info.bodyPart())) {
+            headline = "You starved to death.";
         } else {
             headline = player.getCombatTracker().getDeathMessage().getString();
         }

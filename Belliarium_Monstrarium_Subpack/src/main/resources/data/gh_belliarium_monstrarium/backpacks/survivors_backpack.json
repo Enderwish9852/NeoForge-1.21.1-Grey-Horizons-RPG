@@ -1,0 +1,8 @@
+{
+  "slots": 20,
+  "selfWeightKg": 3.0,
+  "carryCapBonusKg": 10.0,
+  "staminaEfficiencyPct": 0.05,
+  "specialLeft": "bottle",
+  "specialRight": "tool"
+}

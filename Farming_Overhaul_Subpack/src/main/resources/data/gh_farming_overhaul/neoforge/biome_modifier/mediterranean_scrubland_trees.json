@@ -1,0 +1,6 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": ["gh_terraforma:mediterranean_scrubland"],
+  "features": ["gh_farming_overhaul:acacia_normal"],
+  "step": "vegetal_decoration"
+}

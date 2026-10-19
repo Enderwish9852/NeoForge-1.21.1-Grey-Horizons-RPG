@@ -1,4 +1,8 @@
 {
+  "item.gh_belliarium_monstrarium.school_bag": "School Bag",
+  "item.gh_belliarium_monstrarium.rucksack": "Rucksack",
+  "item.gh_belliarium_monstrarium.hiking_bag": "Hiking Bag",
+  "item.gh_belliarium_monstrarium.survivors_backpack": "Survivor's Backpack",
   "item.gh_belliarium_monstrarium.skill_book_dash": "Dash Skill Book",
   "item.gh_belliarium_monstrarium.skill_book_slide": "Slide Skill Book",
   "item.gh_belliarium_monstrarium.skill_book_roll": "Roll Skill Book",
@@ -11,5 +15,7 @@
   "item.gh_belliarium_monstrarium.painkiller": "Painkillers",
   "item.gh_belliarium_monstrarium.adrenaline": "Adrenaline",
   "key.categories.gh_belliarium_monstrarium": "Belliarium Monstrarium",
-  "key.gh_belliarium_monstrarium.fast_use_first_aid": "Fast-Use First Aid Kit"
+  "key.gh_belliarium_monstrarium.fast_use_first_aid": "Fast-Use First Aid Kit",
+  "key.gh_belliarium_monstrarium.quick_slot_left": "Quick Slot (Left)",
+  "key.gh_belliarium_monstrarium.quick_slot_right": "Quick Slot (Right)"
 }

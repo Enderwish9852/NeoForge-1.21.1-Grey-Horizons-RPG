@@ -43,9 +43,27 @@ public class ModKeyMappings {
             CATEGORY
     );
 
+    public static final KeyMapping QUICK_SLOT_LEFT = new KeyMapping(
+            "key." + BelliariumMonstrariumSubpack.MODID + ".quick_slot_left",
+            KeyConflictContext.IN_GAME,
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_LEFT,
+            CATEGORY
+    );
+
+    public static final KeyMapping QUICK_SLOT_RIGHT = new KeyMapping(
+            "key." + BelliariumMonstrariumSubpack.MODID + ".quick_slot_right",
+            KeyConflictContext.IN_GAME,
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_RIGHT,
+            CATEGORY
+    );
+
     @SubscribeEvent
     public static void onRegisterKeyMappings(RegisterKeyMappingsEvent event) {
         event.register(FAST_USE_FIRST_AID);
         event.register(OPEN_BACKPACK);
+        event.register(QUICK_SLOT_LEFT);
+        event.register(QUICK_SLOT_RIGHT);
     }
 }

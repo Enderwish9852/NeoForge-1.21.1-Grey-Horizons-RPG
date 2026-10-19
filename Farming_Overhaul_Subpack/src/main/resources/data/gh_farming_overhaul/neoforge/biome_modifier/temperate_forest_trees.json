@@ -1,0 +1,6 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": ["gh_terraforma:temperate_forest"],
+  "features": ["gh_farming_overhaul:oak_dense", "gh_farming_overhaul:birch_dense"],
+  "step": "vegetal_decoration"
+}

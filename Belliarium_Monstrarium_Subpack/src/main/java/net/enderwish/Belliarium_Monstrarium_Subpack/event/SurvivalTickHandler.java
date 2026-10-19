@@ -38,8 +38,8 @@ public class SurvivalTickHandler {
     private static final float WEIGHT_EXHAUSTION_PER_TICK = 0.002f;
 
     private static final float HUNGER_RAPID_THRESHOLD = 0.5f;
+    /** 1x anchor of the hunger-tiered regen curve (50% hunger); 100% hunger = 4x = 0.2/tick. */
     private static final float RAPID_ENERGY_REGEN_PER_TICK = 0.05f;
-    private static final float NORMAL_ENERGY_REGEN_PER_TICK = 0.01f;
     private static final float WEIGHT_REGEN_SLOWDOWN = 0.85f;
     private static final float RAPID_HUNGER_COST_PER_ENERGY = 0.05f;
     private static final float NORMAL_HUNGER_COST_PER_ENERGY = 0.01f;
@@ -63,7 +63,8 @@ public class SurvivalTickHandler {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         SurvivalCapability cap = player.getData(ModAttachments.SURVIVAL);
         ModMessages.sendToPlayer(
-                new SurvivalSyncPacket(cap.getEnergy(), cap.getStamina(), cap.isCollapsed()), player);
+                new SurvivalSyncPacket(cap.getEnergy(), cap.getStamina(), cap.isCollapsed(),
+                        cap.getThirst(), cap.getBodyTemp()), player);
     }
 
     @SubscribeEvent
@@ -78,7 +79,8 @@ public class SurvivalTickHandler {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         SurvivalCapability cap = player.getData(ModAttachments.SURVIVAL);
         ModMessages.sendToPlayer(
-                new SurvivalSyncPacket(cap.getEnergy(), cap.getStamina(), cap.isCollapsed()), player);
+                new SurvivalSyncPacket(cap.getEnergy(), cap.getStamina(), cap.isCollapsed(),
+                        cap.getThirst(), cap.getBodyTemp()), player);
     }
 
     @SubscribeEvent
@@ -101,8 +103,12 @@ public class SurvivalTickHandler {
         }
 
         if (cap.getEnergy() < 100f) {
+            // hunger-tiered regen: 100% very fast (4x), 75% fast (2x), 50% slow
+            // (1x), 25% very slow (0.5x), 0% none -- piecewise-linear between
+            // those anchors (energyRegenMultiplier below). The old two-tier
+            // rapid/normal split is gone.
+            float baseRate = RAPID_ENERGY_REGEN_PER_TICK * energyRegenMultiplier(hungerFraction);
             boolean rapidTier = hungerFraction >= HUNGER_RAPID_THRESHOLD;
-            float baseRate = rapidTier ? RAPID_ENERGY_REGEN_PER_TICK : NORMAL_ENERGY_REGEN_PER_TICK;
             float hungerCostRate = rapidTier ? RAPID_HUNGER_COST_PER_ENERGY : NORMAL_HUNGER_COST_PER_ENERGY;
 
             float regenRate = baseRate * (1.0f - weightFraction * WEIGHT_REGEN_SLOWDOWN);
@@ -120,10 +126,10 @@ public class SurvivalTickHandler {
         } else if (weightFraction >= MAXED_THRESHOLD) {
             // heavy-load relief: good packs soften weight-driven drain
             cap.setStamina(cap.getStamina() - MAXED_WEIGHT_STANDING_DRAIN
-                    * BackpackHandler.getHeavyLoadRelief(player, weightFraction));
+                    * BackpackHandler.getWeightDrainMultiplier(player, weightFraction));
         } else if (player.isSprinting()) {
             cap.setStamina(cap.getStamina() - STAMINA_SPRINT_DRAIN
-                    * BackpackHandler.getHeavyLoadRelief(player, weightFraction));
+                    * BackpackHandler.getWeightDrainMultiplier(player, weightFraction));
         } else if (AdrenalineManager.INSTANCE.isStaminaLocked(player.getUUID(), player.level().getGameTime())) {
             // THE NEW CHECK -- Adrenaline aftermath: stamina stays frozen, no regen at all while locked.
         } else {
@@ -165,9 +171,19 @@ public class SurvivalTickHandler {
             player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 40, 0, false, false));
         }
 
+        // starved to death: hunger empty AND energy empty. The regen curve
+        // zeroes energy regen at 0 hunger, so energy only drains from there;
+        // this is the kill for "both hunger and energy at zero".
+        if (player.getFoodData().getFoodLevel() == 0
+                && cap.getEnergy() <= 0
+                && player instanceof ServerPlayer starvedPlayer) {
+            BodyDamageHandler.killByStarvation(starvedPlayer);
+        }
+
         if (player.level().getGameTime() % 10 == 0) {
             ModMessages.sendToPlayer(
-                    new SurvivalSyncPacket(cap.getEnergy(), cap.getStamina(), cap.isCollapsed()),
+                    new SurvivalSyncPacket(cap.getEnergy(), cap.getStamina(), cap.isCollapsed(),
+                            cap.getThirst(), cap.getBodyTemp()),
                     (ServerPlayer) player);
         }
     }
@@ -192,5 +208,22 @@ public class SurvivalTickHandler {
         SurvivalCapability cap = player.getData(ModAttachments.SURVIVAL);
         float cost = BASE_JUMP_STAMINA_COST * (1.0f + weightFraction * JUMP_COST_WEIGHT_MULTIPLIER);
         cap.setStamina(cap.getStamina() - cost);
+    }
+
+    /**
+     * Hunger-tiered energy regen multiplier, piecewise-linear between the
+     * anchor points: 100% hunger -> 4x (very fast), 75% -> 2x (fast),
+     * 50% -> 1x (slow), 25% -> 0.5x (very slow), 0% -> 0 (no regen).
+     */
+    private static float energyRegenMultiplier(float hungerFraction) {
+        float h = Mth.clamp(hungerFraction, 0f, 1f);
+        if (h >= 0.75f) return lerp(2.0f, 4.0f, (h - 0.75f) / 0.25f);
+        if (h >= 0.50f) return lerp(1.0f, 2.0f, (h - 0.50f) / 0.25f);
+        if (h >= 0.25f) return lerp(0.5f, 1.0f, (h - 0.25f) / 0.25f);
+        return lerp(0.0f, 0.5f, h / 0.25f);
+    }
+
+    private static float lerp(float a, float b, float t) {
+        return a + (b - a) * t;
     }
 }

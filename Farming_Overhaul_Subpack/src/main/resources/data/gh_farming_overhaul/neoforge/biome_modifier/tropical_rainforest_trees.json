@@ -1,0 +1,6 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": ["gh_terraforma:tropical_rainforest"],
+  "features": ["gh_farming_overhaul:jungle_dense"],
+  "step": "vegetal_decoration"
+}

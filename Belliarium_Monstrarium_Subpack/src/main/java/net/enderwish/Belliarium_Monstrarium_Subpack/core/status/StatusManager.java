@@ -95,4 +95,18 @@ public final class StatusManager {
         if (cap.isRightLegDisabled()) set.add(StatusType.RIGHT_LEG_BROKEN); else if (cap.isRightLegRed()) set.add(StatusType.RIGHT_LEG_INJURED);
         return set;
     }
+
+    /** The environment statuses currently true for this player, read live
+     *  off SurvivalCapability's body temp: hyperthermia above / hypothermia
+     *  below the clinical thresholds (StatusType's shared constants, the
+     *  same ones ThirstBodyTempTickHandler drives its effects with).
+     *  Derived, never stored -- active exactly while the temp is past its
+     *  threshold, so /status remove correctly refuses them. */
+    public Set<StatusType> activeEnvironmentStatuses(Player player) {
+        float bodyTemp = player.getData(ModAttachments.SURVIVAL).getBodyTemp();
+        Set<StatusType> set = EnumSet.noneOf(StatusType.class);
+        if (bodyTemp > StatusType.HYPERTHERMIA_THRESHOLD_C) set.add(StatusType.HYPERTHERMIA);
+        if (bodyTemp < StatusType.HYPOTHERMIA_THRESHOLD_C) set.add(StatusType.HYPOTHERMIA);
+        return set;
+    }
 }

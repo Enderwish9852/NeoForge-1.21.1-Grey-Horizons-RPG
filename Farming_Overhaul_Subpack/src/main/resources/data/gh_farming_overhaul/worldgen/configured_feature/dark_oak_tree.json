@@ -1,0 +1,7 @@
+{
+  "type": "gh_farming_overhaul:custom_tree",
+  "config": {
+    "species": "dark_oak",
+    "semi_mature_chance": 0.15
+  }
+}

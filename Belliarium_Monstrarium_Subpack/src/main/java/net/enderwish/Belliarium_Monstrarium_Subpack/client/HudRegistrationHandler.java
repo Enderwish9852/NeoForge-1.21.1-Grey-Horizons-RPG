@@ -1,6 +1,7 @@
 package net.enderwish.Belliarium_Monstrarium_Subpack.client;
 
 import net.enderwish.Belliarium_Monstrarium_Subpack.client.gui.BodyHealthHUD;
+import net.enderwish.Belliarium_Monstrarium_Subpack.client.gui.BackpackExtensionHud;
 import net.enderwish.Belliarium_Monstrarium_Subpack.client.gui.CombatLogHUD;
 import net.enderwish.Belliarium_Monstrarium_Subpack.client.gui.CombatTimerHUD;
 import net.enderwish.Belliarium_Monstrarium_Subpack.client.gui.DejaVuOverlayHUD;
@@ -25,5 +26,8 @@ public class HudRegistrationHandler {
         event.registerAboveAll(
                 ResourceLocation.fromNamespaceAndPath("gh_belliarium_monstrarium", "deja_vu_overlay"),
                 DejaVuOverlayHUD.LAYER);
+        event.registerAboveAll(
+                ResourceLocation.fromNamespaceAndPath("gh_belliarium_monstrarium", "backpack_extension"),
+                BackpackExtensionHud.LAYER);
     }
 }

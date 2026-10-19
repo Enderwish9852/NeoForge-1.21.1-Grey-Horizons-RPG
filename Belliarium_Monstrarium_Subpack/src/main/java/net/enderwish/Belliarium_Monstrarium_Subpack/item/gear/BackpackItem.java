@@ -3,9 +3,18 @@ package net.enderwish.Belliarium_Monstrarium_Subpack.item.gear;
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.ModDataComponents;
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.gear.backpack.BackpackConfig;
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.gear.backpack.BackpackRegistry;
+import net.enderwish.Belliarium_Monstrarium_Subpack.gui.BackpackMenu;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.MenuProvider;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.ItemContainerContents;
+import net.minecraft.world.level.Level;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,6 +35,32 @@ public class BackpackItem extends Item {
 
     public BackpackItem(Properties properties) {
         super(properties);
+    }
+
+    /**
+     * Right-click while holding the bag opens that bag's GUI, bound to the
+     * hand stack (B still opens the EQUIPPED bag). The menu-open buffer
+     * carries the hand binding so the client menu resolves the same stack.
+     */
+    @Override
+    public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
+        ItemStack stack = player.getItemInHand(hand);
+        if (player instanceof ServerPlayer serverPlayer) {
+            BackpackConfig config = config(stack);
+            serverPlayer.openMenu(new MenuProvider() {
+                @Override
+                public net.minecraft.network.chat.Component getDisplayName() {
+                    return stack.getHoverName();
+                }
+
+                @Override
+                public AbstractContainerMenu createMenu(int windowId, Inventory inv, Player p) {
+                    return new BackpackMenu(windowId, inv, config,
+                            p.getItemInHand(hand), BackpackMenu.BIND_HAND, hand);
+                }
+            }, buf -> BackpackMenu.writeConfig(buf, config, BackpackMenu.BIND_HAND, hand));
+        }
+        return InteractionResultHolder.sidedSuccess(stack, level.isClientSide());
     }
 
     public String backpackId(ItemStack stack) {
@@ -53,10 +88,25 @@ public class BackpackItem extends Item {
                 ItemContainerContents.fromItems(contents));
     }
 
-    /** True if any slot can accept this stack (merge or empty slot). */
+    /**
+     * Number of GENERAL slots (container indices 0..N-1). The last two
+     * container indices are reserved for the special (category-filtered)
+     * slots when the config declares them — general placement must never
+     * write into those.
+     */
+    private int generalSlotCount(ItemStack backpack) {
+        BackpackConfig cfg = config(backpack);
+        int specials = (cfg.specialLeft() != null ? 1 : 0) + (cfg.specialRight() != null ? 1 : 0);
+        return Math.max(0, cfg.slots() - specials);
+    }
+
+    /** True if any GENERAL slot can accept this stack (merge or empty slot). Backpacks never fit — no nesting. */
     public boolean hasRoomFor(ItemStack backpack, ItemStack incoming) {
+        if (incoming.getItem() instanceof BackpackItem) return false;
         List<ItemStack> slots = getContents(backpack);
-        for (ItemStack s : slots) {
+        int general = generalSlotCount(backpack);
+        for (int i = 0; i < general; i++) {
+            ItemStack s = slots.get(i);
             if (s.isEmpty()) return true;
             if (ItemStack.isSameItemSameComponents(s, incoming)
                     && s.getCount() + incoming.getCount() <= s.getMaxStackSize()) return true;
@@ -64,12 +114,14 @@ public class BackpackItem extends Item {
         return false;
     }
 
-    /** Inserts into an existing mergeable stack first, then an empty slot. Returns leftover count. */
+    /** Inserts into an existing mergeable GENERAL stack first, then an empty GENERAL slot. Returns leftover count. Backpacks never fit — no nesting. */
     public int insert(ItemStack backpack, ItemStack incoming) {
+        if (incoming.getItem() instanceof BackpackItem) return incoming.getCount();
         List<ItemStack> slots = getContents(backpack);
+        int general = generalSlotCount(backpack);
         int remaining = incoming.getCount();
 
-        for (int i = 0; i < slots.size() && remaining > 0; i++) {
+        for (int i = 0; i < general && remaining > 0; i++) {
             ItemStack s = slots.get(i);
             if (!s.isEmpty() && ItemStack.isSameItemSameComponents(s, incoming)) {
                 int canTake = Math.min(remaining, s.getMaxStackSize() - s.getCount());
@@ -79,7 +131,7 @@ public class BackpackItem extends Item {
                 }
             }
         }
-        for (int i = 0; i < slots.size() && remaining > 0; i++) {
+        for (int i = 0; i < general && remaining > 0; i++) {
             if (slots.get(i).isEmpty()) {
                 int take = Math.min(remaining, incoming.getMaxStackSize());
                 slots.set(i, incoming.copyWithCount(take));

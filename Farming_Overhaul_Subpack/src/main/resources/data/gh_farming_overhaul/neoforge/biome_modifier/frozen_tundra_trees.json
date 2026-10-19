@@ -1,0 +1,6 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": ["gh_terraforma:frozen_tundra"],
+  "features": ["gh_farming_overhaul:spruce_sparse"],
+  "step": "vegetal_decoration"
+}

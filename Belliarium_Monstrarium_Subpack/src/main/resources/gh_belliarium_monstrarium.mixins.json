@@ -4,11 +4,13 @@
   "package": "net.enderwish.Belliarium_Monstrarium_Subpack.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
-    "LevelSetBlockMixin"
+    "LevelSetBlockMixin",
+    "PlayerMixin"
   ],
   "client": [
     "ItemEntityRendererMixin",
-    "ItemInHandRendererMixin"
+    "ItemInHandRendererMixin",
+    "GuiMixin"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -24,29 +24,29 @@ public final class BackpackHandler {
         if (stack.getItem() instanceof BackpackItem bp) {
             return BackpackRegistry.INSTANCE.getOrFallback(bp.backpackId(stack));
         }
-        return new BackpackConfig("none", 0, 0f, 0f, 0f);
+        return new BackpackConfig("none", 0, 0f, 0f, 0f, 0f, null, null);
     }
 
-    /** Effective carry cap in kg (base 30 × pack bonus). */
+    /** Effective carry cap in kg = base 30 kg + the bag's flat bonus. */
     public static float getMaxCarryKg(Player player) {
         float base = net.enderwish.Belliarium_Monstrarium_Subpack.event.WeightEnforcementHandler.MAX_CARRY_KG;
         ItemStack bp = getEquipped(player);
         if (bp.isEmpty()) return base;
-        return base * (1f + configOf(bp).carryCapBonusPct());
+        return base + configOf(bp).carryCapBonusKg();
     }
 
     /**
-     * Heavy-load stamina relief multiplier: 1.0 unless a backpack with a
-     * heavyLoadReliefPct rating is equipped AND the player is carrying
-     * above the heavy threshold — then (1 - relief), softening all
-     * weight-driven stamina drains.
+     * Weight-driven stamina drain multiplier: 1.0 unless a backpack with a
+     * staminaEfficiencyPct rating is equipped AND the player is carrying
+     * above the heavy threshold — then (1 - efficiency), softening all
+     * weight-driven stamina drains. Bags without the stat return 1.0.
      */
-    public static float getHeavyLoadRelief(Player player, float weightFraction) {
+    public static float getWeightDrainMultiplier(Player player, float weightFraction) {
         ItemStack bp = getEquipped(player);
         if (bp.isEmpty()) return 1.0f;
         BackpackConfig cfg = configOf(bp);
-        if (cfg.heavyLoadReliefPct() <= 0f) return 1.0f;
+        if (cfg.staminaEfficiencyPct() <= 0f) return 1.0f;
         if (weightFraction < BackpackConfig.HEAVY_THRESHOLD) return 1.0f;
-        return 1.0f - cfg.heavyLoadReliefPct();
+        return 1.0f - cfg.staminaEfficiencyPct();
     }
 }

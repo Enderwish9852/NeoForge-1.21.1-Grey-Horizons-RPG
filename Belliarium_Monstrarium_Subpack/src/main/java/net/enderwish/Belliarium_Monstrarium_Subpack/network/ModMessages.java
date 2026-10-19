@@ -31,9 +31,8 @@ public class ModMessages {
         registrar.playToClient(FirstAidKitContentsPacket.TYPE, FirstAidKitContentsPacket.STREAM_CODEC, FirstAidKitContentsPacket::handle);
         registrar.playToClient(OpenMedTargetFromKitPacket.TYPE, OpenMedTargetFromKitPacket.STREAM_CODEC, OpenMedTargetFromKitPacket::handle);
         registrar.playToClient(MedPendingNotifyPacket.TYPE, MedPendingNotifyPacket.STREAM_CODEC, MedPendingNotifyPacket::handle);
-        registrar.playToClient(BackpackContentsPacket.TYPE, BackpackContentsPacket.STREAM_CODEC, BackpackContentsPacket::handle);
         registrar.playToServer(BackpackOpenPacket.TYPE, BackpackOpenPacket.STREAM_CODEC, BackpackOpenPacket::handle);
-        registrar.playToServer(BackpackMovePacket.TYPE, BackpackMovePacket.STREAM_CODEC, BackpackMovePacket::handle);
+        registrar.playToServer(BackpackExtensionSelectPacket.TYPE, BackpackExtensionSelectPacket.STREAM_CODEC, BackpackExtensionSelectPacket::handle);
         registrar.playToServer(UseKitSlotPacket.TYPE, UseKitSlotPacket.STREAM_CODEC, UseKitSlotPacket::handle);
         registrar.playToServer(MedApplyPacket.TYPE, MedApplyPacket.STREAM_CODEC, MedApplyPacket::handle);
         registrar.playToClient(MedicalAnimPacket.TYPE, MedicalAnimPacket.STREAM_CODEC, MedicalAnimPacket::handle);

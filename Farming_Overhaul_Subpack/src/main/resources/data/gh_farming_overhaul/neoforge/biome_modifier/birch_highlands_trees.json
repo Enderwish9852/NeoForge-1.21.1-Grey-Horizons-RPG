@@ -1,0 +1,6 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": ["gh_terraforma:birch_highlands"],
+  "features": ["gh_farming_overhaul:birch_dense"],
+  "step": "vegetal_decoration"
+}

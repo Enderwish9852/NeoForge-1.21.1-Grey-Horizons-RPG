@@ -1,0 +1,6 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": ["gh_terraforma:glacial_peaks"],
+  "features": ["gh_farming_overhaul:spruce_very_sparse"],
+  "step": "vegetal_decoration"
+}

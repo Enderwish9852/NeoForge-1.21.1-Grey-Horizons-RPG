@@ -67,6 +67,8 @@ public class ToolProfileRegistry implements ResourceManagerReloadListener {
                 JsonObject json = GsonHelper.fromJson(GSON, reader, JsonElement.class).getAsJsonObject();
                 String itemId = GsonHelper.getAsString(json, "item");
                 ItemRarity rarity = ItemRarity.valueOf(GsonHelper.getAsString(json, "rarity").toUpperCase());
+                String category = json.has("category") && !json.get("category").isJsonNull()
+                        ? GsonHelper.getAsString(json, "category") : null;
 
                 List<ToolProfileDefinition.ToolTrait> traits = new ArrayList<>();
                 JsonArray traitArray = json.getAsJsonArray("traits");
@@ -79,7 +81,7 @@ public class ToolProfileRegistry implements ResourceManagerReloadListener {
                     }
                 }
 
-                profiles.put(itemId, new ToolProfileDefinition(rarity, traits));
+                profiles.put(itemId, new ToolProfileDefinition(rarity, traits, category));
             } catch (IOException | RuntimeException e) {
                 System.err.println("[GHBelliarium] Failed to parse tool profile " + entry.getKey() + ": " + e.getMessage());
             }
@@ -90,5 +92,19 @@ public class ToolProfileRegistry implements ResourceManagerReloadListener {
 
     public Optional<ToolProfileDefinition> getProfile(String itemId) {
         return Optional.ofNullable(profiles.get(itemId));
+    }
+
+    /**
+     * True when the stack's item has a tool profile whose "category"
+     * equals the requested category string. False for stacks without a
+     * profile, and whenever either the category or the requested string
+     * is null/missing. Used by the backpacks' special (category-filtered)
+     * slots to decide what may be placed in them.
+     */
+    public static boolean matchesCategory(net.minecraft.world.item.ItemStack stack, String category) {
+        if (stack.isEmpty() || category == null) return false;
+        String itemId = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
+        ToolProfileDefinition profile = INSTANCE.profiles.get(itemId);
+        return profile != null && category.equals(profile.category());
     }
 }

@@ -57,6 +57,17 @@ public class SurvivalBarsHUD {
                 0f, 0f, 9, 9, 9, 9);
         drawBar(graphics, x, baseY - ROW_GAP * 3, sanityPct, sanityColor(sanityPct));
 
+        // Thirst + body temp rows. Temp bar spans the 33-41C window with the
+        // live reading (C) printed to its right; colors flag the two clinical
+        // status zones so hypothermia/hyperthermia read at a glance.
+        float thirstPct = creative ? 1.0f : survival.getThirst() / 100f;
+        drawBar(graphics, x, baseY - ROW_GAP * 4, thirstPct, 0xFF3A7BD5);
+        float tempC = creative ? 37.0f : survival.getBodyTemp();
+        drawBar(graphics, x, baseY - ROW_GAP * 5,
+                Mth.clamp((tempC - 33.0f) / 8.0f, 0f, 1f), tempColor(tempC));
+        graphics.drawString(mc.font, String.format("%.1f\u00B0C", tempC),
+                x + BAR_WIDTH + 3, baseY - ROW_GAP * 5, 0xFFC8C8C8, false);
+
         if (!creative) {
             float weightFraction = WeightEnforcementHandler.getWeightFraction(player);
             drawBar(graphics, x, baseY, weightFraction, weightColor(weightFraction));
@@ -74,6 +85,12 @@ public class SurvivalBarsHUD {
         if (pct <= 0.25f) return 0xFFCC3366;   // critical: sickly red-pink
         if (pct <= 0.50f) return 0xFFB45BB0;   // frayed purple
         return 0xFF9F7FD6;                      // healthy lavender
+    }
+
+    private static int tempColor(float tempC) {
+        if (tempC > 40.0f) return 0xFFCC4A33;   // hyperthermia
+        if (tempC < 35.0f) return 0xFF4AA8CC;   // hypothermia
+        return 0xFF9FB8BE;                      // neutral steel
     }
 
     private static void drawBar(GuiGraphics graphics, int x, int y, float pct, int color) {

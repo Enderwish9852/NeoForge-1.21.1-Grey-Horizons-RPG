@@ -61,6 +61,7 @@ public class StatusCommand {
         ServerPlayer player = ctx.getSource().getPlayerOrException();
         Set<StatusType> active = EnumSet.noneOf(StatusType.class);
         active.addAll(StatusManager.INSTANCE.activeBodyStatuses(player));
+        active.addAll(StatusManager.INSTANCE.activeEnvironmentStatuses(player));
         active.addAll(StatusManager.INSTANCE.activePermanent(player.getUUID()));
         active.addAll(StatusManager.INSTANCE.activeConditional(player.getUUID()));
 

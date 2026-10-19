@@ -88,11 +88,18 @@ public class SanityTickHandler {
     @SubscribeEvent
     public static void onPlayerTick(PlayerTickEvent.Post event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        // NOTE: creative players are NOT exempt — sanity is a mental stat
-        // and the Hive Mind drains it in every game mode (also makes the
-        // system testable without leaving creative). Only the dead are
-        // spared (their sanity resets on respawn).
         if (player.isDeadOrDying()) return;
+        // Creative/spectator: like every other bar — pinned at max, never
+        // drained, corrected the moment the mode starts (before the
+        // once-per-second gate).
+        if (player.isCreative() || player.isSpectator()) {
+            SanityCapability sanity = player.getData(ModAttachments.SANITY);
+            if (sanity.get() != SanityCapability.MAX) {
+                sanity.set(SanityCapability.MAX);
+                sync(player);
+            }
+            return;
+        }
         if (player.level().getGameTime() % 20L != 0L) return; // once per second
 
         SanityCapability sanity = player.getData(ModAttachments.SANITY);

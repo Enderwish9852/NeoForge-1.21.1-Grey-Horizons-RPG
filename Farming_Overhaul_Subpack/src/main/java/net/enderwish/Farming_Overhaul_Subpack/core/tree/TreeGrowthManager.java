@@ -20,8 +20,9 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * TreeGrowthManager — persistent registry of player-planted, still-
- * growing trees, keyed by their base position.
+ * TreeGrowthManager — registry of tracked trees keyed by their base
+ * position: player-planted trees (persisted, grow per season) and
+ * wild worldgen trees (session-only, never grow on their own).
  *
  * Stores every placed voxel of each tracked tree so a stage change can
  * cleanly remove the old shape and regrow the tree at the new stage
@@ -39,13 +40,12 @@ public class TreeGrowthManager extends SavedData {
     /** Max squared distance when locating a tree from given coordinates. */
     private static final double MAX_LOCATE_DIST_SQ = 8.0 * 8.0 * 2.0;
 
-    /** One tracked tree: species, current stage, and every placed voxel. */
     /** One tracked tree: species, current stage, its growth seed, and
      * every placed voxel. The seed fixes the tree's shape — every stage
      * regrow replays the same seed, so advancing then regressing returns
-     * the exact earlier appearance. */
+     * the exact earlier appearance. Wild trees (worldgen) never grow. */
     public record TreeRecord(String species, TreeStage stage, long seed,
-                             long[] voxels) {}
+                             long[] voxels, boolean wild) {}
 
     private final Map<BlockPos, TreeRecord> trees = new HashMap<>();
 
@@ -65,12 +65,31 @@ public class TreeGrowthManager extends SavedData {
     /** Registers a freshly grown (staged) tree so it can grow on. */
     public void track(ServerLevel level, BlockPos origin, String species,
                       TreeStage stage, long seed, List<BlockPos> placedVoxels) {
-        long[] voxels = new long[placedVoxels.size()];
-        for (int i = 0; i < placedVoxels.size(); i++)
-            voxels[i] = placedVoxels.get(i).asLong();
+        put(origin, species, stage, seed, toLongArray(placedVoxels), false);
+    }
+
+    /**
+     * Registers a wild (worldgen) tree. Seasons recolor its leaves and
+     * /treestage can read or override it, but it never grows on its own
+     * and is not persisted — wild tracking is session-only.
+     */
+    public void trackWild(ServerLevel level, BlockPos origin, String species,
+                          TreeStage stage, long seed, long[] voxels) {
+        put(origin, species, stage, seed, voxels, true);
+    }
+
+    private void put(BlockPos origin, String species, TreeStage stage,
+                     long seed, long[] voxels, boolean wild) {
         trees.put(origin.immutable(),
-                new TreeRecord(species, stage, seed, voxels));
+                new TreeRecord(species, stage, seed, voxels, wild));
         this.setDirty();
+    }
+
+    private static long[] toLongArray(List<BlockPos> positions) {
+        long[] voxels = new long[positions.size()];
+        for (int i = 0; i < positions.size(); i++)
+            voxels[i] = positions.get(i).asLong();
+        return voxels;
     }
 
     public TreeRecord get(BlockPos origin) { return trees.get(origin); }
@@ -108,16 +127,19 @@ public class TreeGrowthManager extends SavedData {
         boolean ok = TreeGenerator.generate(level, origin, def.get(),
                 RandomSource.create(rec.seed()), true, newStage, placed);
         if (ok) {
-            track(level, origin, rec.species(), newStage, rec.seed(), placed);
+            // re-register preserving the wild flag so wild trees stay wild
+            put(origin, rec.species(), newStage, rec.seed(),
+                    toLongArray(placed), rec.wild());
         }
         return ok;
     }
 
-    /** Season tick: every not-yet-mature tracked tree grows one stage. */
+    /** Season tick: every not-yet-mature planted tree grows one stage
+     *  (wild trees never grow — only their leaves recolor). */
     public void onSeasonChanged(ServerLevel level) {
         for (BlockPos origin : new ArrayList<>(trees.keySet())) {
             TreeRecord rec = trees.get(origin);
-            if (rec != null && rec.stage() != TreeStage.MATURE) {
+            if (rec != null && rec.stage() != TreeStage.MATURE && !rec.wild()) {
                 setStage(level, origin, rec.stage().next());
             }
         }
@@ -132,6 +154,10 @@ public class TreeGrowthManager extends SavedData {
         for (TreeRecord rec : trees.values()) {
             for (long v : rec.voxels()) {
                 BlockPos p = BlockPos.of(v);
+                // wild trees are tracked in bulk — never touch unloaded
+                // chunks (getBlockState would synchronously load them)
+                if (level.getChunkSource().getChunkNow(
+                        p.getX() >> 4, p.getZ() >> 4) == null) continue;
                 BlockState st = level.getBlockState(p);
                 if (st.getBlock() instanceof FruitTreeLeavesBlock) {
                     FruitTreeLeavesBlock.updateSeasonStage(level, p, st);
@@ -159,12 +185,14 @@ public class TreeGrowthManager extends SavedData {
     public CompoundTag save(CompoundTag tag, HolderLookup.Provider provider) {
         ListTag list = new ListTag();
         for (Map.Entry<BlockPos, TreeRecord> e : trees.entrySet()) {
+            if (e.getValue().wild()) continue;  // wild trees are session-only
             CompoundTag t = new CompoundTag();
             t.putLong("origin", e.getKey().asLong());
             t.putString("species", e.getValue().species());
             t.putInt("stage", e.getValue().stage().id());
             t.putLong("seed", e.getValue().seed());
             t.putLongArray("voxels", e.getValue().voxels());
+            t.putBoolean("wild", false);
             list.add(t);
         }
         tag.put("trees", list);
@@ -182,7 +210,8 @@ public class TreeGrowthManager extends SavedData {
                     t.getString("species"),
                     TreeStage.byId(t.getInt("stage")),
                     t.getLong("seed"),
-                    t.getLongArray("voxels"));
+                    t.getLongArray("voxels"),
+                    t.getBoolean("wild"));
             mgr.trees.put(origin, rec);
         }
         return mgr;

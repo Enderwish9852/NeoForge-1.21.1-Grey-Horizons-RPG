@@ -20,6 +20,7 @@ import net.enderwish.Farming_Overhaul_Subpack.core.tree.TreeRegistry;
 import net.enderwish.Farming_Overhaul_Subpack.core.tree.TreeStage;
 import net.enderwish.Farming_Overhaul_Subpack.event.*;
 import net.enderwish.Farming_Overhaul_Subpack.init.ModBlockEntities;
+import net.enderwish.Farming_Overhaul_Subpack.init.ModFeatures;
 import net.enderwish.Farming_Overhaul_Subpack.init.ModMenuTypes;
 import net.enderwish.Farming_Overhaul_Subpack.item.ModItems;
 import net.minecraft.commands.CommandSourceStack;
@@ -257,6 +258,7 @@ public class FarmingOverhaulSubpack {
         CREATIVE_MODE_TABS.register(modEventBus);
         ModBlockEntities.register(modEventBus);
         ModMenuTypes.register(modEventBus);
+        ModFeatures.register(modEventBus);
 
         modEventBus.addListener(FarmingOverhaulSubpack::onClientReloadListeners);
         modEventBus.addListener(FarmingOverhaulSubpack::onRegisterScreens);
@@ -269,6 +271,7 @@ public class FarmingOverhaulSubpack {
         NeoForge.EVENT_BUS.register(CraftingSpoilageHandler.class);
         NeoForge.EVENT_BUS.register(CookingSpoilageHandler.class);
         NeoForge.EVENT_BUS.register(FruitTreeSeasonHandler.class);
+        NeoForge.EVENT_BUS.register(WildTreeTrackHandler.class);
         NeoForge.EVENT_BUS.addListener(FarmingOverhaulSubpack::onRegisterCommands);
     }
 

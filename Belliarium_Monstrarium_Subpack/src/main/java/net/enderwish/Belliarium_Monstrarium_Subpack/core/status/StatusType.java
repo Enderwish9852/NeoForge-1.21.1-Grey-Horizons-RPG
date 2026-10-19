@@ -27,7 +27,20 @@ public enum StatusType {
      * for the first 7 in-game days (config), so beginners can set up
      * before the Hive Mind drain starts biting. Granted once, on first
      * world join; never re-granted after it expires. */
-    ADVENTURERS_HEART(true);
+    ADVENTURERS_HEART(true),
+    /** DERIVED, like the body-part statuses: active only while the body
+     *  temp is past its clinical threshold (see
+     *  StatusManager.activeEnvironmentStatuses). Never stored, so
+     *  /status remove correctly refuses it -- cool down or warm up
+     *  instead. */
+    HYPERTHERMIA(false),
+    HYPOTHERMIA(false);
+
+    /** Real clinical thresholds in degrees C: shared by
+     *  ThirstBodyTempTickHandler's effects and the /status derivation so
+     *  the two can never drift apart. */
+    public static final float HYPERTHERMIA_THRESHOLD_C = 40.0f;
+    public static final float HYPOTHERMIA_THRESHOLD_C = 35.0f;
 
     private final boolean conditional;
 

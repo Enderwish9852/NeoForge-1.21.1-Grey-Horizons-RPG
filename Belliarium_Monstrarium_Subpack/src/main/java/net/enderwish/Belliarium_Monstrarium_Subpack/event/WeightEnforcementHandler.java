@@ -3,6 +3,7 @@ package net.enderwish.Belliarium_Monstrarium_Subpack.event;
 import net.enderwish.Belliarium_Monstrarium_Subpack.BelliariumMonstrariumSubpack;
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.gear.WeightRegistry;
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.gear.backpack.BackpackHandler;
+import net.enderwish.Belliarium_Monstrarium_Subpack.core.integration.CuriosHooks;
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.medical.AdrenalineManager;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -35,11 +36,13 @@ public class WeightEnforcementHandler {
             ItemStack stack = player.getInventory().getItem(i);
             if (!stack.isEmpty()) total += WeightRegistry.INSTANCE.getWeightKg(stack);
         }
+        // the equipped backpack counts too (self weight + contents)
+        total += WeightRegistry.INSTANCE.getWeightKg(CuriosHooks.getBackpack(player));
         return total;
     }
 
     public static float getWeightFraction(Player player) {
-        // per-player cap: equipped backpack's carryCapBonusPct raises it
+        // per-player cap: equipped backpack's carryCapBonusKg raises it
         return getCurrentWeight(player) / BackpackHandler.getMaxCarryKg(player);
     }
 
@@ -50,7 +53,7 @@ public class WeightEnforcementHandler {
         Inventory inventory = player.getInventory();
         boolean ejectedAny = false;
 
-        for (int i = inventory.getContainerSize() - 1; i >= 0 && total > MAX_CARRY_KG; i--) {
+        for (int i = inventory.getContainerSize() - 1; i >= 0 && total > BackpackHandler.getMaxCarryKg(player); i--) {
             ItemStack stack = inventory.getItem(i);
             if (stack.isEmpty()) continue;
 
