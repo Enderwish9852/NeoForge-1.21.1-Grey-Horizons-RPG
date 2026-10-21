@@ -37,6 +37,12 @@ public final class WaterPostShaderRegistry {
     /** Sunlight coming down through the surface, seen from under water. */
     public static volatile ShaderInstance shaftsShader;
 
+    /** The march that finds what a puddle on the ground is reflecting. */
+    public static volatile ShaderInstance wetGroundShader;
+
+    /** Mixes the puddle's reflection into the frame. */
+    public static volatile ShaderInstance wetCompositeShader;
+
     /** Ray-marched reflection pass (half-res) + the composite pass (full-res). */
     public static volatile ShaderInstance ssrShader;
     public static volatile ShaderInstance compositeShader;
@@ -67,5 +73,17 @@ public final class WaterPostShaderRegistry {
                         ResourceLocation.fromNamespaceAndPath(AtmosphericOverhaulSubpack.MOD_ID, "gh_water_shafts"),
                         DefaultVertexFormat.POSITION_TEX),
                 shader -> shaftsShader = shader);
+        event.registerShader(
+                new ShaderInstance(
+                        event.getResourceProvider(),
+                        ResourceLocation.fromNamespaceAndPath(AtmosphericOverhaulSubpack.MOD_ID, "gh_wet_ground"),
+                        DefaultVertexFormat.POSITION_TEX),
+                shader -> wetGroundShader = shader);
+        event.registerShader(
+                new ShaderInstance(
+                        event.getResourceProvider(),
+                        ResourceLocation.fromNamespaceAndPath(AtmosphericOverhaulSubpack.MOD_ID, "gh_wet_composite"),
+                        DefaultVertexFormat.POSITION_TEX),
+                shader -> wetCompositeShader = shader);
     }
 }
