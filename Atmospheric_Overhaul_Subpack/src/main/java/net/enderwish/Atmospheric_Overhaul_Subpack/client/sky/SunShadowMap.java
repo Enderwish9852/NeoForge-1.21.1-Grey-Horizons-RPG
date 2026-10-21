@@ -89,6 +89,14 @@ public final class SunShadowMap {
     private static boolean valid;
     private static int frameCounter;
     private static float lastElevation = -99.0f;
+    /**
+     * The viewport that was bound before the pass. The map is 1024
+     * square, and binding it sets the viewport to that; the cloud
+     * renderer never sets a viewport of its own, so without putting
+     * this back the clouds were drawn into a 1024x1024 window and came
+     * out squashed into the corner.
+     */
+    private static final int[] savedViewport = new int[4];
 
     /** How often the map is re-rendered. The sun moves slowly, so every
      *  other frame is plenty and halves the cost of the pass. */
@@ -182,6 +190,9 @@ public final class SunShadowMap {
                         (float) -player.x, (float) -player.y, (float) -player.z));
 
         target.bindWrite(true);
+        // the viewport has to be put back afterwards: the cloud
+        // renderer does not set one of its own
+        GL11C.glGetIntegerv(GL11C.GL_VIEWPORT, savedViewport);
         // save the global clear colour: the weather code sets it for
         // blizzard and heatwave skies and expects it to survive
         float[] clear = new float[4];
@@ -200,6 +211,7 @@ public final class SunShadowMap {
     public static void finish(int previousFbo) {
         passActive = false;
         GlStateManager._glBindFramebuffer(GL30C.GL_FRAMEBUFFER, previousFbo);
+        GlStateManager._viewport(savedViewport[0], savedViewport[1], savedViewport[2], savedViewport[3]);
     }
 
     /** True when the last begin() found a sun above the horizon. */

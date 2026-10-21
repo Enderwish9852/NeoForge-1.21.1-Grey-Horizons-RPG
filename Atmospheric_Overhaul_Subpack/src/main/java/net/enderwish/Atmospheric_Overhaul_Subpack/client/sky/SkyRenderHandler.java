@@ -41,9 +41,13 @@ public class SkyRenderHandler {
         if (!mc.options.getCameraType().isFirstPerson() || mc.player == null) return;
         if (!isEyeInWater(mc.player)) return;
 
-        // dense, short fog that thickens with depth below the surface
+        // dense, short fog that thickens with depth below the surface.
+        // It was thick enough to hide the shafts and the bed: the far
+        // plane now reaches a good deal further, and the tint is a
+        // little less heavy, so the water still reads as water without
+        // being a wall.
         event.setNearPlaneDistance(0.0f);
-        event.setFarPlaneDistance(14.0f + 10.0f * mc.player.getAirSupply() / 300f);
+        event.setFarPlaneDistance(22.0f + 16.0f * mc.player.getAirSupply() / 300f);
         event.setCanceled(true);
     }
 
@@ -54,9 +58,9 @@ public class SkyRenderHandler {
         if (!isEyeInWater(mc.player)) return;
 
         // deep blue-green; darker the deeper the camera sits
-        event.setRed(event.getRed() * 0.35f + 0.02f);
-        event.setGreen(event.getGreen() * 0.55f + 0.06f);
-        event.setBlue(event.getBlue() * 0.60f + 0.10f);
+        event.setRed(event.getRed() * 0.46f + 0.02f);
+        event.setGreen(event.getGreen() * 0.66f + 0.06f);
+        event.setBlue(event.getBlue() * 0.72f + 0.10f);
     }
 
     private static boolean isEyeInWater(LocalPlayer player) {

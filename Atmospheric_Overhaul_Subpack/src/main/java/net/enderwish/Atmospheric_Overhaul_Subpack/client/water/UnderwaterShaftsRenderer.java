@@ -1,6 +1,7 @@
 package net.enderwish.Atmospheric_Overhaul_Subpack.client.water;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
+import com.mojang.blaze3d.pipeline.TextureTarget;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.shaders.Uniform;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -23,6 +24,7 @@ import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
+import org.lwjgl.opengl.GL11C;
 import org.lwjgl.opengl.GL30C;
 
 /**
@@ -62,6 +64,7 @@ public final class UnderwaterShaftsRenderer {
     private static final Matrix4f IDENTITY = new Matrix4f();
 
     private static VertexBuffer quad;
+    private static TextureTarget halfRes;
     private static boolean loggedFirstRender;
 
     /**
@@ -73,10 +76,12 @@ public final class UnderwaterShaftsRenderer {
         if (!WaterShaderUniforms.ENABLED) return;
         if (camera.getFluidInCamera() != FogType.WATER) return;
         ShaderInstance shader = WaterPostShaderRegistry.shaftsShader;
-        if (shader == null) return;
+        ShaderInstance copy = WaterPostShaderRegistry.wobbleShader;
+        if (shader == null || copy == null) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null) return;
         RenderTarget main = mc.getMainRenderTarget();
+        ensureTargets(main.width, main.height);
         ensureQuad();
 
         // the sun, and how much of it is above the horizon
@@ -118,11 +123,12 @@ public final class UnderwaterShaftsRenderer {
         RenderSystem.disableDepthTest();
         RenderSystem.depthMask(false);
         RenderSystem.disableCull();
-        RenderSystem.enableBlend();
-        RenderSystem.blendFuncSeparate(
-                GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ONE,
-                GlStateManager.SourceFactor.ZERO, GlStateManager.DestFactor.ONE);
+        RenderSystem.disableBlend();
 
+        // The march is fourteen samples of trigonometry per pixel, which
+        // at full resolution is several milliseconds, so it runs at half
+        // resolution and is added to the frame with a bilinear upscale.
+        halfRes.bindWrite(true);
         uniformMat(shader, "RayInvProjMat", invProj);
         uniformMat(shader, "RayInvViewMat", invView);
         uniform3(shader, "CameraPos", (float) cam.x, (float) cam.y, (float) cam.z);
@@ -138,6 +144,18 @@ public final class UnderwaterShaftsRenderer {
         uniform1(shader, "Time", (float) timeSeconds);
 
         drawQuad(shader);
+
+        // add it to the frame
+        GlStateManager._glBindFramebuffer(GL30C.GL_FRAMEBUFFER, prevFbo);
+        GlStateManager._viewport(0, 0, main.width, main.height);
+        RenderSystem.enableBlend();
+        RenderSystem.blendFuncSeparate(
+                GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ONE,
+                GlStateManager.SourceFactor.ZERO, GlStateManager.DestFactor.ONE);
+        copy.setSampler("DiffuseSampler", halfRes.getColorTextureId());
+        uniform4(copy, "WobbleParams", 0.0f, 0.0f, 0.0f, 0.0f);
+        uniform2(copy, "ScreenSize", main.width, main.height);
+        drawQuad(copy);
 
         RenderSystem.disableBlend();
         RenderSystem.enableDepthTest();
@@ -194,6 +212,25 @@ public final class UnderwaterShaftsRenderer {
         VertexBuffer.unbind();
     }
 
+    /** The half resolution target the march runs in. */
+    private static void ensureTargets(int width, int height) {
+        int hw = Math.max(1, width / 2);
+        int hh = Math.max(1, height / 2);
+        if (halfRes == null) {
+            halfRes = new TextureTarget(hw, hh, false, false);
+            GL11C.glBindTexture(GL11C.GL_TEXTURE_2D, halfRes.getColorTextureId());
+            GL11C.glTexParameteri(GL11C.GL_TEXTURE_2D, GL11C.GL_TEXTURE_MIN_FILTER, GL11C.GL_LINEAR);
+            GL11C.glTexParameteri(GL11C.GL_TEXTURE_2D, GL11C.GL_TEXTURE_MAG_FILTER, GL11C.GL_LINEAR);
+            GL11C.glBindTexture(GL11C.GL_TEXTURE_2D, 0);
+        } else if (halfRes.width != hw || halfRes.height != hh) {
+            halfRes.resize(hw, hh, false);
+            GL11C.glBindTexture(GL11C.GL_TEXTURE_2D, halfRes.getColorTextureId());
+            GL11C.glTexParameteri(GL11C.GL_TEXTURE_2D, GL11C.GL_TEXTURE_MIN_FILTER, GL11C.GL_LINEAR);
+            GL11C.glTexParameteri(GL11C.GL_TEXTURE_2D, GL11C.GL_TEXTURE_MAG_FILTER, GL11C.GL_LINEAR);
+            GL11C.glBindTexture(GL11C.GL_TEXTURE_2D, 0);
+        }
+    }
+
     private static void ensureQuad() {
         if (quad != null) return;
         BufferBuilder buf = Tesselator.getInstance()
@@ -212,6 +249,16 @@ public final class UnderwaterShaftsRenderer {
     private static void uniform1(ShaderInstance shader, String name, float v) {
         Uniform u = shader.getUniform(name);
         if (u != null) u.set(v);
+    }
+
+    private static void uniform2(ShaderInstance shader, String name, float a, float b) {
+        Uniform u = shader.getUniform(name);
+        if (u != null) u.set(a, b);
+    }
+
+    private static void uniform4(ShaderInstance shader, String name, float a, float b, float c, float d) {
+        Uniform u = shader.getUniform(name);
+        if (u != null) u.set(a, b, c, d);
     }
 
     private static void uniform3(ShaderInstance shader, String name, float a, float b, float c) {
