@@ -143,6 +143,88 @@ public final class VolumetricShaftsRenderer {
         RenderSystem.enableCull();
     }
 
+    /**
+     * The sun's shadow ON THE SURFACES.
+     *
+     * Minecraft's lighting has no sun in it, so nothing in the world
+     * is ever in shadow. This adds it: each pixel's world position is
+     * found from the depth buffer, the shadow map is asked whether
+     * the sun reaches it, and what the sun cannot reach is darkened.
+     *
+     * The map holds the terrain, the leaves and the clouds, so this
+     * is the shadow of a tree, the shadow of a roof and the shadow of
+     * a cloud all at once.
+     *
+     * The pass outputs a factor and the blend does the multiplying,
+     * so the frame is never read back.
+     */
+    public static void renderGroundShadow(Camera camera, Matrix4f viewMatrix, Matrix4f projectionMatrix,
+                                           float partialTick) {
+        if (!SunShadowMap.isValid()) return;
+        ShaderInstance shader = SunShaderRegistry.groundShadowShader;
+        if (shader == null) return;
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null) return;
+        RenderTarget main = mc.getMainRenderTarget();
+        ensureQuad();
+
+        Vector3f sun = SunRenderer.worldDirection(mc.level.getTimeOfDay(partialTick));
+        if (sun.y <= 0.02f) return;
+
+        // the sun is worth less and less as it sinks towards the
+        // horizon, and at night it is worth nothing
+        float strength = 0.30f * Mth.clamp(sun.y / 0.30f, 0.0f, 1.0f);
+        float rain = mc.level.getRainLevel(partialTick);
+        strength *= 1.0f - 0.6f * rain;
+        if (strength <= 0.005f) return;
+
+        Matrix4f steadyProjection = SunRenderer.unbobbedProjection(projectionMatrix);
+        Matrix4f invProj = new Matrix4f(steadyProjection).invert();
+        Matrix4f invView = new Matrix4f(viewMatrix).invert();
+        Vec3 cam = camera.getPosition();
+
+        int[] boundFbo = new int[1];
+        GL30C.glGetIntegerv(GL30C.GL_DRAW_FRAMEBUFFER_BINDING, boundFbo);
+        int prevFbo = boundFbo[0];
+
+        RenderSystem.disableDepthTest();
+        RenderSystem.depthMask(false);
+        RenderSystem.disableCull();
+        RenderSystem.enableBlend();
+        // multiply: the shader outputs the factor, the blend applies it
+        RenderSystem.blendFuncSeparate(
+                GlStateManager.SourceFactor.DST_COLOR, GlStateManager.DestFactor.ZERO,
+                GlStateManager.SourceFactor.ZERO, GlStateManager.DestFactor.ONE);
+
+        // The MAIN target, not whatever happens to be bound: in Fabulous
+        // the terrain lives in the main target and the water in the
+        // translucent one, and it is the terrain that has to be in the
+        // cloud's shadow.
+        main.bindWrite(true);
+
+        shader.setSampler("MainDepth", main.getDepthTextureId());
+        shader.setSampler("ShadowMap", SunShadowMap.depthTextureId());
+        uniformMat(shader, "SunViewProjMat", SunShadowMap.viewProjection());
+        uniformMat(shader, "RayInvProjMat", invProj);
+        uniformMat(shader, "RayInvViewMat", invView);
+        uniform3(shader, "CameraPos", (float) cam.x, (float) cam.y, (float) cam.z);
+        uniform2(shader, "DepthRange", 0.05f, mc.gameRenderer.getDepthFar());
+        uniform1(shader, "ShadowStrength", strength);
+        uniform1(shader, "ShadowTexel", 1.0f / SunShadowMap.SIZE);
+        drawQuad(shader);
+
+        RenderSystem.disableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.enableDepthTest();
+        RenderSystem.depthMask(true);
+        RenderSystem.enableCull();
+
+        if (prevFbo != 0) {
+            GlStateManager._glBindFramebuffer(GL30C.GL_FRAMEBUFFER, prevFbo);
+            GlStateManager._viewport(0, 0, main.width, main.height);
+        }
+    }
+
     // ── GPU helpers ───────────────────────────────────────────────────────
 
     private static void drawQuad(ShaderInstance shader) {

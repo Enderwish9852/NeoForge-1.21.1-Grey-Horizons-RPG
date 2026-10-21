@@ -34,6 +34,9 @@ public final class SunShaderRegistry {
     /** The volumetric raymarch that makes the true god rays. */
     public static volatile ShaderInstance shadowShader;
 
+    /** The sun's shadow on the surfaces. */
+    public static volatile ShaderInstance groundShadowShader;
+
     @SubscribeEvent
     public static void onRegisterShaders(RegisterShadersEvent event) throws IOException {
         event.registerShader(
@@ -48,5 +51,11 @@ public final class SunShaderRegistry {
                         ResourceLocation.fromNamespaceAndPath(AtmosphericOverhaulSubpack.MOD_ID, "gh_sun_shadow"),
                         DefaultVertexFormat.POSITION_TEX),
                 shader -> shadowShader = shader);
+        event.registerShader(
+                new ShaderInstance(
+                        event.getResourceProvider(),
+                        ResourceLocation.fromNamespaceAndPath(AtmosphericOverhaulSubpack.MOD_ID, "gh_sun_ground_shadow"),
+                        DefaultVertexFormat.POSITION_TEX),
+                shader -> groundShadowShader = shader);
     }
 }

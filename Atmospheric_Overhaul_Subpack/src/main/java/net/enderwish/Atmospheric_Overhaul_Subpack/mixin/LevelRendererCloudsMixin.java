@@ -2,6 +2,7 @@ package net.enderwish.Atmospheric_Overhaul_Subpack.mixin;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import net.enderwish.Atmospheric_Overhaul_Subpack.client.sky.CloudTileManager;
 import net.enderwish.Atmospheric_Overhaul_Subpack.client.sky.GodRayRenderer;
 import net.enderwish.Atmospheric_Overhaul_Subpack.client.sky.SunShadowMap;
 import net.enderwish.Atmospheric_Overhaul_Subpack.client.sky.VolumetricShaftsRenderer;
@@ -12,6 +13,7 @@ import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.chunk.SectionRenderDispatcher;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.Level;
 import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL30C;
 import org.slf4j.Logger;
@@ -40,14 +42,17 @@ import java.util.List;
  *
  * The same hook now drives the whole light pass, in this order:
  *
- *   1. the sun's shadow map: the scene drawn from the sun's point of
- *      view, which is what the volumetric shafts are marched against;
- *   2. the voxel clouds;
+ *   1. the voxel clouds;
+ *   2. the sun's shadow map: the scene drawn from the sun's point of
+ *      view -- the terrain, the leaves AND the clouds -- which is what
+ *      the volumetric shafts are marched against;
  *   3. the volumetric shafts: the ray march that makes true god rays;
  *   4. the screen-space god rays: the cheap wide glow around the sun.
  *
- * The order matters: the shafts need the shadow map, and both add
- * light to the same framebuffer.
+ * The order matters. The clouds come first because the shadow map
+ * draws the same cloud tiles a second time, from the sun's point of
+ * view, and the tiles have to have been meshed. The shafts come after
+ * the map because they are marched against it.
  *
  * Lives in the EXISTING atmospheric.mixins.json (shared with the
  * weather/biome mixins) rather than a second config file.
@@ -94,16 +99,24 @@ public class LevelRendererCloudsMixin {
 
             Camera camera = Minecraft.getInstance().gameRenderer.getMainCamera();
 
-            // 1. the sun's shadow map
-            renderSunShadowMap(camera, partialTick);
-
-            // 2. the clouds
+            // 1. the clouds. First, because the shadow map below draws
+            //    the same tiles a second time from the sun's point of
+            //    view, and the tiles have to have been meshed.
             VoxelCloudEngine.render(frustumMatrix, projectionMatrix, camX, camY, camZ);
 
-            // 3. the true volumetric shafts, marched against the map
+            // 2. the sun's shadow map: the terrain, the leaves AND the
+            //    clouds, so the map knows all three as occluders
+            renderSunShadowMap(camera, partialTick);
+
+            // 3. the sun's shadow on the surfaces, then the shafts
+            //    (which are light in the air, so they are added after
+            //    the surfaces have been darkened)
+            VolumetricShaftsRenderer.renderGroundShadow(camera, frustumMatrix, projectionMatrix, partialTick);
+
+            // 4. the true volumetric shafts, marched against the map
             VolumetricShaftsRenderer.render(camera, frustumMatrix, projectionMatrix, partialTick);
 
-            // 4. the cheap screen-space glow
+            // 5. the cheap screen-space glow
             GodRayRenderer.render(frustumMatrix, projectionMatrix, camX, camY, camZ, partialTick);
         }
     }
@@ -138,6 +151,13 @@ public class LevelRendererCloudsMixin {
                 this.renderSectionLayer(RenderType.cutoutMipped(), x, y, z, view, projection);
             } finally {
                 this.visibleSections.addAll(far);
+            }
+
+            // and the clouds, so the cloud gaps break the shafts into
+            // beams and the cloud shadows fall on the ground
+            Level level = Minecraft.getInstance().level;
+            if (level != null) {
+                CloudTileManager.INSTANCE.drawForShadow(level, view, projection, x, y, z);
             }
         } finally {
             SunShadowMap.finish(previousFbo);

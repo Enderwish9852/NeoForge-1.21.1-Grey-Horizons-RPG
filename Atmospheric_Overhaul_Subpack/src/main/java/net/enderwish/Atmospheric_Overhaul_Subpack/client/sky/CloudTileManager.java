@@ -182,11 +182,53 @@ public final class CloudTileManager {
 
     // ── Draw ─────────────────────────────────────────────────────────────
 
+    /**
+     * Draws the cloud tiles into the sun's shadow map.
+     *
+     * The same tiles that are drawn for the sky are drawn a second
+     * time, from the sun's point of view, so the clouds become
+     * occluders in the map. The map then says three things at once:
+     * the terrain's shadow, the tree's shadow, and the CLOUD's shadow
+     * -- and the cloud's gaps are what break the god rays into shafts.
+     *
+     * Only the depth matters here, so the blending is off and the
+     * depth writes are on; the colour the shader produces is never
+     * read.
+     */
+    public void drawForShadow(Level level, Matrix4f viewMatrix, Matrix4f projectionMatrix,
+                              double camX, double camY, double camZ) {
+        ShaderInstance shader = CloudShaderRegistry.cloudShader;
+        if (shader == null) return;
+
+        RenderSystem.disableBlend();
+        RenderSystem.depthMask(true);
+        RenderSystem.enableDepthTest();
+        RenderSystem.disableCull();
+
+        drawTiles(level, shader, viewMatrix, projectionMatrix, camX, camY, camZ, 0, true);
+
+        RenderSystem.enableCull();
+        RenderSystem.depthMask(true);
+        RenderSystem.enableBlend();
+    }
+
     private void drawTiles(Level level, ShaderInstance shader, Matrix4f viewMatrix, Matrix4f projectionMatrix,
                            double camX, double camY, double camZ, int rangeBlocks) {
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-        RenderSystem.depthMask(false);
+        drawTiles(level, shader, viewMatrix, projectionMatrix, camX, camY, camZ, rangeBlocks, false);
+    }
+
+    private void drawTiles(Level level, ShaderInstance shader, Matrix4f viewMatrix, Matrix4f projectionMatrix,
+                           double camX, double camY, double camZ, int rangeBlocks, boolean shadowPass) {
+        if (shadowPass) {
+            // the shadow map wants the cloud's DEPTH: no blending, and
+            // the depth has to be written
+            RenderSystem.disableBlend();
+            RenderSystem.depthMask(true);
+        } else {
+            RenderSystem.enableBlend();
+            RenderSystem.defaultBlendFunc();
+            RenderSystem.depthMask(false);
+        }
         RenderSystem.enableDepthTest();
         RenderSystem.disableCull();
 
@@ -224,9 +266,11 @@ public final class CloudTileManager {
         RenderSystem.setShaderFogStart(fogStart);
         RenderSystem.setShaderFogEnd(fogEnd);
         if (fogShape != null) RenderSystem.setShaderFogShape(fogShape);
-        RenderSystem.enableCull();
-        RenderSystem.depthMask(true);
-        RenderSystem.disableBlend();
+        if (!shadowPass) {
+            RenderSystem.enableCull();
+            RenderSystem.depthMask(true);
+            RenderSystem.disableBlend();
+        }
 
         if (!loggedFirstDraw) {
             loggedFirstDraw = true;

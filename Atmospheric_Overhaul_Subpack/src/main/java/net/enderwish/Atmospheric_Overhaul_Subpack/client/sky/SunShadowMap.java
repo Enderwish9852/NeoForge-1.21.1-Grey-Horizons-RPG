@@ -52,8 +52,17 @@ public final class SunShadowMap {
 
     /** Resolution of the map. 1024 over 128 blocks is 8 texels a block. */
     public static final int SIZE = 1024;
-    /** Half the width of the area the map covers, in blocks. */
-    private static final float EXTENT = 64.0f;
+    /**
+     * Half the width of the area the map covers, in blocks.
+     *
+     * It has to be wide enough to REACH THE CLOUD LAYER, which sits
+     * 48 to 144 blocks above the player: in the sun's frame the clouds
+     * are that distance up, scaled by the cosine of the sun's
+     * elevation. At 112 the map covers them for any sun above about
+     * 25 degrees, which is when the shafts through the gaps are worth
+     * having. A wider map would cost the tree shadows their detail.
+     */
+    private static final float EXTENT = 112.0f;
     /**
      * How far from the player the shadow map is still worth drawing.
      * The map covers EXTENT blocks either side, so anything much
