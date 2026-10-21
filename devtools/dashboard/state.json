@@ -1,34 +1,43 @@
 {
   "project": "Grey Horizons RPG",
   "subtitle": "NeoForge 1.21.1 - 5 subpacks",
-  "currentTask": "Dashboard ready - waiting for your feature plan",
+  "currentTask": "Fix: water reflection painted on land instead of on water",
   "tasks": [
     {
-      "title": "Build live dev dashboard on localhost",
+      "title": "Find why the water mask covered the whole screen",
       "status": "done",
-      "note": "http://localhost:7645 - Node server + HTML side panel, reads git working tree live"
+      "note": "RenderTarget.bindWrite() does NOT clear; a TextureTarget clears to WHITE by default"
     },
     {
-      "title": "Restart helper script",
+      "title": "Clear the mask target to black + copy the scene depth",
       "status": "done",
-      "note": "powershell -ExecutionPolicy Bypass -File devtools/dashboard/start.ps1"
+      "note": "WaterReflectionRenderer.prepareMaskTarget()"
     },
     {
-      "title": "Wait for the first feature plan from the user",
+      "title": "Keep the mask pass on our own target in Fabulous mode",
+      "status": "done",
+      "note": "New mixin: MinecraftShaderTransparencyMixin"
+    },
+    {
+      "title": "Build the subpack",
+      "status": "done",
+      "note": "gradlew :Atmospheric_Overhaul_Subpack:build - green"
+    },
+    {
+      "title": "Live test in game",
       "status": "doing",
-      "note": "Ask questions until ~95% sure, then code off verified facts"
+      "note": "User to confirm: reflection on water only, none on land"
     }
   ],
   "files": [
-    { "path": "devtools/dashboard/server.js", "action": "new" },
-    { "path": "devtools/dashboard/dashboard.html", "action": "new" },
-    { "path": "devtools/dashboard/start.ps1", "action": "new" },
-    { "path": "devtools/dashboard/state.json", "action": "new" },
-    { "path": ".gitignore", "action": "modified" }
+    { "path": "Atmospheric_Overhaul_Subpack/src/main/java/net/enderwish/Atmospheric_Overhaul_Subpack/client/water/WaterReflectionRenderer.java", "action": "modified" },
+    { "path": "Atmospheric_Overhaul_Subpack/src/main/java/net/enderwish/Atmospheric_Overhaul_Subpack/mixin/MinecraftShaderTransparencyMixin.java", "action": "new" },
+    { "path": "Atmospheric_Overhaul_Subpack/src/main/resources/atmospheric.mixins.json", "action": "modified" }
   ],
   "notes": [
     "Decompiled Minecraft sources for reference: .abacusai/temp/mcsrc",
-    "Modules: Atmospheric_Overhaul, Farming_Overhaul, TerraForma, Frontier, Belliarium_Monstrarium",
-    "Uncommitted work-in-progress already in the tree before this session - left untouched"
+    "Root cause: maskTarget was never cleared, so it kept its initial WHITE clear colour and every pixel read as water",
+    "Second cause: the mask depth was stale, so hidden water behind terrain was still marked as water",
+    "Third cause: in Fabulous mode the translucent render type binds the game's own translucent target, stealing the mask pass"
   ]
 }

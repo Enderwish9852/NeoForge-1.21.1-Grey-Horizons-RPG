@@ -9,9 +9,11 @@
   ],
   "client": [
     "FogRendererMixin",
+    "MinecraftShaderTransparencyMixin",
     "WeatherParticleMixin",
     "WeatherRenderMixin",
-    "LevelRendererCloudsMixin"
+    "LevelRendererCloudsMixin",
+    "LevelRendererWaterUniformsMixin"
   ],
   "injectionPoints": {}
 }
