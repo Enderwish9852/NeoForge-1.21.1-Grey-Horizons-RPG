@@ -1,5 +1,6 @@
 package net.enderwish.Atmospheric_Overhaul_Subpack.mixin;
 
+import net.enderwish.Atmospheric_Overhaul_Subpack.client.sky.WetShaderUniforms;
 import net.enderwish.Atmospheric_Overhaul_Subpack.client.water.UnderwaterShaftsRenderer;
 import net.enderwish.Atmospheric_Overhaul_Subpack.client.water.UnderwaterWobbleRenderer;
 import net.enderwish.Atmospheric_Overhaul_Subpack.client.water.WaterReflectionRenderer;
@@ -51,6 +52,8 @@ public class LevelRendererWaterUniformsMixin {
                                   LightTexture lightTexture, Matrix4f frustumMatrix,
                                   Matrix4f projectionMatrix, CallbackInfo ci) {
         WaterShaderUniforms.push(camera, deltaTracker.getGameTimeDeltaPartialTick(false));
+        // the rain's wet look on the terrain
+        WetShaderUniforms.push(camera, deltaTracker.getGameTimeDeltaPartialTick(false));
     }
 
     /**

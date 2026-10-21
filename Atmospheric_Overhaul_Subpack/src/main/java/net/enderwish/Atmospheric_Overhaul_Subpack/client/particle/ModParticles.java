@@ -19,6 +19,14 @@ public class ModParticles {
     public static final DeferredHolder<ParticleType<?>, SimpleParticleType> RAIN_SPLASH =
             PARTICLE_TYPES.register("rain_splash", () -> new SimpleParticleType(false));
 
+    /** The flat ring a raindrop leaves on the ground. */
+    public static final DeferredHolder<ParticleType<?>, SimpleParticleType> RAIN_SPLASH_RING =
+        PARTICLE_TYPES.register("rain_splash_ring", () -> new SimpleParticleType(false));
+
+    /** One of the droplets thrown up by a splash. */
+    public static final DeferredHolder<ParticleType<?>, SimpleParticleType> RAIN_CROWN =
+        PARTICLE_TYPES.register("rain_crown", () -> new SimpleParticleType(false));
+
     public static final DeferredHolder<ParticleType<?>, SimpleParticleType> SWIRLING_LEAVES =
             PARTICLE_TYPES.register("swirling_leaves", () -> new SimpleParticleType(false));
 

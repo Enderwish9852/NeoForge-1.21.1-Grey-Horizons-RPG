@@ -32,7 +32,7 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 @EventBusSubscriber(modid = AtmosphericOverhaulSubpack.MOD_ID, bus = EventBusSubscriber.Bus.GAME, value = Dist.CLIENT)
 public class ClientParticleSpawner {
 
-    private static final int BASE_RAIN_COUNT    = 20;
+    private static final int BASE_RAIN_COUNT    = 9;
     private static final int SPAWN_RADIUS       = 40;
     private static final int SPAWN_HEIGHT_ABOVE = 15;
     private static final float UPWIND_BIAS_STRENGTH = 0.3f;
@@ -40,6 +40,8 @@ public class ClientParticleSpawner {
     private static final int LEAVES_SPAWN_RADIUS = 20;
     private static final int DUST_SPAWN_RADIUS   = 24;
     private static final int FOG_SPAWN_RADIUS    = 18;
+    /** How far around the player the rain's ground mist reaches. */
+    private static final int RAIN_WISP_RADIUS  = 14;
 
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
@@ -52,6 +54,7 @@ public class ClientParticleSpawner {
         spawnSwirlingLeaves(mc.level, mc.player);
         spawnDustMotes(mc.level, mc.player);
         spawnFogWisps(mc.level, mc.player);
+        spawnRainWisps(mc.level, mc.player);
     }
 
     private static void spawnRain(ClientLevel level, Player player) {
@@ -152,6 +155,40 @@ public class ClientParticleSpawner {
         double x = colX + random.nextDouble();
         double z = colZ + random.nextDouble();
         double y = topY + 1 + random.nextDouble() * 2.0;
+
+        level.addParticle(ModParticles.FOG_WISP.get(), x, y, z, 0.0, 0.0, 0.0);
+    }
+
+    /**
+     * The mist that hangs near the ground in the rain.
+     *
+     * Rain on its own looks like rain; a downpour with the ground
+     * misting under it looks like weather. These are the same soft
+     * wisps the fog weather uses, but they hug the floor and their
+     * number follows how hard it is raining.
+     */
+    private static void spawnRainWisps(ClientLevel level, Player player) {
+        float rain = level.getRainLevel(1.0f);
+        if (ClientSeasonState.isPrecipitating()) {
+            rain = Math.max(rain, ClientSeasonState.getIntensity());
+        }
+        if (rain < 0.15f) return;
+
+        RandomSource random = level.getRandom();
+        // more of them the harder it rains
+        if (random.nextFloat() > 0.18f * rain) return;
+
+        BlockPos playerPos = player.blockPosition();
+        int dx = random.nextInt(RAIN_WISP_RADIUS * 2) - RAIN_WISP_RADIUS;
+        int dz = random.nextInt(RAIN_WISP_RADIUS * 2) - RAIN_WISP_RADIUS;
+        int colX = playerPos.getX() + dx;
+        int colZ = playerPos.getZ() + dz;
+        int topY = level.getHeight(Heightmap.Types.MOTION_BLOCKING, colX, colZ);
+
+        double x = colX + random.nextDouble();
+        double z = colZ + random.nextDouble();
+        // they hug the ground: low, and barely above it
+        double y = topY + 0.6 + random.nextDouble() * 1.8;
 
         level.addParticle(ModParticles.FOG_WISP.get(), x, y, z, 0.0, 0.0, 0.0);
     }

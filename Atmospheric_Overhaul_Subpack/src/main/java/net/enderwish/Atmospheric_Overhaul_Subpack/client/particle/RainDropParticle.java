@@ -38,7 +38,7 @@ public class RainDropParticle extends TextureSheetParticle {
     public static final float MAX_FALL_SPEED   = 0.65f;
 
     private static final float STREAK_LENGTH_SCALE = 3.2f;
-    private static final float STREAK_WIDTH_SCALE   = 0.35f;
+    private static final float STREAK_WIDTH_SCALE   = 0.28f;
     private static final float DOT_LENGTH_SCALE     = 0.5f;
 
     private final float fallSpeed;
@@ -58,7 +58,7 @@ public class RainDropParticle extends TextureSheetParticle {
         this.rCol = 0.78f;
         this.gCol = 0.80f;
         this.bCol = 0.82f;
-        this.alpha = 0.35f;
+        this.alpha = 0.30f;
     }
 
     @Override
@@ -107,14 +107,36 @@ public class RainDropParticle extends TextureSheetParticle {
             if (this.y <= surface) {
                 this.level.addParticle(ModParticles.WATER_RIPPLE.get(),
                         this.x, surface + 0.02, this.z, 0.0, 0.0, 0.12);
-                this.level.addParticle(ModParticles.RAIN_SPLASH.get(), this.x, surface, this.z, 0.0, 0.0, 0.0);
+                // the same splash as on the ground: a ring on the surface
+                // and a crown of droplets thrown up
+                this.level.addParticle(ModParticles.RAIN_SPLASH_RING.get(),
+                        this.x, surface + 0.02, this.z, 0.0, 0.0, 0.0);
+                for (int i = 0; i < 4; i++) {
+                    double angle = this.random.nextDouble() * Math.PI * 2.0;
+                    double spread = 0.05 + this.random.nextDouble() * 0.05;
+                    this.level.addParticle(ModParticles.RAIN_CROWN.get(),
+                            this.x, surface + 0.02, this.z,
+                            Math.cos(angle) * spread,
+                            0.15 + this.random.nextDouble() * 0.10,
+                            Math.sin(angle) * spread);
+                }
                 this.remove();
                 return;
             }
         }
 
         if (this.level.getBlockState(pos).isSolid()) {
-            this.level.addParticle(ModParticles.RAIN_SPLASH.get(), this.x, this.y, this.z, 0.0, 0.0, 0.0);
+            // a splash is two things: the ring it leaves on the ground,
+            // and the crown of small droplets it throws up
+            this.level.addParticle(ModParticles.RAIN_SPLASH_RING.get(), this.x, this.y, this.z, 0.0, 0.0, 0.0);
+            for (int i = 0; i < 4; i++) {
+                double angle = this.random.nextDouble() * Math.PI * 2.0;
+                double spread = 0.05 + this.random.nextDouble() * 0.05;
+                this.level.addParticle(ModParticles.RAIN_CROWN.get(), this.x, this.y, this.z,
+                        Math.cos(angle) * spread,
+                        0.15 + this.random.nextDouble() * 0.10,
+                        Math.sin(angle) * spread);
+            }
             this.remove();
         }
     }
