@@ -8,12 +8,12 @@
         { "name": "RayInvProjMat", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
         { "name": "RayInvViewMat", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
         { "name": "CameraPos", "type": "float", "count": 3, "values": [ 0.0, 0.0, 0.0 ] },
-        { "name": "SunScreen", "type": "float", "count": 2, "values": [ 0.5, 0.5 ] },
-        { "name": "ScreenAspect", "type": "float", "count": 1, "values": [ 1.7 ] },
         { "name": "SunDir", "type": "float", "count": 3, "values": [ 0.0, -1.0, 0.0 ] },
         { "name": "SunColor", "type": "float", "count": 3, "values": [ 1.0, 0.95, 0.85 ] },
         { "name": "SunStrength", "type": "float", "count": 1, "values": [ 0.0 ] },
         { "name": "SurfaceY", "type": "float", "count": 1, "values": [ 62.0 ] },
-        { "name": "Time", "type": "float", "count": 1, "values": [ 0.0 ] }
+        { "name": "WavePhase", "type": "float", "count": 4, "values": [ 0.0, 0.0, 0.0, 0.0 ] },
+        { "name": "WindVec", "type": "float", "count": 2, "values": [ 0.0, 0.0 ] },
+        { "name": "WaterParams", "type": "float", "count": 1, "values": [ 1.0 ] }
     ]
 }

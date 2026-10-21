@@ -116,23 +116,11 @@ public final class UnderwaterShaftsRenderer {
         Matrix4f invProj = new Matrix4f(steadyProjection).invert();
         Matrix4f invView = new Matrix4f(viewMatrix).invert();
 
-        // The rays have to converge on where the sun is SEEN FROM
-        // UNDERWATER, which is not where the sun is: the water bends
-        // the light and pulls it up towards the zenith. The rays are
-        // also drawn from here rather than in the sky pass, because
-        // underwater the water surface is drawn over the sky and hides
-        // the sun completely.
-        // The negated vector: the refracted one is the direction the light
-        // TRAVELS, which points down into the water, and that is where
-        // the sun is NOT. The sun as seen from underwater is the other
-        // way round, and its elevation is HIGHER than the real sun's,
-        // because the refraction compresses the sky towards the zenith.
-        Vector3f refractedView = viewMatrix.transformDirection(
-                new Vector3f(-refracted.x, -refracted.y, -refracted.z));
-        float[] sunScreen = new float[3];
-        SunRenderer.screenPositionOf(viewMatrix, steadyProjection, refractedView, sunScreen);
-        if (sunScreen[2] < 0.5f) return;   // the sun is behind the camera
-        float aspect = (float) main.width / main.height;
+        // The shader works out the geometry itself: where the eye's
+        // ray meets the surface, and where the sun's own light comes
+        // through it. The refracted vector it is given is the
+        // direction the light TRAVELS, which points down into the
+        // water; the sun is the other way round.
 
         int[] boundFbo = new int[1];
         GL30C.glGetIntegerv(GL30C.GL_DRAW_FRAMEBUFFER_BINDING, boundFbo);
@@ -150,9 +138,11 @@ public final class UnderwaterShaftsRenderer {
         uniformMat(shader, "RayInvProjMat", invProj);
         uniformMat(shader, "RayInvViewMat", invView);
         uniform3(shader, "CameraPos", (float) cam.x, (float) cam.y, (float) cam.z);
-        uniform2(shader, "SunScreen", sunScreen[0], sunScreen[1]);
-        uniform1(shader, "ScreenAspect", aspect);
         uniform3(shader, "SunDir", refracted.x, refracted.y, refracted.z);
+        uniform4v(shader, "WavePhase", WaterShaderUniforms.getWavePhases());
+        uniform2(shader, "WindVec",
+                WaterShaderUniforms.getSmoothWindDx(), WaterShaderUniforms.getSmoothWindDz());
+        uniform1(shader, "WaterParams", 1.0f);
         uniform3(shader, "SunColor", tintR, tintG, tintB);
         uniform1(shader, "SunStrength", strength);
         uniform1(shader, "SurfaceY", (float) surfaceY);
@@ -279,6 +269,11 @@ public final class UnderwaterShaftsRenderer {
     private static void uniform4(ShaderInstance shader, String name, float a, float b, float c, float d) {
         Uniform u = shader.getUniform(name);
         if (u != null) u.set(a, b, c, d);
+    }
+
+    private static void uniform4v(ShaderInstance shader, String name, float[] v) {
+        Uniform u = shader.getUniform(name);
+        if (u != null && v != null && v.length >= 4) u.set(v[0], v[1], v[2], v[3]);
     }
 
     private static void uniform3(ShaderInstance shader, String name, float a, float b, float c) {
