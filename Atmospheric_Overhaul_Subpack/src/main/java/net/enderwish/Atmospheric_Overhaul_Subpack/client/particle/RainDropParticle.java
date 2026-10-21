@@ -38,7 +38,7 @@ public class RainDropParticle extends TextureSheetParticle {
     public static final float MAX_FALL_SPEED   = 0.65f;
 
     private static final float STREAK_LENGTH_SCALE = 3.2f;
-    private static final float STREAK_WIDTH_SCALE   = 0.28f;
+    private static final float STREAK_WIDTH_SCALE   = 0.20f;
     private static final float DOT_LENGTH_SCALE     = 0.5f;
 
     private final float fallSpeed;
@@ -58,7 +58,7 @@ public class RainDropParticle extends TextureSheetParticle {
         this.rCol = 0.78f;
         this.gCol = 0.80f;
         this.bCol = 0.82f;
-        this.alpha = 0.30f;
+        this.alpha = 0.35f;
     }
 
     @Override

@@ -32,7 +32,7 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 @EventBusSubscriber(modid = AtmosphericOverhaulSubpack.MOD_ID, bus = EventBusSubscriber.Bus.GAME, value = Dist.CLIENT)
 public class ClientParticleSpawner {
 
-    private static final int BASE_RAIN_COUNT    = 9;
+    private static final int BASE_RAIN_COUNT    = 20;
     private static final int SPAWN_RADIUS       = 40;
     private static final int SPAWN_HEIGHT_ABOVE = 15;
     private static final float UPWIND_BIAS_STRENGTH = 0.3f;
