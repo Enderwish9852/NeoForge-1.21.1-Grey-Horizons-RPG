@@ -185,11 +185,29 @@ public final class SunRenderer {
      */
     public static void screenPosition(Matrix4f viewMatrix, Matrix4f projectionMatrix,
                                       float dayT, float[] out) {
-        Matrix4f sunViewMat = new Matrix4f(viewMatrix)
+        Vector3f sunView = new Matrix4f(viewMatrix)
                 .rotate(Axis.YP.rotationDegrees(-90.0f))
-                .rotate(Axis.XP.rotationDegrees(dayT * 360.0f));
-        Vector3f sunView = sunViewMat.transformDirection(new Vector3f(0.0f, 1.0f, 0.0f));
-        Vector4f clip = new Vector4f(sunView.x * 100.0f, sunView.y * 100.0f, sunView.z * 100.0f, 1.0f);
+                .rotate(Axis.XP.rotationDegrees(dayT * 360.0f))
+                .transformDirection(new Vector3f(0.0f, 1.0f, 0.0f));
+        screenPositionOf(viewMatrix, projectionMatrix, sunView, out);
+    }
+
+    /**
+     * The screen position of a direction that is ALREADY in view space.
+     *
+     * Underwater the sun is seen through the surface, so the rays have
+     * to converge on where the REFRACTED sun appears, not where the
+     * sun really is: the water bends the light, pulling it up towards
+     * the zenith.
+     *
+     * @param out out[0] = u (0..1, left to right), out[1] = v (0..1, BOTTOM
+     *             to top -- the same space the shaders' texCoord lives in),
+     *             out[2] = 1 when the direction is in front of the camera
+     */
+    public static void screenPositionOf(Matrix4f viewMatrix, Matrix4f projectionMatrix,
+                                         Vector3f viewDirection, float[] out) {
+        Vector4f clip = new Vector4f(viewDirection.x * 100.0f, viewDirection.y * 100.0f,
+                viewDirection.z * 100.0f, 1.0f);
         projectionMatrix.transform(clip);
         if (clip.w <= 1.0e-4f) {
             // behind the camera: the projection mirrors, so there is no

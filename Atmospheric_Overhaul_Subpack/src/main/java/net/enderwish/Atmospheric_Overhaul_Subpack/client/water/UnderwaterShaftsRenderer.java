@@ -116,9 +116,15 @@ public final class UnderwaterShaftsRenderer {
         Matrix4f invProj = new Matrix4f(steadyProjection).invert();
         Matrix4f invView = new Matrix4f(viewMatrix).invert();
 
-        // the rays radiate from the sun's position on screen
+        // The rays have to converge on where the sun is SEEN FROM
+        // UNDERWATER, which is not where the sun is: the water bends
+        // the light and pulls it up towards the zenith. The rays are
+        // also drawn from here rather than in the sky pass, because
+        // underwater the water surface is drawn over the sky and hides
+        // the sun completely.
+        Vector3f refractedView = viewMatrix.transformDirection(new Vector3f(refracted));
         float[] sunScreen = new float[3];
-        SunRenderer.screenPosition(viewMatrix, steadyProjection, dayT, sunScreen);
+        SunRenderer.screenPositionOf(viewMatrix, steadyProjection, refractedView, sunScreen);
         if (sunScreen[2] < 0.5f) return;   // the sun is behind the camera
         float aspect = (float) main.width / main.height;
 

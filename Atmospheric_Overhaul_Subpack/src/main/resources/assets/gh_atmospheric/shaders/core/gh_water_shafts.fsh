@@ -91,10 +91,21 @@ void main() {
     float falloff = exp(-r * 1.5) * smoothstep(1.7, 0.15, r) * smoothstep(0.0, 0.05, r);
 
     // the deeper the camera is, the less of the sun gets through
-    float depthFade = exp(-max(0.0, SurfaceY - CameraPos.y) * 0.10);
+    float depthBelow = max(0.0, SurfaceY - CameraPos.y);
+    float depthFade = exp(-depthBelow * 0.10);
 
     // the ridges decide how much light comes through each wedge
     float shaft = wedges * falloff * (0.28 + 0.72 * (ripple * 0.5 + 0.5)) * depthFade;
 
-    fragColor = vec4(SunColor * (shaft * SunStrength * 1.5), 0.0);
+    // THE SUN ITSELF, seen through the water. Underwater the surface
+    // is drawn over the sky, so the sun drawn in the sky pass is
+    // completely hidden: without this the rays would radiate from a
+    // point where nothing is, which is what made the first version of
+    // this look wrong. The disc is soft and dimmed, the way a sun
+    // through water actually is.
+    float glow = exp(-(r * r) / 0.0060);
+    float core = exp(-(r * r) / 0.0006);
+    float sunThroughWater = (glow * 0.42 + core * 0.85) * depthFade;
+
+    fragColor = vec4(SunColor * ((shaft * 0.9 + sunThroughWater) * SunStrength * 1.5), 0.0);
 }
