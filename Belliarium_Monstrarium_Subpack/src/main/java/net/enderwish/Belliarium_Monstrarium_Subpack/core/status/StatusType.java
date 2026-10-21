@@ -34,7 +34,13 @@ public enum StatusType {
      *  /status remove correctly refuses it -- cool down or warm up
      *  instead. */
     HYPERTHERMIA(false),
-    HYPOTHERMIA(false);
+    HYPOTHERMIA(false),
+    /** CONDITIONAL: body wetness maxed out — soaked through. Applied the
+     *  moment wetness reaches 100 (indefinite duration, stored like DEJA_VU)
+     *  and removed only when the body is half-dried (wetness <= 50), per
+     *  the hysteresis rule. While active the body cools very fast (see
+     *  ThirstBodyTempTickHandler). */
+    DRENCHED(true);
 
     /** Real clinical thresholds in degrees C: shared by
      *  ThirstBodyTempTickHandler's effects and the /status derivation so

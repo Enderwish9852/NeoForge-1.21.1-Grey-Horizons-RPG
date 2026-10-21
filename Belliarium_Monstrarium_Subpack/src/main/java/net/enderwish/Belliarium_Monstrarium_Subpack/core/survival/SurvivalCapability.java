@@ -11,6 +11,7 @@ public class SurvivalCapability {
     private boolean collapsed = false;
     private float thirst = 100.0f;
     private float bodyTemp = 37.0f;
+    private float wetness = 0.0f;
 
     public SurvivalCapability() {}
 
@@ -21,11 +22,17 @@ public class SurvivalCapability {
 
     public SurvivalCapability(float energy, float stamina, boolean collapsed,
                                float thirst, float bodyTemp) {
+        this(energy, stamina, collapsed, thirst, bodyTemp, 0.0f);
+    }
+
+    public SurvivalCapability(float energy, float stamina, boolean collapsed,
+                               float thirst, float bodyTemp, float wetness) {
         this.energy = energy;
         this.stamina = stamina;
         this.collapsed = collapsed;
         this.thirst = thirst;
         this.bodyTemp = bodyTemp;
+        this.wetness = wetness;
     }
 
     public static final Codec<SurvivalCapability> CODEC = RecordCodecBuilder.create(inst -> inst.group(
@@ -33,7 +40,8 @@ public class SurvivalCapability {
             Codec.FLOAT.fieldOf("stamina").forGetter(SurvivalCapability::getStamina),
             Codec.BOOL.fieldOf("collapsed").forGetter(SurvivalCapability::isCollapsed),
             Codec.FLOAT.optionalFieldOf("thirst", 100.0f).forGetter(SurvivalCapability::getThirst),
-            Codec.FLOAT.optionalFieldOf("bodyTemp", 37.0f).forGetter(SurvivalCapability::getBodyTemp)
+            Codec.FLOAT.optionalFieldOf("bodyTemp", 37.0f).forGetter(SurvivalCapability::getBodyTemp),
+            Codec.FLOAT.optionalFieldOf("wetness", 0.0f).forGetter(SurvivalCapability::getWetness)
     ).apply(inst, SurvivalCapability::new));
 
     public float getEnergy() { return energy; }
@@ -41,12 +49,14 @@ public class SurvivalCapability {
     public boolean isCollapsed() { return collapsed; }
     public float getThirst() { return thirst; }
     public float getBodyTemp() { return bodyTemp; }
+    public float getWetness() { return wetness; }
 
     public void setEnergy(float v) { energy = Mth.clamp(v, 0, 100); }
     public void setStamina(float v) { stamina = Mth.clamp(v, 0, 100); }
     public void setCollapsed(boolean v) { collapsed = v; }
     public void setThirst(float v) { thirst = Mth.clamp(v, 0, 100); }
     public void setBodyTemp(float v) { bodyTemp = Mth.clamp(v, 30.0f, 44.0f); }
+    public void setWetness(float v) { wetness = Mth.clamp(v, 0.0f, 100.0f); }
 
-    public void healAll() { energy = 100f; stamina = 100f; collapsed = false; thirst = 100f; bodyTemp = 37.0f; }
+    public void healAll() { energy = 100f; stamina = 100f; collapsed = false; thirst = 100f; bodyTemp = 37.0f; wetness = 0f; }
 }

@@ -8,10 +8,13 @@ import net.enderwish.Belliarium_Monstrarium_Subpack.client.gui.DejaVuOverlayHUD;
 import net.enderwish.Belliarium_Monstrarium_Subpack.client.gui.SurvivalBarsHUD;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
+import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 
 public class HudRegistrationHandler {
     public static void onRegisterGuiLayers(RegisterGuiLayersEvent event) {
-        event.registerAboveAll(
+        // The body-health diagram renders one layer UNDER the F3 debug
+        // overlay: registerAboveAll drew it on top of the debug text.
+        event.registerBelow(VanillaGuiLayers.DEBUG_OVERLAY,
                 ResourceLocation.fromNamespaceAndPath("gh_belliarium_monstrarium", "body_health"),
                 BodyHealthHUD.LAYER);
         event.registerAboveAll(

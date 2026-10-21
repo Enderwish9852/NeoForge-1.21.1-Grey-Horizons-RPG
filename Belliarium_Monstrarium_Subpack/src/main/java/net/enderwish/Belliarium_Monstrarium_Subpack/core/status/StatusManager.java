@@ -76,13 +76,19 @@ public final class StatusManager {
 
     public Set<StatusType> activeConditional(UUID playerId) {
         Map<StatusType, Long> map = conditional.get(playerId);
-        return map == null ? EnumSet.noneOf(StatusType.class) : EnumSet.copyOf(map.keySet());
+        // EnumSet.copyOf throws IllegalArgumentException on an EMPTY
+        // non-EnumSet collection — the exact /status crash once the last
+        // conditional (e.g. DRENCHED) was removed and left an empty map.
+        return map == null || map.isEmpty()
+                ? EnumSet.noneOf(StatusType.class) : EnumSet.copyOf(map.keySet());
     }
 
     /** Stored permanent statuses for /status listing (derived body ones come separately). */
     public Set<StatusType> activePermanent(UUID playerId) {
         Set<StatusType> set = permanent.get(playerId);
-        return set == null ? EnumSet.noneOf(StatusType.class) : EnumSet.copyOf(set);
+        // same empty-collection guard as activeConditional
+        return set == null || set.isEmpty()
+                ? EnumSet.noneOf(StatusType.class) : EnumSet.copyOf(set);
     }
 
     /** The permanent body-part statuses currently true for this player, read live off BodyHealthCapability. */

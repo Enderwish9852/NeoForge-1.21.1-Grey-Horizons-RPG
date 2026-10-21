@@ -64,7 +64,7 @@ public class SurvivalTickHandler {
         SurvivalCapability cap = player.getData(ModAttachments.SURVIVAL);
         ModMessages.sendToPlayer(
                 new SurvivalSyncPacket(cap.getEnergy(), cap.getStamina(), cap.isCollapsed(),
-                        cap.getThirst(), cap.getBodyTemp()), player);
+                        cap.getThirst(), cap.getBodyTemp(), cap.getWetness()), player);
     }
 
     @SubscribeEvent
@@ -80,7 +80,7 @@ public class SurvivalTickHandler {
         SurvivalCapability cap = player.getData(ModAttachments.SURVIVAL);
         ModMessages.sendToPlayer(
                 new SurvivalSyncPacket(cap.getEnergy(), cap.getStamina(), cap.isCollapsed(),
-                        cap.getThirst(), cap.getBodyTemp()), player);
+                        cap.getThirst(), cap.getBodyTemp(), cap.getWetness()), player);
     }
 
     @SubscribeEvent
@@ -183,7 +183,7 @@ public class SurvivalTickHandler {
         if (player.level().getGameTime() % 10 == 0) {
             ModMessages.sendToPlayer(
                     new SurvivalSyncPacket(cap.getEnergy(), cap.getStamina(), cap.isCollapsed(),
-                            cap.getThirst(), cap.getBodyTemp()),
+                            cap.getThirst(), cap.getBodyTemp(), cap.getWetness()),
                     (ServerPlayer) player);
         }
     }

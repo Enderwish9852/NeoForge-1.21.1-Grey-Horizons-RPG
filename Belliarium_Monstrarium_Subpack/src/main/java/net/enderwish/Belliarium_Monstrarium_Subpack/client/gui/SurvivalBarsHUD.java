@@ -36,13 +36,25 @@ public class SurvivalBarsHUD {
         Minecraft mc = Minecraft.getInstance();
         Player player = mc.player;
         if (player == null || !player.isAlive()) return;
+
+        int x = mc.getWindow().getGuiScaledWidth() / 2 - 91;
+        int baseY = mc.getWindow().getGuiScaledHeight() - 39;
+
+        // Wetness is NOT watch-gated — you physically feel getting wet.
+        // The row only exists while actually wet, so a dry player never
+        // sees it. DRENCHED (100%) reads as a deeper blue than plain damp.
+        if (!player.isCreative()) {
+            float wetness = player.getData(ModAttachments.SURVIVAL).getWetness();
+            if (wetness >= 1.0f) {
+                float wetPct = wetness / 100f;
+                drawBar(graphics, x, baseY - ROW_GAP * 6, wetPct, wetnessColor(wetPct));
+            }
+        }
+
         if (!CuriosHooks.hasWatchEquipped(player)) return;
 
         boolean creative = player.isCreative();
         SurvivalCapability survival = player.getData(ModAttachments.SURVIVAL);
-
-        int x = mc.getWindow().getGuiScaledWidth() / 2 - 91;
-        int baseY = mc.getWindow().getGuiScaledHeight() - 39;
 
         float staminaPct = creative ? 1.0f : survival.getStamina() / 100f;
         float energyPct = creative ? 1.0f : survival.getEnergy() / 100f;
@@ -91,6 +103,12 @@ public class SurvivalBarsHUD {
         if (tempC > 40.0f) return 0xFFCC4A33;   // hyperthermia
         if (tempC < 35.0f) return 0xFF4AA8CC;   // hypothermia
         return 0xFF9FB8BE;                      // neutral steel
+    }
+
+    /** Wetness: teal when merely damp, deeper blue when DRENCHED-full. */
+    private static int wetnessColor(float pct) {
+        if (pct >= 0.995f) return 0xFF2E86AB;   // drenched
+        return 0xFF3AB5C4;                      // damp teal
     }
 
     private static void drawBar(GuiGraphics graphics, int x, int y, float pct, int color) {

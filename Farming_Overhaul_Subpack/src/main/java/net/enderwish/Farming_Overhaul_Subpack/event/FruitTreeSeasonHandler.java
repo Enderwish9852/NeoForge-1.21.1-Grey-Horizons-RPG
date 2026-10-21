@@ -1,7 +1,6 @@
 package net.enderwish.Farming_Overhaul_Subpack.event;
 
 import net.enderwish.Atmospheric_Overhaul_Subpack.api.SeasonsAPI;
-import net.enderwish.Atmospheric_Overhaul_Subpack.core.season.SeasonCalendar;
 import net.enderwish.Farming_Overhaul_Subpack.FarmingOverhaulSubpack;
 import net.enderwish.Farming_Overhaul_Subpack.block.tree.FruitTreeLeavesBlock;
 import net.enderwish.Farming_Overhaul_Subpack.core.tree.TreeGrowthManager;
@@ -52,7 +51,7 @@ public class FruitTreeSeasonHandler {
      * /season setday, /season skipphase), which bypass natural time flow
      * and fire no event.
      */
-    private static final Map<ResourceKey<Level>, SeasonCalendar.Season> LAST_SEASON =
+    private static final Map<ResourceKey<Level>, String> LAST_SEASON =
             new HashMap<>();
 
     @SubscribeEvent
@@ -63,10 +62,10 @@ public class FruitTreeSeasonHandler {
         // Runs every tick; the compare is a single cheap API read.
         // First tick after load only primes the map (no growth), so re-
         // joining a world doesn't double-grow.
-        SeasonCalendar.Season current = SeasonsAPI.getSeason(level);
-        SeasonCalendar.Season previous =
+        String current = SeasonsAPI.getSeasonId(level);
+        String previous =
                 LAST_SEASON.put(level.dimension(), current);
-        if (previous != null && previous != current) {
+        if (previous != null && !previous.equals(current)) {
             TreeGrowthManager mgr = TreeGrowthManager.get(level);
             mgr.onSeasonChanged(level);      // grow non-mature trees one stage
             mgr.updateAllLeafStages(level);  // instant leaf recolor (no 60s wait)

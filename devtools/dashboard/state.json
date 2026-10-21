@@ -1,7 +1,7 @@
 ﻿{
     "project":  "Grey Horizons RPG",
     "subtitle":  "NeoForge 1.21.1 - 5 subpacks",
-    "currentTask":  "Round 3 fix 4: clouds cast shadows, beams through the gaps, underwater rays, lighter water fog",
+    "currentTask":  "Pause screen: the world no longer moves behind it",
     "tasks":  [
                   {
                       "title":  "Diagnose the 90% screen flash bang",
@@ -152,6 +152,51 @@
                       "title":  "Live test in game",
                       "status":  "doing",
                       "note":  "clouds, ground shadows, beams, underwater rays, fog"
+                  },
+                  {
+                      "title":  "Lens rain: refraction through the drops",
+                      "status":  "done",
+                      "note":  "gh_lens_rain.fsh - the world is sampled through each drop, not sprites over it"
+                  },
+                  {
+                      "title":  "Lens rain: the wind decides the character",
+                      "status":  "done",
+                      "note":  "the wind blowing into the player makes the drops run down; the other way gives small splashes"
+                  },
+                  {
+                      "title":  "Lens rain: driven by the body wetness",
+                      "status":  "done",
+                      "note":  "clear below 50% wet, fewer and smaller as the player dries from 100%"
+                  },
+                  {
+                      "title":  "Lens rain: the slush on surfacing",
+                      "status":  "done",
+                      "note":  "a sheet running off the lens for 2.2s, then it settles into the drops"
+                  },
+                  {
+                      "title":  "Live test in game",
+                      "status":  "doing",
+                      "note":  "rain in the wind, and coming out of the water"
+                  },
+                  {
+                      "title":  "Clouds drifting while paused",
+                      "status":  "done",
+                      "note":  "the drift is integrated from the system clock; now gated on Minecraft.isPaused()"
+                  },
+                  {
+                      "title":  "Survey every per-frame animation",
+                      "status":  "done",
+                      "note":  "system clock users found across all five subpacks"
+                  },
+                  {
+                      "title":  "New pause-aware GameClock",
+                      "status":  "done",
+                      "note":  "the same wall clock, but it only advances while the game runs"
+                  },
+                  {
+                      "title":  "HUD clocks on the pause-aware clock",
+                      "status":  "done",
+                      "note":  "kill feed rows, combat timer message, bandage in-hand spin"
                   }
               ],
     "files":  [
@@ -239,6 +284,7 @@
                   "Open: the sun\u0027s disc radius is seeded at 1.5x the drawn disc so a canopy\u0027s gaps can seed the shafts",
                   "The shadow pass is the expensive part: 2 extra chunk layers over the near sections, every other frame",
                   "MC view bobbing is applied to the projection matrix in GameRenderer.renderLevel - anything computed from it rocks with the walk cycle",
-                  "The shadow map is now 224 blocks across (112 either side) so it reaches the cloud layer"
+                  "The shadow map is now 224 blocks across (112 either side) so it reaches the cloud layer",
+                  "Minecraft.isPaused() is only true for a singleplayer pause screen - in multiplayer the world keeps running, which is correct"
               ]
 }

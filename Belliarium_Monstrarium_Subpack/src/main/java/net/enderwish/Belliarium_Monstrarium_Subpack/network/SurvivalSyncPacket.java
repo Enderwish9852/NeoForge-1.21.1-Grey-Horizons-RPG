@@ -11,16 +11,16 @@ import net.minecraft.resources.ResourceLocation;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 public record SurvivalSyncPacket(float energy, float stamina, boolean collapsed,
-                                 float thirst, float bodyTemp) implements CustomPacketPayload {
+                                 float thirst, float bodyTemp, float wetness) implements CustomPacketPayload {
 
     public static final Type<SurvivalSyncPacket> TYPE =
             new Type<>(ResourceLocation.fromNamespaceAndPath(BelliariumMonstrariumSubpack.MODID, "survival_sync"));
 
     public static final StreamCodec<FriendlyByteBuf, SurvivalSyncPacket> STREAM_CODEC = StreamCodec.of(
             (buf, p) -> { buf.writeFloat(p.energy); buf.writeFloat(p.stamina); buf.writeBoolean(p.collapsed);
-                buf.writeFloat(p.thirst); buf.writeFloat(p.bodyTemp); },
+                buf.writeFloat(p.thirst); buf.writeFloat(p.bodyTemp); buf.writeFloat(p.wetness); },
             buf -> new SurvivalSyncPacket(buf.readFloat(), buf.readFloat(), buf.readBoolean(),
-                    buf.readFloat(), buf.readFloat())
+                    buf.readFloat(), buf.readFloat(), buf.readFloat())
     );
 
     @Override
@@ -31,7 +31,7 @@ public record SurvivalSyncPacket(float energy, float stamina, boolean collapsed,
             var player = Minecraft.getInstance().player;
             if (player == null) return;
             player.setData(ModAttachments.SURVIVAL,
-                    new SurvivalCapability(energy, stamina, collapsed, thirst, bodyTemp));
+                    new SurvivalCapability(energy, stamina, collapsed, thirst, bodyTemp, wetness));
         });
     }
 }

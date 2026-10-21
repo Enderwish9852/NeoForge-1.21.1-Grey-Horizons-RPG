@@ -1,7 +1,6 @@
 package net.enderwish.Farming_Overhaul_Subpack.block.tree;
 
 import net.enderwish.Atmospheric_Overhaul_Subpack.api.SeasonsAPI;
-import net.enderwish.Atmospheric_Overhaul_Subpack.core.season.SeasonCalendar;
 import net.enderwish.Farming_Overhaul_Subpack.core.tree.TreeDefinition;
 import net.enderwish.Farming_Overhaul_Subpack.core.tree.TreeRegistry;
 import net.minecraft.core.BlockPos;
@@ -178,24 +177,27 @@ public class FruitTreeLeavesBlock extends Block {
         // Evergreen trees always stay FULL
         if (def.isEvergreen()) return SeasonStage.FULL;
 
-        SeasonCalendar.Season season = SeasonsAPI.getSeason(level);
-        SeasonCalendar.Phase  phase  = SeasonsAPI.getPhase(level);
+        String season = SeasonsAPI.getSeasonId(level);
+        String phase  = SeasonsAPI.getPhaseId(level);
 
         return switch (season) {
-            case WINTER -> SeasonStage.BARE;
-            case SPRING -> switch (phase) {
-                case EARLY -> SeasonStage.BUDDING;
-                case MID   -> def.hasBlossoms()
+            case "WINTER" -> SeasonStage.BARE;
+            case "SPRING" -> switch (phase) {
+                case "EARLY" -> SeasonStage.BUDDING;
+                case "MID"   -> def.hasBlossoms()
                         ? SeasonStage.BLOSSOM
                         : SeasonStage.BUDDING;
-                case LATE  -> SeasonStage.FULL;
+                case "LATE"  -> SeasonStage.FULL;
+                default      -> SeasonStage.FULL;
             };
-            case SUMMER -> SeasonStage.FULL;
-            case AUTUMN -> switch (phase) {
-                case EARLY -> SeasonStage.FULL;
-                case MID   -> SeasonStage.COLOURED;
-                case LATE  -> SeasonStage.COLOURED;
+            case "SUMMER" -> SeasonStage.FULL;
+            case "AUTUMN" -> switch (phase) {
+                case "EARLY" -> SeasonStage.FULL;
+                case "MID"   -> SeasonStage.COLOURED;
+                case "LATE"  -> SeasonStage.COLOURED;
+                default      -> SeasonStage.COLOURED;
             };
+            default -> SeasonStage.FULL;
         };
     }
 

@@ -48,6 +48,25 @@ public final class SeasonsAPI {
         return SeasonData.get(level).getPhase();
     }
 
+    /**
+     * Returns the current season as a plain string — "SPRING", "SUMMER",
+     * "AUTUMN", "WINTER". For cross-subpack consumers so they never have
+     * to import the core SeasonCalendar enum type.
+     */
+    public static String getSeasonId(ServerLevel level) {
+        return SeasonData.get(level).getSeason().name();
+    }
+
+    /** Returns the current phase as a plain string — "EARLY", "MID", "LATE". */
+    public static String getPhaseId(ServerLevel level) {
+        return SeasonData.get(level).getPhase().name();
+    }
+
+    /** True if the current season's id equals the given one (case-insensitive). */
+    public static boolean isSeasonId(ServerLevel level, String seasonId) {
+        return getSeasonId(level).equalsIgnoreCase(seasonId);
+    }
+
     /** Returns the current day within the year (0-79). */
     public static int getYearDay(ServerLevel level) {
         return SeasonData.get(level).getYearDay();
@@ -265,6 +284,19 @@ public final class SeasonsAPI {
         return getLocalChunkTemp(level, pos) > 0.5f;
     }
 
+    /**
+     * Returns only the heat/cold-block modifier at a position — the
+     * temperature contribution of nearby heat sources (campfire, lava...)
+     * and cold blocks (ice, powder snow...), after the distance falloff
+     * and season range multipliers. Clamped to [-1.5, +2.0]. Positive =
+     * net heating nearby. Cross-subpack consumers (e.g. drying off a
+     * wet body near a campfire) should use this, not the core scan.
+     */
+    public static float getHeatBlockModifier(ServerLevel level, BlockPos pos) {
+        return net.enderwish.Atmospheric_Overhaul_Subpack.core.season
+                .LocalChunkTemperature.getBlockModifierOnly(level, pos);
+    }
+
     // ── Wind queries (server-side) ────────────────────────────────────────────
 
     /**
@@ -281,6 +313,27 @@ public final class SeasonsAPI {
     public static float getWindSpeed(ServerLevel level) {
         return net.enderwish.Atmospheric_Overhaul_Subpack.core.weather
                 .WindManager.INSTANCE.getSpeed(level);
+    }
+
+    /**
+     * Effective server-side wind X vector — direction dx scaled by speed.
+     * Positive = blowing toward east. Lets consumers reason about wind
+     * direction without importing the core WindDirection type.
+     */
+    public static float getWindVectorX(ServerLevel level) {
+        var dir = net.enderwish.Atmospheric_Overhaul_Subpack.core.weather
+                .WindManager.INSTANCE.getDirection(level);
+        return dir.dx * getWindSpeed(level);
+    }
+
+    /**
+     * Effective server-side wind Z vector — direction dz scaled by speed.
+     * Positive = blowing toward south.
+     */
+    public static float getWindVectorZ(ServerLevel level) {
+        var dir = net.enderwish.Atmospheric_Overhaul_Subpack.core.weather
+                .WindManager.INSTANCE.getDirection(level);
+        return dir.dz * getWindSpeed(level);
     }
 
     /** Returns the current wind direction for this level. */
@@ -321,6 +374,26 @@ public final class SeasonsAPI {
     /** True if wind is currently strong on the client. */
     public static boolean isClientWindy() {
         return ClientSeasonState.isWindy();
+    }
+
+    /**
+     * Client's synced environmental feels-like temperature at the
+     * player's position — the same value the [GH Feels Like] F3 line
+     * shows, on the internal 0-1 season scale.
+     */
+    public static float getClientFeelsLikeTemp() {
+        return ClientSeasonState.getFeelsLikeTemp();
+    }
+
+    /**
+     * Client's synced environmental feels-like temperature at the
+     * player's position, in degrees Celsius. BODY-side consumers (e.g.
+     * a body F3 line) subtract their own wet-skin chill from this to
+     * get the effective felt temperature.
+     */
+    public static int getClientFeelsLikeTempCelsius() {
+        return net.enderwish.Atmospheric_Overhaul_Subpack.core.season
+                .SeasonTemperature.toCelsius(ClientSeasonState.getFeelsLikeTemp());
     }
 
     // ── Environment snapshot / restore (Survivor's Diary) ─────────────────────

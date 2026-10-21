@@ -1,7 +1,6 @@
 package net.enderwish.Farming_Overhaul_Subpack.block.composter;
 
 import net.enderwish.Atmospheric_Overhaul_Subpack.api.SeasonsAPI;
-import net.enderwish.Atmospheric_Overhaul_Subpack.core.season.SeasonCalendar;
 import net.enderwish.Farming_Overhaul_Subpack.core.spoilage.ModDataComponents;
 import net.enderwish.Farming_Overhaul_Subpack.core.spoilage.SpoilageComponent;
 import net.enderwish.Farming_Overhaul_Subpack.init.ModBlockEntities;
@@ -230,7 +229,7 @@ public class GHComposterBlockEntity extends BlockEntity {
             if (SeasonsAPI.isLocalChunkHot(sl, pos)) {
                 boostFraction += 0.10f;
             }
-            if (SeasonsAPI.isSeason(sl, SeasonCalendar.Season.SUMMER)) {
+            if (SeasonsAPI.isSeasonId(sl, "SUMMER")) {
                 boostFraction += 0.50f;
             }
         }

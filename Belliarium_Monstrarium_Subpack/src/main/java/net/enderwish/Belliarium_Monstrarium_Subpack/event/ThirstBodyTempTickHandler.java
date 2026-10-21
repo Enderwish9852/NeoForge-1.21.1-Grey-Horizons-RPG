@@ -3,9 +3,11 @@ package net.enderwish.Belliarium_Monstrarium_Subpack.event;
 import net.enderwish.Atmospheric_Overhaul_Subpack.api.SeasonsAPI;
 import net.enderwish.Belliarium_Monstrarium_Subpack.BelliariumMonstrariumSubpack;
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.ModAttachments;
+import net.enderwish.Belliarium_Monstrarium_Subpack.core.status.StatusManager;
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.status.StatusType;
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.survival.SurvivalCapability;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
@@ -93,6 +95,13 @@ public class ThirstBodyTempTickHandler {
     /** Base drift: fraction of the target gap closed per tick (a ~2500-tick
      *  time constant in mild conditions, where the felt gap is small). */
     private static final float TEMP_DRIFT_BASE = 0.0004f;
+    /** Wet-skin cooling: at 100% wetness the cooling drift is multiplied by
+     *  (1 + this) — 1.75x when soaked through but not DRENCHED. */
+    private static final float WET_COOLING_MAX = 0.75f;
+    /** DRENCHED pushes the cooling multiplier to 4x total — the "temp
+     *  plummets" rule. Applies only while the status holds (wetness
+     *  reached 100 and has not yet fallen to the 50% dry point). */
+    private static final float DRENCHED_COOLING_BONUS = 2.25f;
     /** Drift accelerates with the felt extreme: this much extra rate per
      *  degree C of |feels-like - body temp|, so a desert afternoon or a
      *  blizzard bites several times harder than a mild evening. */
@@ -125,15 +134,37 @@ public class ThirstBodyTempTickHandler {
         }
 
         if (player.level().getGameTime() % FEELS_SAMPLE_INTERVAL == 0) {
-            FEELS_LIKE_CACHE.put(serverPlayer.getUUID(),
-                    (float) SeasonsAPI.getLocalChunkTempCelsius(
-                            serverPlayer.serverLevel(), serverPlayer.blockPosition()));
+            ServerLevel lvl = serverPlayer.serverLevel();
+            // EFFECTIVE feels-like: the environmental value minus the wet-skin
+            // evaporative chill (BodyWetnessTickHandler.wetChillC — single
+            // source, wind-driven, +2C while DRENCHED). Without this, a
+            // soaked player inside the 15-25C comfort band cooled by exactly
+            // nothing: wet only sped the drift TOWARD a target that never
+            // moved. With it, wet + wind pulls the felt temp below the band
+            // so the target itself drops and the body genuinely cools.
+            float envC = (float) SeasonsAPI.getLocalChunkTempCelsius(
+                    lvl, serverPlayer.blockPosition());
+            float chill = BodyWetnessTickHandler.wetChillC(cap.getWetness(),
+                    SeasonsAPI.getWindSpeed(lvl),
+                    StatusManager.INSTANCE.has(serverPlayer.getUUID(), StatusType.DRENCHED));
+            FEELS_LIKE_CACHE.put(serverPlayer.getUUID(), envC - chill);
         }
         float feelsLikeC = FEELS_LIKE_CACHE.getOrDefault(serverPlayer.getUUID(), 20.0f);
 
         float target = targetBodyTemp(feelsLikeC);
         float feltGap = Math.abs(feelsLikeC - cap.getBodyTemp());
         float driftRate = Math.min(TEMP_DRIFT_BASE + TEMP_DRIFT_GAP_SCALE * feltGap, TEMP_DRIFT_MAX);
+        // Wet skin loses heat much faster, but only when cooling — drying off
+        // by a fire doesn't make the warmth bite harder too. Wet = up to 1.75x
+        // at soaked; DRENCHED (100% wet until half-dry, per the hysteresis
+        // rule in BodyWetnessTickHandler) pushes it to 4x: the temp plummets.
+        if (target < cap.getBodyTemp()) {
+            float wetCooling = 1.0f + WET_COOLING_MAX * (cap.getWetness() / 100.0f);
+            if (StatusManager.INSTANCE.has(player.getUUID(), StatusType.DRENCHED)) {
+                wetCooling += DRENCHED_COOLING_BONUS;
+            }
+            driftRate *= wetCooling;
+        }
         cap.setBodyTemp(cap.getBodyTemp() + (target - cap.getBodyTemp()) * driftRate);
 
         boolean hyperthermic = cap.getBodyTemp() > HYPERTHERMIA_THRESHOLD;

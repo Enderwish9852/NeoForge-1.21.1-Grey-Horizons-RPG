@@ -1,7 +1,6 @@
 package net.enderwish.Farming_Overhaul_Subpack.block.tree;
 
 import net.enderwish.Atmospheric_Overhaul_Subpack.api.SeasonsAPI;
-import net.enderwish.Atmospheric_Overhaul_Subpack.core.season.SeasonCalendar;
 import net.enderwish.Farming_Overhaul_Subpack.core.tree.TreeRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -283,11 +282,7 @@ public class FruitBlock extends Block {
 
     private boolean isInFruitingSeason(ServerLevel level) {
         return TreeRegistry.INSTANCE.getBySpecies(species)
-                .map(def -> {
-                    SeasonCalendar.Season season =
-                            SeasonsAPI.getSeason(level);
-                    return def.fruitsInSeason(season.name());
-                })
+                .map(def -> def.fruitsInSeason(SeasonsAPI.getSeasonId(level)))
                 .orElse(false);
     }
 
