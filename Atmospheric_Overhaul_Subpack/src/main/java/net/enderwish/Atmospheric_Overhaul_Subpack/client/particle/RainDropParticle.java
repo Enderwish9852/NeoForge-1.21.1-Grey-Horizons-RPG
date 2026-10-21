@@ -11,6 +11,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.SimpleParticleType;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.material.FluidState;
+import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
@@ -94,7 +96,24 @@ public class RainDropParticle extends TextureSheetParticle {
 
         this.move(this.xd, this.yd, this.zd);
 
-        if (this.level.getBlockState(BlockPos.containing(this.x, this.y, this.z)).isSolid()) {
+        BlockPos pos = BlockPos.containing(this.x, this.y, this.z);
+
+        // a raindrop reaching the water: it stops at the surface and
+        // leaves a small dimple there (and a splash). The dimple is
+        // spawned where the drop actually landed, never at random.
+        FluidState fluid = this.level.getFluidState(pos);
+        if (fluid.is(Fluids.WATER)) {
+            double surface = pos.getY() + fluid.getHeight(this.level, pos);
+            if (this.y <= surface) {
+                this.level.addParticle(ModParticles.WATER_RIPPLE.get(),
+                        this.x, surface + 0.02, this.z, 0.0, 0.0, 0.12);
+                this.level.addParticle(ModParticles.RAIN_SPLASH.get(), this.x, surface, this.z, 0.0, 0.0, 0.0);
+                this.remove();
+                return;
+            }
+        }
+
+        if (this.level.getBlockState(pos).isSolid()) {
             this.level.addParticle(ModParticles.RAIN_SPLASH.get(), this.x, this.y, this.z, 0.0, 0.0, 0.0);
             this.remove();
         }

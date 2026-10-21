@@ -1,21 +1,12 @@
 package net.enderwish.Atmospheric_Overhaul_Subpack.client.sky;
 
 import net.enderwish.Atmospheric_Overhaul_Subpack.AtmosphericOverhaulSubpack;
-import net.enderwish.Atmospheric_Overhaul_Subpack.client.ClientSeasonState;
-import net.enderwish.Atmospheric_Overhaul_Subpack.client.particle.ModParticles;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.core.BlockPos;
-import net.minecraft.core.particles.SimpleParticleType;
-import net.minecraft.util.RandomSource;
-import net.minecraft.world.level.levelgen.Heightmap;
-import net.minecraft.world.level.material.FluidState;
-import net.minecraft.world.level.material.Fluids;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.ViewportEvent;
 import net.neoforged.neoforge.fluids.FluidType;
 import net.neoforged.neoforge.common.NeoForgeMod;
@@ -29,14 +20,17 @@ import net.neoforged.neoforge.common.NeoForgeMod;
  *   pose stack, so that hook was removed).
  * - Underwater: denser fog ramp (RenderFog) + blue-green fog tint
  *   (ComputeFogColor) -- the murk that makes depth legible.
- * - Water ripples: ambient + rain-driven expanding rings on the water
- *   surface near the camera, drifting with the synced WIND direction
- *   (this is also the visual hook the water-current system will use).
+ *
+ * Water ripples used to be spawned from here as an AMBIENT effect: one
+ * ring every 4 ticks at a random spot within 14 blocks of the player,
+ * with nothing having touched the water. That was the "ripples just
+ * random spawn" the user saw, and it is gone. Ripples are now spawned
+ * by whatever actually hits the surface:
+ *   - WaterImpactHandler: an item or an entity crossing the surface;
+ *   - RainDropParticle: a raindrop reaching the water.
  */
 @EventBusSubscriber(modid = AtmosphericOverhaulSubpack.MOD_ID, bus = EventBusSubscriber.Bus.GAME, value = Dist.CLIENT)
 public class SkyRenderHandler {
-
-    private static final RandomSource RANDOM = RandomSource.create();
 
     // ── Underwater murk ──────────────────────────────────────────────────
 
@@ -67,42 +61,5 @@ public class SkyRenderHandler {
 
     private static boolean isEyeInWater(LocalPlayer player) {
         return player.isEyeInFluidType(NeoForgeMod.WATER_TYPE.value());
-    }
-
-    // ── Water ripples ────────────────────────────────────────────────────
-
-    private static int ambientRippleCooldown = 0;
-
-    @SubscribeEvent
-    public static void onClientTick(ClientTickEvent.Post event) {
-        Minecraft mc = Minecraft.getInstance();
-        ClientLevel level = mc.level;
-        LocalPlayer player = mc.player;
-        if (level == null || player == null || mc.isPaused()) return;
-
-        boolean raining = level.isRaining() || ClientSeasonState.isPrecipitating();
-
-        if (ambientRippleCooldown-- > 0) return;
-        ambientRippleCooldown = raining ? 1 : 4;   // spawn cadence (ticks)
-
-        // try a handful of water-surface spots in a ring around the player
-        for (int attempt = 0; attempt < 6; attempt++) {
-            double ang = RANDOM.nextDouble() * Math.PI * 2;
-            double dist = 2 + RANDOM.nextDouble() * 14;
-            int x = (int) Math.round(player.getX() + Math.cos(ang) * dist);
-            int z = (int) Math.round(player.getZ() + Math.sin(ang) * dist);
-            int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING, x, z);
-
-            // getHeight returns the first AIR block above the surface,
-            // so the fluid itself sits at y-1 (surface top ~y-1+0.875)
-            FluidState fluid = level.getFluidState(new BlockPos(x, y - 1, z));
-            if (!fluid.is(Fluids.WATER)) continue;
-
-            SimpleParticleType type = ModParticles.WATER_RIPPLE.get();
-            level.addParticle(type,
-                    x + RANDOM.nextDouble(), y - 0.12, z + RANDOM.nextDouble(),
-                    0, 0, 0);
-            break;   // one ripple per cadence tick is plenty (ambient)
-        }
     }
 }
