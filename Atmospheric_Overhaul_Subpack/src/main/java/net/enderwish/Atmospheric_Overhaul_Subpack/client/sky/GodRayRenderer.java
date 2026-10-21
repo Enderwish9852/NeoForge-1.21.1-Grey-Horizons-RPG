@@ -88,23 +88,35 @@ public final class GodRayRenderer {
     private static final float BASE_INTENSITY = 0.50f;   // peak composite intensity
     private static final float BLUR1_DENSITY = 0.22f;    // pass 1: short sharp shafts
     private static final float BLUR1_DECAY = 0.955f;
-    private static final float BLUR1_EXPOSURE = 0.19f;
+    private static final float BLUR1_EXPOSURE = 0.12f;
     private static final float BLUR2_DENSITY = 1.00f;    // pass 2: full-length soft rays
     private static final float BLUR2_DECAY = 0.985f;
-    private static final float BLUR2_EXPOSURE = 0.095f;
+    private static final float BLUR2_EXPOSURE = 0.06f;
     private static final int MARCH_STEPS = 20;           // CPU sun-ray occlusion samples
     private static final double MARCH_MAX_BLOCKS = 700.0;
     private static final int MAP_SIZE = 48;              // cloud transit map cells per axis
     private static final int MAP_LAYER_SAMPLES = 3;      // density samples per map cell
 
     /**
-     * Seed used when the sun is not in frame: a broad, weaker blob at
-     * the frame edge (screen-height units) and how much of it there is.
+     * Seed used when the sun is not in frame. The seed is ALWAYS a
+     * small disc: a broad, soft seed fills the buffer evenly, and
+     * blurring an even field gives an even field back, which is a
+     * bright haze with no rays in it -- the "massive light" the user
+     * saw, and the reason there were no god rays either.
+     *
+     * When the sun is off-frame the disc is clipped by the frame
+     * edge, so only a sliver of it lands in the buffer. The strength
+     * is raised to make up for the light that is cut away.
      */
-    private static final float OFFSCREEN_SEED_RADIUS = 0.22f;
-    private static final float OFFSCREEN_SEED_STRENGTH = 0.55f;
-    /** How far outside the frame the convergence point may sit. */
-    private static final float OFFSCREEN_MARGIN = 0.12f;
+    /**
+     * When the sun is off-frame the disc is pushed to the frame edge,
+     * where only a sliver of it lands in the buffer, and the strength
+     * is raised to make up for the light that got cut away. The shafts
+     * then stream in from the edge, in the sun's direction.
+     */
+    private static final float OFFSCREEN_SEED_STRENGTH = 3.0f;
+    /** How far outside the frame the seed may sit (0 = right on the edge). */
+    private static final float OFFSCREEN_MARGIN = 0.0f;
 
     private static final Matrix4f IDENTITY = new Matrix4f();
 
@@ -190,20 +202,22 @@ public final class GodRayRenderer {
             // canopy usually hides the disc itself and only lets the
             // light through in slivers -- the shafts have to be seeded
             // from the gaps, not from the exact pixels of the disc.
-            seedRadius = discRadius * 1.5f;
+            seedRadius = discRadius * 1.2f;
             seedStrength = 1.0f;
-            falloffInner = 0.12f;
-            falloffOuter = 1.05f;
+            falloffInner = 0.08f;
+            falloffOuter = 1.20f;
         } else {
-            // the sun is off-frame (or behind us): a broad, weaker seed
-            // just outside the frame, so the shafts keep streaming in
-            // from the sun's direction instead of dying
+            // the sun is off-frame (or behind us): the disc is pushed
+            // to the frame edge, where only a sliver of it lands in
+            // the buffer, and the strength is raised to make up for
+            // the light that got cut away. The shafts then stream in
+            // from the edge, in the sun's direction.
             sunU = Mth.clamp(sunU, -OFFSCREEN_MARGIN, 1.0f + OFFSCREEN_MARGIN);
             sunV = Mth.clamp(sunV, -OFFSCREEN_MARGIN, 1.0f + OFFSCREEN_MARGIN);
-            seedRadius = OFFSCREEN_SEED_RADIUS;
+            seedRadius = discRadius * 1.2f;
             seedStrength = OFFSCREEN_SEED_STRENGTH;
-            falloffInner = 0.45f;
-            falloffOuter = 2.20f;
+            falloffInner = 0.35f;
+            falloffOuter = 2.00f;
         }
 
         frameCounter++;

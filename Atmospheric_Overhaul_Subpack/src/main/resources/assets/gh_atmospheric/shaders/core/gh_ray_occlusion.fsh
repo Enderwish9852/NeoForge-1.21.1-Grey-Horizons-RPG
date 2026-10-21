@@ -5,7 +5,7 @@ uniform sampler2D CloudMap;
 uniform vec2 SunScreen;       // the sun's screen position, in texCoord space
 uniform float SeedRadius;     // the light source's radius, in screen-height units
 uniform float ScreenAspect;
-uniform float SeedStrength;   // 1.0 for the real sun, lower for the anti-solar seed
+uniform float SeedStrength;   // 1.0 for the real sun, higher when the disc is clipped
 
 in vec2 texCoord;
 
@@ -15,32 +15,34 @@ out vec4 fragColor;
  * gh_ray_occlusion -- builds the light source buffer the radial blur
  * smears into shafts.
  *
- * The old version stamped a "glare" disc reaching SunRadius * 10.0,
- * which with the old 0.045 constant meant a blob 45% of the screen
- * height across -- a 90%-of-the-screen white cover that the blur then
- * smeared over everything. That was the "flash bang".
+ * THE SEED MUST BE SMALL AND BRIGHT. That is what makes the blurred
+ * result a set of distinct rays instead of a smooth wash:
  *
- * Now the seed is the sun's ACTUAL disc (SeedRadius, derived from the
- * projection matrix so it matches the drawn sun exactly) plus a small
- * halo a few times its radius, and nothing more.
+ *   - a big, soft source fills the whole buffer evenly, and blurring
+ *     an even field gives an even field back: a bright haze over half
+ *     the screen, with no rays in it at all;
+ *   - a small, bright source is a point, and blurring a point along
+ *     the rays towards it draws the rays.
+ *
+ * So the seed is the sun's own disc (SeedRadius, derived from the
+ * projection matrix so it matches the drawn sun exactly) plus a very
+ * small, dim halo. The old version had a halo reaching 2.6x the disc
+ * and that was what washed the sky out.
  *
  * The seed is masked to pixels whose depth is exactly sky, so terrain
  * and tree canopies cut the light: that is what makes the shafts pass
  * through the gaps between branches.
- *
- * When the sun is behind the camera there is no disc on screen at all,
- * so the Java side switches to a broad, weak seed at the anti-solar
- * point: the shafts then stream in from beyond the screen edge, which
- * is what real crepuscular rays do.
  */
 void main() {
     float depth = texture(DiffuseSampler, texCoord).r;
     vec2 delta = (texCoord - SunScreen) * vec2(ScreenAspect, 1.0);
     float dist = length(delta);
 
-    float core = 1.0 - smoothstep(SeedRadius * 0.55, SeedRadius * 1.15, dist);
-    float halo = 1.0 - smoothstep(SeedRadius, SeedRadius * 2.6, dist);
-    float glow = max(core, 0.30 * halo * halo);
+    // the disc: a hard-ish core with a one-pixel-wide soft edge
+    float core = 1.0 - smoothstep(SeedRadius * 0.70, SeedRadius * 1.05, dist);
+    // a tight, dim halo so the disc is not a hard cut-out
+    float halo = 1.0 - smoothstep(SeedRadius, SeedRadius * 1.8, dist);
+    float glow = max(core, 0.12 * halo * halo * halo);
 
     // only sky pixels: terrain and leaves cut the light
     float sky = step(0.99999, depth);

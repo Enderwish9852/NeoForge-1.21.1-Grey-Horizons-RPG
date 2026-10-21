@@ -126,7 +126,12 @@ public final class UnderwaterShaftsRenderer {
         uniform3(shader, "SunColor", tintR, tintG, tintB);
         uniform1(shader, "SunStrength", strength);
         uniform1(shader, "SurfaceY", (float) surfaceY);
-        uniform1(shader, "Time", (float) (mc.level.getGameTime() % 100000L) + partialTick);
+        // the caustic clock is in SECONDS: the game clock counts ticks,
+        // and feeding ticks to the shader dragged the pattern across
+        // the water at over ten blocks a second, which read as random
+        // light patches flashing rather than light through a surface
+        double timeSeconds = (mc.level.getGameTime() % 100000L + partialTick) / 20.0;
+        uniform1(shader, "Time", (float) timeSeconds);
 
         drawQuad(shader);
 

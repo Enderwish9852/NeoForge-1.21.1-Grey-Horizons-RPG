@@ -36,11 +36,20 @@ const int STEPS = 6;
  * (a stand-in for the real caustic network) evaluated in WORLD space,
  * so the pattern is locked to the water and moves with the swell.
  */
+/**
+ * The interference pattern standing in for the surface caustics.
+ *
+ * Time is in SECONDS, not ticks. With the game clock in ticks the
+ * phase advanced by a radian every tick, which dragged the pattern
+ * across the water at over ten blocks a second -- it read as random
+ * light patches flashing on and off rather than as light through a
+ * rippling surface.
+ */
 float caustic(vec2 p, float t) {
     float v = 0.0;
-    v += sin(p.x * 1.7 + t * 1.10) * sin(p.y * 1.3 - t * 0.90);
-    v += sin((p.x + p.y) * 0.90 - t * 0.70) * sin((p.x - p.y) * 1.10 + t * 0.50);
-    v += sin(p.x * 2.30 - t * 1.40) * sin(p.y * 2.10 + t * 1.20);
+    v += sin(p.x * 1.7 + t * 2.0) * sin(p.y * 1.3 - t * 1.7);
+    v += sin((p.x + p.y) * 0.9 - t * 1.3) * sin((p.x - p.y) * 1.1 + t * 0.9);
+    v += sin(p.x * 2.3 - t * 2.6) * sin(p.y * 2.1 + t * 2.2);
     return v / 3.0;
 }
 
@@ -71,12 +80,12 @@ void main() {
         vec2 s = p.xz - SunDir.xz * u;
 
         float c = caustic(s, Time);
-        float bands = pow(clamp(c * 0.5 + 0.5, 0.0, 1.0), 5.0);
+        float bands = pow(clamp(c * 0.5 + 0.5, 0.0, 1.0), 3.0);
         // the water absorbs what it scatters on the way down
         acc += bands * exp(-u * 0.10);
     }
     acc /= float(STEPS);
 
-    vec3 lit = SunColor * (acc * SunStrength * 2.2);
+    vec3 lit = SunColor * (acc * SunStrength * 1.4);
     fragColor = vec4(lit, 0.0);
 }
