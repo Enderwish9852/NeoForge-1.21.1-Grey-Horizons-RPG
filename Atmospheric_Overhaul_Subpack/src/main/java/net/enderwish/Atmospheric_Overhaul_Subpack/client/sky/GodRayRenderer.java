@@ -1,7 +1,8 @@
 package net.enderwish.Atmospheric_Overhaul_Subpack.client.sky;
 
-import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.pipeline.TextureTarget;
+import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.shaders.Uniform;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferBuilder;
@@ -10,7 +11,6 @@ import com.mojang.blaze3d.vertex.MeshData;
 import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexBuffer;
 import com.mojang.blaze3d.vertex.VertexFormat;
-import com.mojang.math.Axis;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.util.Mth;
@@ -33,21 +33,46 @@ import org.slf4j.LoggerFactory;
  *    1657-1659), its screen position through the mixin's view+projection
  *    matrices, one march from the camera toward the sun through
  *    OUR CloudDensityField as the intensity gate, and a 48x48
- *    cloud-transit map: each screen cell's view ray marched through the
- *    cloud layer (cloud space = world minus drift, the tile system's
+ *    cloud-transit map: each screen cell's view ray marched through
+ *    the cloud layer (cloud space = world minus drift, the tile system's
  *    seed), so the occlusion buffer carries the REAL gap pattern and
  *    rays and clouds can never disagree;
- * 2. occlusion pass, half-res: the sun disc stamped only where the
- *    main target's DEPTH is exactly sky, so terrain silhouettes cut
- *    the light (ShaderInstance.setSampler takes the raw GL texture id);
+ * 2. occlusion pass, half-res: the sun's ACTUAL DISC stamped only
+ *    where the main target's DEPTH is exactly sky, so terrain
+ *    silhouettes and tree canopies cut the light (ShaderInstance
+ *    .setSampler takes the raw GL texture id);
  * 3. radial blur, half-res, run twice chained: short sharp reach then
- *    full-length soft reach, each accumulating toward SunScreen with a
+ *    full-length soft reach, each accumulating toward the sun with a
  *    per-pass decay;
  * 4. composite: additive (ONE,ONE) onto the framebuffer the cloud
  *    render was drawing into (saved and rebound around the passes, so
  *    both Fabulous and plain rendering work), depth-tested at the far
  *    plane so rays land on sky pixels, never over near terrain, with
  *    the elevation-gated intensity and warm horizon tint.
+ *
+ * ── Round 3 rewrite ────────────────────────────────────────────────────
+ * The old version had three faults that the user hit in game:
+ *
+ * a) THE FLASH BANG. The occlusion shader stamped a "glare" disc
+ *    reaching SunRadius * 10.0. With the old constant 0.045 that is
+ *    0.45 in screen-height units -- a blob 90% of the screen across --
+ *    and the composite kept it at FULL strength for the first 0.45.
+ *    The seed is now the sun's real disc, whose size comes from the
+ *    projection matrix (so it matches the drawn sun exactly) plus a
+ *    small halo.
+ *
+ * b) "ONLY AT CERTAIN ANGLES". SunRadius was a fixed screen fraction,
+ *    so the light source never scaled with the FOV, and when the sun
+ *    left the frame the blur degenerated into a faint wash. The sun's
+ *    screen position now comes from the shared SunRenderer math, the
+ *    seed radius is derived from the projection, and an off-screen sun
+ *    switches to a broad, weaker seed at the frame edge so the shafts
+ *    keep streaming in from the sun's direction.
+ *
+ * c) The sun behind the camera. The old code returned early
+ *    (clip.w <= 0), so there were no rays at all for most of the day.
+ *    Now the convergence point becomes the ANTI-SOLAR point and the
+ *    shafts radiate from it, which is what real crepuscular rays do.
  *
  * v1 scope: sun only, no volumetric shadow pass (that would need a
  * sun-shadowmap render -- a separate feature).
@@ -60,18 +85,26 @@ public final class GodRayRenderer {
 
     // ── Tuning (v1 constants) ─────────────────────────────────────────────
 
-    private static final float BASE_INTENSITY = 0.75f;   // peak composite intensity
-    private static final float SUN_RADIUS = 0.045f;      // core disc radius, height fraction
+    private static final float BASE_INTENSITY = 0.50f;   // peak composite intensity
     private static final float BLUR1_DENSITY = 0.22f;    // pass 1: short sharp shafts
     private static final float BLUR1_DECAY = 0.955f;
-    private static final float BLUR1_EXPOSURE = 0.16f;
+    private static final float BLUR1_EXPOSURE = 0.13f;
     private static final float BLUR2_DENSITY = 1.00f;    // pass 2: full-length soft rays
     private static final float BLUR2_DECAY = 0.985f;
-    private static final float BLUR2_EXPOSURE = 0.08f;
+    private static final float BLUR2_EXPOSURE = 0.065f;
     private static final int MARCH_STEPS = 20;           // CPU sun-ray occlusion samples
     private static final double MARCH_MAX_BLOCKS = 700.0;
     private static final int MAP_SIZE = 48;              // cloud transit map cells per axis
     private static final int MAP_LAYER_SAMPLES = 3;      // density samples per map cell
+
+    /**
+     * Seed used when the sun is not in frame: a broad, weaker blob at
+     * the frame edge (screen-height units) and how much of it there is.
+     */
+    private static final float OFFSCREEN_SEED_RADIUS = 0.22f;
+    private static final float OFFSCREEN_SEED_STRENGTH = 0.55f;
+    /** How far outside the frame the convergence point may sit. */
+    private static final float OFFSCREEN_MARGIN = 0.12f;
 
     private static final Matrix4f IDENTITY = new Matrix4f();
 
@@ -109,23 +142,17 @@ public final class GodRayRenderer {
         float dayT = level.getTimeOfDay(partialTick);
 
         // sun direction in WORLD space (no camera rotation) -- elevation
-        Matrix4f sunWorldMat = new Matrix4f()
-                .rotate(Axis.YP.rotationDegrees(-90.0f))
-                .rotate(Axis.XP.rotationDegrees(dayT * 360.0f));
-        Vector3f sunWorld = sunWorldMat.transformDirection(new Vector3f(0.0f, 1.0f, 0.0f));
+        Vector3f sunWorld = SunRenderer.worldDirection(dayT);
         float elevation = sunWorld.y;
         if (elevation < -0.02f) return;   // sun below the horizon
 
-        // sun position on screen through the real view + projection
-        Matrix4f sunViewMat = new Matrix4f(viewMatrix)
-                .rotate(Axis.YP.rotationDegrees(-90.0f))
-                .rotate(Axis.XP.rotationDegrees(dayT * 360.0f));
-        Vector3f sunView = sunViewMat.transformDirection(new Vector3f(0.0f, 1.0f, 0.0f));
-        Vector4f clip = new Vector4f(sunView.x * 100.0f, sunView.y * 100.0f, sunView.z * 100.0f, 1.0f);
-        projectionMatrix.transform(clip);
-        if (clip.w <= 0.0f) return;       // sun behind the camera
-        float sunU = clip.x / clip.w * 0.5f + 0.5f;
-        float sunV = clip.y / clip.w * 0.5f + 0.5f;
+        // where the shafts converge: the sun itself, or the anti-solar
+        // point when the sun is behind the camera
+        float[] conv = new float[3];
+        SunRenderer.convergencePoint(viewMatrix, projectionMatrix, dayT, conv);
+        boolean sunInFront = conv[2] > 0.5f;
+        float sunU = conv[0];
+        float sunV = conv[1];
 
         // gates: elevation ramp, rain dim, shafts through our own clouds
         float elevGate = Mth.clamp((elevation + 0.02f) / 0.14f, 0.0f, 1.0f);
@@ -146,15 +173,45 @@ public final class GodRayRenderer {
         ensureTargets(main.width, main.height);
         ensureQuad();
         buildCloudMap(viewMatrix, projectionMatrix, camX, camY, camZ);
+
+        // ── the light source ─────────────────────────────────────────────
+        // the sun's real disc, straight off the projection matrix, so it
+        // is exactly the disc SunRenderer draws
+        float discRadius = SunRenderer.angularRadiusToUv(SunRenderer.DISC_ANGLE, projectionMatrix);
+        boolean onScreen = sunU >= 0.0f && sunU <= 1.0f && sunV >= 0.0f && sunV <= 1.0f;
+
+        float seedRadius;
+        float seedStrength;
+        float falloffInner;
+        float falloffOuter;
+        if (sunInFront && onScreen) {
+            // the sun is in frame: its disc IS the light source
+            seedRadius = discRadius;
+            seedStrength = 1.0f;
+            falloffInner = 0.12f;
+            falloffOuter = 1.05f;
+        } else {
+            // the sun is off-frame (or behind us): a broad, weaker seed
+            // just outside the frame, so the shafts keep streaming in
+            // from the sun's direction instead of dying
+            sunU = Mth.clamp(sunU, -OFFSCREEN_MARGIN, 1.0f + OFFSCREEN_MARGIN);
+            sunV = Mth.clamp(sunV, -OFFSCREEN_MARGIN, 1.0f + OFFSCREEN_MARGIN);
+            seedRadius = OFFSCREEN_SEED_RADIUS;
+            seedStrength = OFFSCREEN_SEED_STRENGTH;
+            falloffInner = 0.45f;
+            falloffOuter = 2.20f;
+        }
+
         frameCounter++;
         if (frameCounter % 100 == 1) {
-            LOGGER.info("rays #{}: sun=({}, {}), elev={}, openness={}, intensity={}, map[min={} avg={} max={} atSun={}]",
+            LOGGER.info("rays #{}: sun=({}, {}) front={} onScreen={} elev={} openness={} intensity={} seed={} map[min={} avg={} max={}]",
                     frameCounter,
                     String.format("%.2f", sunU), String.format("%.2f", sunV),
+                    sunInFront, onScreen,
                     String.format("%.2f", elevation), String.format("%.2f", openness),
                     String.format("%.2f", intensity),
-                    mapMin, String.format("%.1f", mapAvg), mapMax,
-                    String.format("%.2f", mapValueAt(sunU, sunV)));
+                    String.format("%.3f", seedRadius),
+                    mapMin, String.format("%.1f", mapAvg), mapMax);
         }
 
         int[] boundFbo = new int[1];
@@ -166,12 +223,13 @@ public final class GodRayRenderer {
         RenderSystem.disableDepthTest();
         RenderSystem.disableCull();
 
-        // pass 1: occlusion -- sun disc masked to sky pixels, into A
+        // pass 1: occlusion -- the sun's disc masked to sky pixels, into A
         passA.bindWrite(true);
         occlusion.setSampler("DiffuseSampler", main.getDepthTextureId());
         occlusion.setSampler("CloudMap", cloudMapTex);
         uniform2(occlusion, "SunScreen", sunU, sunV);
-        uniform1(occlusion, "SunRadius", SUN_RADIUS);
+        uniform1(occlusion, "SeedRadius", seedRadius);
+        uniform1(occlusion, "SeedStrength", seedStrength);
         uniform1(occlusion, "ScreenAspect", aspect);
         drawQuad(occlusion);
 
@@ -183,6 +241,7 @@ public final class GodRayRenderer {
             uniform1(blur, "RayDensity", BLUR1_DENSITY);
             uniform1(blur, "RayDecay", BLUR1_DECAY);
             uniform1(blur, "RayExposure", BLUR1_EXPOSURE);
+            uniform1(blur, "ScreenAspect", aspect);
             drawQuad(blur);
 
             passA.bindWrite(true);
@@ -222,6 +281,7 @@ public final class GodRayRenderer {
         uniform3(composite, "RayColor", tintR, tintG, tintB);
         uniform1(composite, "RayIntensity", intensity);
         uniform1(composite, "ScreenAspect", aspect);
+        uniform2(composite, "FalloffRange", falloffInner, falloffOuter);
         drawQuad(composite);
 
         // restore the state the cloud draw leaves behind
@@ -231,10 +291,11 @@ public final class GodRayRenderer {
 
         if (!loggedFirstRender) {
             loggedFirstRender = true;
-            LOGGER.info("first rays: sun=({}, {}), elev={}, openness={}, intensity={}",
+            LOGGER.info("first rays: sun=({}, {}) front={} elev={} openness={} intensity={} seed={}",
                     String.format("%.2f", sunU), String.format("%.2f", sunV),
+                    sunInFront,
                     String.format("%.2f", elevation), String.format("%.2f", openness),
-                    String.format("%.2f", intensity));
+                    String.format("%.2f", intensity), String.format("%.3f", seedRadius));
         }
     }
 
@@ -355,16 +416,7 @@ public final class GodRayRenderer {
         return (float) Mth.clamp(1.0 - avg * 1.35, 0.0, 1.0);
     }
 
-    /** Cloud-map openness at the sun's screen cell, for the periodic log line. */
-    private static float mapValueAt(float u, float v) {
-        if (cloudMapTex <= 0 || cloudMapBuf == null) return -1.0f;
-        int ix = Mth.clamp((int) (u * MAP_SIZE), 0, MAP_SIZE - 1);
-        int iy = Mth.clamp((int) (v * MAP_SIZE), 0, MAP_SIZE - 1);
-        int idx = (iy * MAP_SIZE + ix) * 4;
-        if (idx >= cloudMapBuf.limit()) return -1.0f;
-        return (cloudMapBuf.get(idx) & 0xFF) / 255.0f;
-    }
-
+    /** Allocates the small cloud-transit map texture and its upload buffer. */
     private static void ensureCloudMap() {
         if (cloudMapTex > 0) return;
         cloudMapTex = GL30C.glGenTextures();

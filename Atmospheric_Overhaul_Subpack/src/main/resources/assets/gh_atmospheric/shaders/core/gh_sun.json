@@ -1,0 +1,14 @@
+{
+    "vertex": "gh_atmospheric:gh_screen_quad",
+    "fragment": "gh_atmospheric:gh_sun",
+    "samplers": [],
+    "uniforms": [
+        { "name": "ModelViewMat", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+        { "name": "ProjMat", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+        { "name": "QuadCenter", "type": "float", "count": 2, "values": [ 0.0, 0.0 ] },
+        { "name": "QuadHalfSize", "type": "float", "count": 2, "values": [ 0.1, 0.1 ] },
+        { "name": "DiscRatio", "type": "float", "count": 1, "values": [ 0.2 ] },
+        { "name": "SunColor", "type": "float", "count": 3, "values": [ 1.0, 0.95, 0.85 ] },
+        { "name": "SunBrightness", "type": "float", "count": 1, "values": [ 1.0 ] }
+    ]
+}

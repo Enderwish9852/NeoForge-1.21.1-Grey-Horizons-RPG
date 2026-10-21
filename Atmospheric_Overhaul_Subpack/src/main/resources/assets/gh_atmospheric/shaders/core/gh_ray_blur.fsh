@@ -5,17 +5,38 @@ uniform vec2 SunScreen;
 uniform float RayDensity;
 uniform float RayDecay;
 uniform float RayExposure;
+uniform float ScreenAspect;
 
 in vec2 texCoord;
 
 out vec4 fragColor;
 
+const int STEPS = 32;
+
+/**
+ * gh_ray_blur -- the radial accumulation that smears the sun's disc
+ * into shafts (GPU Gems 3 style).
+ *
+ * Each step walks TOWARD the sun and adds what it finds, attenuated by
+ * a per-step decay. The step length is a fraction of the distance to
+ * the sun, capped, so the sampling stays dense enough not to band when
+ * the sun is far off-screen (which is the normal case for most of the
+ * day: the sun is only in frame for a short while).
+ */
 void main() {
-    vec2 stepVec = (SunScreen - texCoord) * (RayDensity / 24.0);
+    // toward the sun, in a pixel-isotropic space
+    vec2 delta = (texCoord - SunScreen) * vec2(ScreenAspect, 1.0);
+    float dist = length(delta);
+
+    float stepLen = min(dist, 1.5) * (RayDensity / float(STEPS));
+    vec2 dir = dist > 1.0e-5 ? -delta / dist : vec2(0.0);
+    // back into texCoord space
+    vec2 stepVec = vec2(dir.x / ScreenAspect, dir.y) * stepLen;
+
     vec2 coord = texCoord;
     float illum = 1.0;
     vec3 acc = vec3(0.0);
-    for (int i = 0; i < 24; i++) {
+    for (int i = 0; i < STEPS; i++) {
         coord += stepVec;
         acc += texture(DiffuseSampler, coord).rgb * illum;
         illum *= RayDecay;

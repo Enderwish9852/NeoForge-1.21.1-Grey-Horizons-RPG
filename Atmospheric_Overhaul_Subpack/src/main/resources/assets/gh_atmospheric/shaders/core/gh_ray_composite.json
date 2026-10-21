@@ -8,9 +8,10 @@
         { "name": "ModelViewMat", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
         { "name": "ProjMat", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
         { "name": "SunScreen", "type": "float", "count": 2, "values": [ 0.5, 0.5 ] },
-        { "name": "RayColor", "type": "float", "count": 3, "values": [ 1.0, 0.99, 0.96 ] },
-        { "name": "RayIntensity", "type": "float", "count": 1, "values": [ 0.7 ] },
+        { "name": "RayColor", "type": "float", "count": 3, "values": [ 1.0, 0.95, 0.85 ] },
+        { "name": "RayIntensity", "type": "float", "count": 1, "values": [ 0.5 ] },
         { "name": "ScreenAspect", "type": "float", "count": 1, "values": [ 1.7 ] },
-        { "name": "DebugMode", "type": "float", "count": 1, "values": [ 0 ] }
+        { "name": "FalloffRange", "type": "float", "count": 2, "values": [ 0.12, 1.05 ] },
+        { "name": "DebugMode", "type": "float", "count": 1, "values": [ 0.0 ] }
     ]
 }

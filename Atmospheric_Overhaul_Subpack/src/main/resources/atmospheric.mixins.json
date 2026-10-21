@@ -13,6 +13,7 @@
     "WeatherParticleMixin",
     "WeatherRenderMixin",
     "LevelRendererCloudsMixin",
+    "LevelRendererSunMixin",
     "LevelRendererWaterUniformsMixin"
   ],
   "injectionPoints": {}
