@@ -1,0 +1,23 @@
+{
+    "vertex": "gh_atmospheric:gh_rays_full",
+    "fragment": "gh_atmospheric:gh_sun_shadow",
+    "samplers": [
+        { "name": "ShadowMap" },
+        { "name": "MainDepth" }
+    ],
+    "uniforms": [
+        { "name": "ModelViewMat", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+        { "name": "ProjMat", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+        { "name": "SunViewProjMat", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+        { "name": "RayInvProjMat", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+        { "name": "RayInvViewMat", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
+        { "name": "CameraPos", "type": "float", "count": 3, "values": [ 0.0, 0.0, 0.0 ] },
+        { "name": "SunDir", "type": "float", "count": 3, "values": [ 0.0, 1.0, 0.0 ] },
+        { "name": "ShaftColor", "type": "float", "count": 3, "values": [ 1.0, 0.95, 0.85 ] },
+        { "name": "DepthRange", "type": "float", "count": 2, "values": [ 0.05, 512.0 ] },
+        { "name": "ShaftStrength", "type": "float", "count": 1, "values": [ 0.9 ] },
+        { "name": "MaxDistance", "type": "float", "count": 1, "values": [ 80.0 ] },
+        { "name": "PhaseG", "type": "float", "count": 1, "values": [ 0.45 ] },
+        { "name": "FrameJitter", "type": "float", "count": 1, "values": [ 0.0 ] }
+    ]
+}
