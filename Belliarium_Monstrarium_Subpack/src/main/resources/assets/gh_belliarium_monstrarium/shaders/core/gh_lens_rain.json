@@ -1,6 +1,6 @@
 {
     "vertex": "gh_belliarium_monstrarium:gh_lens_quad",
-    "fragment": "gh_atmospheric:gh_lens_rain",
+    "fragment": "gh_belliarium_monstrarium:gh_lens_rain",
     "samplers": [
         { "name": "DiffuseSampler" }
     ],
