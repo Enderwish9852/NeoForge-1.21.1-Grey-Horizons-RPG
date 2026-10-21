@@ -122,7 +122,13 @@ public final class UnderwaterShaftsRenderer {
         // also drawn from here rather than in the sky pass, because
         // underwater the water surface is drawn over the sky and hides
         // the sun completely.
-        Vector3f refractedView = viewMatrix.transformDirection(new Vector3f(refracted));
+        // The negated vector: the refracted one is the direction the light
+        // TRAVELS, which points down into the water, and that is where
+        // the sun is NOT. The sun as seen from underwater is the other
+        // way round, and its elevation is HIGHER than the real sun's,
+        // because the refraction compresses the sky towards the zenith.
+        Vector3f refractedView = viewMatrix.transformDirection(
+                new Vector3f(-refracted.x, -refracted.y, -refracted.z));
         float[] sunScreen = new float[3];
         SunRenderer.screenPositionOf(viewMatrix, steadyProjection, refractedView, sunScreen);
         if (sunScreen[2] < 0.5f) return;   // the sun is behind the camera
