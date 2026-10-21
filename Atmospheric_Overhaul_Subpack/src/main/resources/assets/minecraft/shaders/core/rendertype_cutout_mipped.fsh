@@ -58,32 +58,40 @@ void main() {
     }
 
     // the water does not lie evenly: it gathers, and the edges of a
-    // puddle are where it thins out
+    // puddle are where it thins out. That is what breaks the one
+    // perfect sheet, and the depth of the pool is what gives the
+    // layer its thickness.
     float pool = ghPool(ghWorldPos) * 0.5 + 0.5;
-    wet *= smoothstep(0.30, 0.60, pool);
+    float depth = smoothstep(0.30, 0.62, pool);
+    wet *= depth;
 
     if (wet > 0.001) {
         // the surface of the water is not flat: small ripples, which
         // are what make it read as a layer of water
         vec2 ripple = vec2(
             sin(ghWorldPos.x * 2.6 + ghWorldPos.z * 1.1 + ghTime * 1.6),
-            cos(ghWorldPos.z * 2.3 - ghWorldPos.x * 0.9 - ghTime * 1.2)) * 0.010;
+            cos(ghWorldPos.z * 2.3 - ghWorldPos.x * 0.9 - ghTime * 1.2));
 
-        // the block is seen THROUGH the water, so its texture is looked
-        // up slightly off. That bend is the depth of the layer.
-        vec3 base = texture(Sampler0, texCoord0 + ripple).rgb * vertexColor.rgb * ColorModulator.rgb;
+        // The block is seen THROUGH the water, so its texture is looked
+        // up slightly off. THE OFFSET MUST BE SUB-TEXEL: the block
+        // atlas is one enormous texture, so a whole percent of a UV is
+        // dozens of texels and the shader ends up sampling a different
+        // block's texture entirely. A fraction of a texel is all the
+        // bend a real puddle gives anyway.
+        vec3 base = texture(Sampler0, texCoord0 + ripple * 0.0004).rgb
+                * vertexColor.rgb * ColorModulator.rgb;
 
-        // a wet surface is a little deeper in colour
+        // deeper water is darker and glossier than the thin edges
         float lum = dot(base, vec3(0.299, 0.587, 0.114));
         base = mix(vec3(lum), base, 1.12);
-        base *= mix(1.0, 0.78, wet);
+        base *= mix(1.0, mix(0.86, 0.68, depth), wet);
 
-        vec3 n = normalize(ghNormal + vec3(ripple.x, 0.0, ripple.y) * 0.7);
+        vec3 n = normalize(ghNormal + vec3(ripple.x, 0.0, ripple.y) * 0.35);
         vec3 v = normalize(ghCameraPos - ghWorldPos);
 
         // the sky slides over the top of the water
         float fres = pow(1.0 - max(dot(n, v), 0.0), 4.0);
-        base += FogColor.rgb * fres * wet * 0.32;
+        base += FogColor.rgb * fres * wet * 0.14;
 
         // and the sun glints off the ripples
         vec3 h = normalize(ghSunDir + v);
