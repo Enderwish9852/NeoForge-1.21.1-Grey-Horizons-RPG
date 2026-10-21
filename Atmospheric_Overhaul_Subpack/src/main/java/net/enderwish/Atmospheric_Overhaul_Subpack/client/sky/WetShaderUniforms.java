@@ -57,18 +57,21 @@ public final class WetShaderUniforms {
 
         Vec3 pos = camera.getPosition();
         boolean shadowUsable = SunShadowMap.isValid();
+        // the clock the ripples on the water run on, in seconds
+        float time = (mc.level.getGameTime() % 100000L) + partialTick * 0.05f;
 
         ShaderInstance solid = GameRenderer.getRendertypeSolidShader();
         ShaderInstance cutout = GameRenderer.getRendertypeCutoutMippedShader();
-        pushTo(solid, rain, sun, pos, shadowUsable);
-        pushTo(cutout, rain, sun, pos, shadowUsable);
+        pushTo(solid, rain, sun, pos, shadowUsable, time);
+        pushTo(cutout, rain, sun, pos, shadowUsable, time);
     }
 
     private static void pushTo(ShaderInstance shader, float rain, Vector3f sun, Vec3 pos,
-                               boolean shadowUsable) {
+                               boolean shadowUsable, float time) {
         if (shader == null) return;   // not loaded yet, or not ours
         set(shader, "ghRainWetness", rain);
         set(shader, "ghShadowValid", shadowUsable ? 1.0f : 0.0f);
+        set(shader, "ghTime", time);
         set(shader, "ghCameraPos", (float) pos.x, (float) pos.y, (float) pos.z);
         set(shader, "ghSunDir", sun.x, sun.y, sun.z);
         Uniform u = shader.getUniform("ghSunClip");

@@ -12,6 +12,7 @@ uniform vec4 FogColor;
 
 uniform float ghRainWetness;   // 0..1, how hard it is raining
 uniform float ghShadowValid;   // 1 when the sun's shadow map is usable
+uniform float ghTime;          // seconds, for the ripples on the water
 uniform mat4 ghSunClip;        // world -> the sun's clip space
 uniform vec3 ghSunDir;         // towards the sun
 uniform vec3 ghCameraPos;
@@ -24,18 +25,21 @@ in vec3 ghWorldPos;
 
 out vec4 fragColor;
 
-/** A smooth, low frequency variation, so the water pools unevenly. */
+/**
+ * A slow, smooth variation across the world, so the water gathers in
+ * puddles instead of covering everything evenly.
+ */
 float ghPool(vec3 p) {
-    return sin(p.x * 0.7) * sin(p.z * 0.9 + 1.3) * sin(p.y * 0.5 + 0.7);
+    return sin(p.x * 0.27 + 1.7) * sin(p.z * 0.31 - 0.6) * sin(p.y * 0.19 + 0.9);
 }
+
 void main() {
     vec4 color = texture(Sampler0, texCoord0) * vertexColor * ColorModulator;
 
     // ---- the wet look --------------------------------------------------
-    // Only the faces that point up collect the rain, and only where
-    // the sky is actually open over them. The sun's shadow map says
-    // that: a roof or a canopy puts the ground in shadow in exactly
-    // the same way it keeps the rain off it.
+    // A PUDDLE OF WATER STANDING ON THE BLOCK, not a wet block. It
+    // has a surface of its own, which is why the block underneath is
+    // seen slightly bent and the sky slides over the top of it.
     float wet = ghRainWetness * step(0.5, ghNormal.y);
     if (wet > 0.001 && ghShadowValid > 0.5) {
         vec4 clip = ghSunClip * vec4(ghWorldPos, 1.0);
@@ -50,26 +54,40 @@ void main() {
         }
     }
 
-    wet *= 0.72 + 0.42 * (ghPool(ghWorldPos) * 0.5 + 0.5);
+    // the water does not lie evenly: it gathers, and the edges of a
+    // puddle are where it thins out
+    float pool = ghPool(ghWorldPos) * 0.5 + 0.5;
+    wet *= smoothstep(0.30, 0.60, pool);
 
     if (wet > 0.001) {
-        // Water is not a mirror. A wet surface is DARKER and a little
-        // deeper in colour, with a broad soft sheen -- not the hard
-        // rim of light a mirror throws at grazing angles.
-        vec3 base = color.rgb;
-        float lum = dot(base, vec3(0.299, 0.587, 0.114));
-        base = mix(vec3(lum), base, 1.15);          // a touch richer
-        color.rgb = base * mix(1.0, 0.74, wet);
+        // the surface of the water is not flat: small ripples, which
+        // are what make it read as a layer of water
+        vec2 ripple = vec2(
+            sin(ghWorldPos.x * 2.6 + ghWorldPos.z * 1.1 + ghTime * 1.6),
+            cos(ghWorldPos.z * 2.3 - ghWorldPos.x * 0.9 - ghTime * 1.2)) * 0.010;
 
-        vec3 n = normalize(ghNormal);
+        // the block is seen THROUGH the water, so its texture is looked
+        // up slightly off. That bend is the depth of the layer.
+        vec3 base = texture(Sampler0, texCoord0 + ripple).rgb * vertexColor.rgb * ColorModulator.rgb;
+
+        // a wet surface is a little deeper in colour
+        float lum = dot(base, vec3(0.299, 0.587, 0.114));
+        base = mix(vec3(lum), base, 1.12);
+        base *= mix(1.0, 0.78, wet);
+
+        vec3 n = normalize(ghNormal + vec3(ripple.x, 0.0, ripple.y) * 0.7);
         vec3 v = normalize(ghCameraPos - ghWorldPos);
+
+        // the sky slides over the top of the water
+        float fres = pow(1.0 - max(dot(n, v), 0.0), 4.0);
+        base += FogColor.rgb * fres * wet * 0.32;
+
+        // and the sun glints off the ripples
         vec3 h = normalize(ghSunDir + v);
-        // a broad, soft highlight rather than a tight hot spot
-        float spec = pow(max(dot(n, h), 0.0), 18.0) * wet;
-        color.rgb += spec * vec3(1.0, 0.98, 0.93) * 0.28;
-        // and only a whisper of the grazing-angle sheen a mirror has
-        float fres = pow(1.0 - max(dot(n, v), 0.0), 6.0);
-        color.rgb += fres * wet * 0.022;
+        float spec = pow(max(dot(n, h), 0.0), 40.0) * wet;
+        base += spec * vec3(1.0, 0.98, 0.93) * 0.40;
+
+        color.rgb = base;
     }
 
     fragColor = linear_fog(color, vertexDistance, FogStart, FogEnd, FogColor);

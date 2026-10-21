@@ -19,6 +19,7 @@
         { "name": "ghSunDir", "type": "float", "count": 3, "values": [ 0.0, 1.0, 0.0 ] },
         { "name": "ghSunClip", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
         { "name": "ghRainWetness", "type": "float", "count": 1, "values": [ 0.0 ] },
+        { "name": "ghTime", "type": "float", "count": 1, "values": [ 0.0 ] },
         { "name": "ghShadowValid", "type": "float", "count": 1, "values": [ 0.0 ] }
     ]
 }
