@@ -62,6 +62,7 @@ public class LevelRendererCloudsMixin {
 
     private static final Logger LOGGER = LoggerFactory.getLogger("GHAtmospheric/CloudsMixin");
     private static boolean firedOnce;
+    private static boolean loggedShadowClouds;
 
     /**
      * The chunk layer renderer. Its view and projection matrices are
@@ -157,6 +158,18 @@ public class LevelRendererCloudsMixin {
             // beams and the cloud shadows fall on the ground
             Level level = Minecraft.getInstance().level;
             if (level != null) {
+                // The map has to be bound again first: the chunk render
+                // type's output state REBINDS THE MAIN TARGET when it
+                // clears itself at the end of the layer, so without
+                // this the clouds were drawn into the main target
+                // through the sun's orthographic projection, which
+                // tore the sky apart and left the map with no clouds
+                // in it either.
+                if (!loggedShadowClouds) {
+                    loggedShadowClouds = true;
+                    LOGGER.info("cloud tiles drawn into the sun shadow map");
+                }
+                SunShadowMap.bindTarget();
                 CloudTileManager.INSTANCE.drawForShadow(level, view, projection, x, y, z);
             }
         } finally {
