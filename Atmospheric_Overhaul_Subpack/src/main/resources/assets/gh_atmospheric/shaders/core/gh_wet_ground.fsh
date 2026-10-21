@@ -1,6 +1,7 @@
 #version 150
 
 uniform sampler2D MainDepth;      // the main target's depth
+uniform sampler2D SceneSampler;   // the main target's colour
 uniform sampler2D ghShadowMap;    // the sun's shadow map, for "is the sky open"
 
 uniform mat4 RayProjMat;
@@ -14,6 +15,7 @@ uniform vec2 ScreenSize;
 uniform float Time;
 uniform float RainWetness;       // 0..1, how hard it is raining
 uniform float ShadowValid;       // 1 when the sun's shadow map is usable
+uniform float DebugMode;         // 0 off, 1 pool mask, 2 normal, 3 strength
 
 in vec2 texCoord;
 
@@ -46,14 +48,21 @@ vec3 worldPos(vec2 uv, float depth) {
     return CameraPos + (RayInvViewMat * vec4(view.xyz, 0.0)).xyz;
 }
 
-/** The surface normal, from the depth buffer's gradients. */
+/**
+ * The surface normal, from the depth buffer's gradients.
+ *
+ * The order of the cross product matters: pR - pL runs to the right
+ * and pU - pD runs AWAY from the camera, and right x away points
+ * UP. The other way round gives a normal pointing into the ground,
+ * and then every up-facing surface fails the test below.
+ */
 vec3 normalFromDepth(vec2 uv) {
     vec2 texel = 1.0 / ScreenSize;
     vec3 pL = worldPos(uv - vec2(texel.x, 0.0), texture(MainDepth, uv - vec2(texel.x, 0.0)).x);
     vec3 pR = worldPos(uv + vec2(texel.x, 0.0), texture(MainDepth, uv + vec2(texel.x, 0.0)).x);
     vec3 pD = worldPos(uv - vec2(0.0, texel.y), texture(MainDepth, uv - vec2(0.0, texel.y)).x);
     vec3 pU = worldPos(uv + vec2(0.0, texel.y), texture(MainDepth, uv + vec2(0.0, texel.y)).x);
-    return normalize(cross(pU - pD, pR - pL));
+    return normalize(cross(pR - pL, pU - pD));
 }
 
 /**
@@ -66,9 +75,11 @@ vec3 normalFromDepth(vec2 uv) {
  * same way the water's own reflection pass does, and finds what the
  * puddle is showing.
  *
- * The output is the screen position of the reflection in xy, and how
- * strongly it should show in z. The composite pass mixes it in, so
- * this pass never has to read the frame it is helping to build.
+ * The output is the REFLECTED COLOUR in rgb and how strongly it
+ * should show in a. The composite pass blends it over the frame, so
+ * this pass never reads the frame it is helping to build -- the scene
+ * is sampled here, into a scratch, and the composite only ever reads
+ * the scratch.
  */
 void main() {
     fragColor = vec4(0.0);
@@ -79,13 +90,27 @@ void main() {
 
     vec3 p = worldPos(texCoord, depth);
     vec3 n = normalFromDepth(texCoord);
-    if (n.y < 0.55) return;               // only the faces that point up
 
     // the pools, and how deep the water stands in them
     float pool = ghPool(p);
-    float inPool = smoothstep(0.42, 0.47, pool);
+    float inPool = smoothstep(0.34, 0.40, pool);
+    float depthOfWater = smoothstep(0.34, 0.58, pool);
+
+    if (DebugMode > 2.5) {
+        fragColor = vec4(vec3(inPool), 1.0);
+        return;
+    }
+    if (DebugMode > 1.5) {
+        fragColor = vec4(n * 0.5 + 0.5, 1.0);
+        return;
+    }
+    if (DebugMode > 0.5) {
+        fragColor = vec4(vec3(pool * 0.5 + 0.5), 1.0);
+        return;
+    }
+
+    if (n.y < 0.55) return;               // only the faces that point up
     if (inPool <= 0.001) return;
-    float depthOfWater = smoothstep(0.42, 0.62, pool);
 
     // is the sky open over here? the sun's shadow map answers that: a
     // roof or a canopy puts the ground in shadow in exactly the same
@@ -156,5 +181,12 @@ void main() {
     float strength = (0.10 + 0.62 * fres) * inPool * RainWetness;
     strength *= mix(0.55, 1.0, depthOfWater);
 
-    fragColor = vec4(hitUv, strength, 1.0);
+    // the reflected colour, taken from the scene
+    vec3 mirrored = texture(SceneSampler, hitUv).rgb;
+
+    if (DebugMode > 3.5) {
+        fragColor = vec4(mirrored * strength, 1.0);
+        return;
+    }
+    fragColor = vec4(mirrored, strength);
 }

@@ -1,7 +1,8 @@
 #version 150
 
-uniform sampler2D ReflectionSampler;   // the reflected screen position + strength
+uniform sampler2D ReflectionSampler;   // the reflected colour and its strength
 uniform sampler2D DiffuseSampler;      // the scene
+uniform float DebugMode;               // 0 off, 4 shows the reflection alone
 
 in vec2 texCoord;
 
@@ -14,18 +15,20 @@ out vec4 fragColor;
  * the reflection of what is around it, and only a little of the
  * ground underneath. So this mixes the reflection over the scene
  * rather than replacing it, and the blend does the mixing -- the
- * shader only has to say WHERE the reflection is and HOW MUCH of it
- * to show.
+ * shader only has to say HOW MUCH of the reflection to show.
  *
- * The reflection's screen position carries a slight wobble, which is
- * the surface of the water moving.
+ * It never reads the frame: the march already sampled the scene into
+ * the scratch, so there is no feedback of the buffer this writes to.
  */
 void main() {
     vec4 refl = texture(ReflectionSampler, texCoord);
-    if (refl.z <= 0.001) {
+    if (DebugMode > 3.5) {
+        fragColor = vec4(refl.rgb, 1.0);
+        return;
+    }
+    if (refl.a <= 0.002) {
         fragColor = vec4(0.0);
         return;
     }
-    vec3 mirrored = texture(DiffuseSampler, refl.xy).rgb;
-    fragColor = vec4(mirrored, clamp(refl.z, 0.0, 1.0));
+    fragColor = vec4(refl.rgb, clamp(refl.a, 0.0, 1.0));
 }

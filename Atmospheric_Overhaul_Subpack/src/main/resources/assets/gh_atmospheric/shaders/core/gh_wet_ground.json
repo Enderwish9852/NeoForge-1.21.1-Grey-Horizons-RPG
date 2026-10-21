@@ -3,6 +3,7 @@
     "fragment": "gh_atmospheric:gh_wet_ground",
     "samplers": [
         { "name": "MainDepth" },
+        { "name": "SceneSampler" },
         { "name": "ghShadowMap" }
     ],
     "uniforms": [
@@ -17,6 +18,7 @@
         { "name": "ScreenSize", "type": "float", "count": 2, "values": [ 1920.0, 1080.0 ] },
         { "name": "Time", "type": "float", "count": 1, "values": [ 0.0 ] },
         { "name": "RainWetness", "type": "float", "count": 1, "values": [ 0.0 ] },
-        { "name": "ShadowValid", "type": "float", "count": 1, "values": [ 0.0 ] }
+        { "name": "ShadowValid", "type": "float", "count": 1, "values": [ 0.0 ] },
+        { "name": "DebugMode", "type": "float", "count": 1, "values": [ 0.0 ] }
     ]
 }

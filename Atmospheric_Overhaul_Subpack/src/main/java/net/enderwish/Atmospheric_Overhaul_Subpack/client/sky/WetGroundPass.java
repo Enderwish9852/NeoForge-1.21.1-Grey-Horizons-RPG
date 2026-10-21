@@ -57,6 +57,18 @@ public final class WetGroundPass {
 
     private static final Matrix4f IDENTITY = new Matrix4f();
 
+    /** -Dgh.wetdebug=N shows what the pass is doing: 1 the pool mask,
+     *  2 the surface normal, 4 the reflection on its own. */
+    private static final float DEBUG = debugLevel();
+
+    private static float debugLevel() {
+        try {
+            return Float.parseFloat(System.getProperty("gh.wetdebug", "0"));
+        } catch (NumberFormatException e) {
+            return 0.0f;
+        }
+    }
+
     private static VertexBuffer quad;
     private static TextureTarget reflectionTarget;
 
@@ -97,6 +109,7 @@ public final class WetGroundPass {
         // ── 1. the march ────────────────────────────────────────────────
         reflectionTarget.bindWrite(true);
         march.setSampler("MainDepth", main.getDepthTextureId());
+        march.setSampler("SceneSampler", main.getColorTextureId());
         march.setSampler("ghShadowMap", SunShadowMap.depthTextureId());
         uniformMat(march, "RayProjMat", projectionMatrix);
         uniformMat(march, "RayViewMat", viewMatrix);
@@ -108,6 +121,7 @@ public final class WetGroundPass {
         uniform1(march, "Time", time);
         uniform1(march, "RainWetness", rain);
         uniform1(march, "ShadowValid", shadowUsable ? 1.0f : 0.0f);
+        uniform1(march, "DebugMode", DEBUG);
         drawQuad(march);
 
         // ── 2. the composite, straight onto the frame ───────────────────
@@ -117,6 +131,7 @@ public final class WetGroundPass {
         RenderSystem.defaultBlendFunc();
         composite.setSampler("ReflectionSampler", reflectionTarget.getColorTextureId());
         composite.setSampler("DiffuseSampler", main.getColorTextureId());
+        uniform1(composite, "DebugMode", DEBUG);
         drawQuad(composite);
 
         RenderSystem.disableBlend();
