@@ -1,43 +1,46 @@
 {
   "project": "Grey Horizons RPG",
   "subtitle": "NeoForge 1.21.1 - 5 subpacks",
-  "currentTask": "Fix: water reflection painted on land instead of on water",
+  "currentTask": "Round 3 DONE: realistic sun + god rays through branches, underwater light shafts, event-driven flat water ripples",
   "tasks": [
-    {
-      "title": "Find why the water mask covered the whole screen",
-      "status": "done",
-      "note": "RenderTarget.bindWrite() does NOT clear; a TextureTarget clears to WHITE by default"
-    },
-    {
-      "title": "Clear the mask target to black + copy the scene depth",
-      "status": "done",
-      "note": "WaterReflectionRenderer.prepareMaskTarget()"
-    },
-    {
-      "title": "Keep the mask pass on our own target in Fabulous mode",
-      "status": "done",
-      "note": "New mixin: MinecraftShaderTransparencyMixin"
-    },
-    {
-      "title": "Build the subpack",
-      "status": "done",
-      "note": "gradlew :Atmospheric_Overhaul_Subpack:build - green"
-    },
-    {
-      "title": "Live test in game",
-      "status": "doing",
-      "note": "User to confirm: reflection on water only, none on land"
-    }
+    { "title": "Diagnose the 90% screen flash bang", "status": "done", "note": "gh_ray_occlusion.fsh glare reached SunRadius*10 = 0.45 screen-heights; the composite held it at full strength" },
+    { "title": "Diagnose 'rays only at certain angles'", "status": "done", "note": "SunRadius was a fixed screen fraction; the sun behind the camera returned early" },
+    { "title": "Replace the vanilla square sun with a realistic one", "status": "done", "note": "SunRenderer + LevelRendererSunMixin: round disc, limb darkening, corona, FOV-correct size" },
+    { "title": "Rewrite the god ray pass", "status": "done", "note": "Seeds the sun's real disc, off-screen and anti-solar convergence, gentler composite" },
+    { "title": "Underwater light shafts", "status": "done", "note": "UnderwaterShaftsRenderer + gh_water_shafts.fsh: refracted sun ray, caustic bands, depth absorption" },
+    { "title": "Flat horizontal ripple rings", "status": "done", "note": "WaterRippleParticle overrides render() to build an XZ-plane quad, both windings" },
+    { "title": "Event-driven ripple spawning", "status": "done", "note": "WaterImpactHandler: entity/item crosses the surface -> a ring; the ambient spawner is gone" },
+    { "title": "Build the whole project", "status": "done", "note": "gradlew build - green" },
+    { "title": "Live test in game", "status": "doing", "note": "User to confirm: sun, shafts through branches, underwater shafts, impact ripples" }
   ],
   "files": [
-    { "path": "Atmospheric_Overhaul_Subpack/src/main/java/net/enderwish/Atmospheric_Overhaul_Subpack/client/water/WaterReflectionRenderer.java", "action": "modified" },
-    { "path": "Atmospheric_Overhaul_Subpack/src/main/java/net/enderwish/Atmospheric_Overhaul_Subpack/mixin/MinecraftShaderTransparencyMixin.java", "action": "new" },
-    { "path": "Atmospheric_Overhaul_Subpack/src/main/resources/atmospheric.mixins.json", "action": "modified" }
+    { "path": "Atmospheric_Overhaul_Subpack/src/main/java/net/enderwish/Atmospheric_Overhaul_Subpack/client/sky/SunRenderer.java", "action": "new" },
+    { "path": "Atmospheric_Overhaul_Subpack/src/main/java/net/enderwish/Atmospheric_Overhaul_Subpack/client/sky/SunShaderRegistry.java", "action": "new" },
+    { "path": "Atmospheric_Overhaul_Subpack/src/main/java/net/enderwish/Atmospheric_Overhaul_Subpack/client/sky/GodRayRenderer.java", "action": "modified" },
+    { "path": "Atmospheric_Overhaul_Subpack/src/main/java/net/enderwish/Atmospheric_Overhaul_Subpack/mixin/LevelRendererSunMixin.java", "action": "new" },
+    { "path": "Atmospheric_Overhaul_Subpack/src/main/java/net/enderwish/Atmospheric_Overhaul_Subpack/client/water/UnderwaterShaftsRenderer.java", "action": "new" },
+    { "path": "Atmospheric_Overhaul_Subpack/src/main/java/net/enderwish/Atmospheric_Overhaul_Subpack/client/particle/WaterRippleParticle.java", "action": "modified" },
+    { "path": "Atmospheric_Overhaul_Subpack/src/main/java/net/enderwish/Atmospheric_Overhaul_Subpack/client/particle/WaterImpactHandler.java", "action": "new" },
+    { "path": "Atmospheric_Overhaul_Subpack/src/main/java/net/enderwish/Atmospheric_Overhaul_Subpack/client/particle/RainDropParticle.java", "action": "modified" },
+    { "path": "Atmospheric_Overhaul_Subpack/src/main/java/net/enderwish/Atmospheric_Overhaul_Subpack/client/sky/SkyRenderHandler.java", "action": "modified" },
+    { "path": "Atmospheric_Overhaul_Subpack/src/main/java/net/enderwish/Atmospheric_Overhaul_Subpack/mixin/LevelRendererWaterUniformsMixin.java", "action": "modified" },
+    { "path": "Atmospheric_Overhaul_Subpack/src/main/resources/assets/gh_atmospheric/shaders/core/gh_sun.fsh", "action": "new" },
+    { "path": "Atmospheric_Overhaul_Subpack/src/main/resources/assets/gh_atmospheric/shaders/core/gh_screen_quad.vsh", "action": "new" },
+    { "path": "Atmospheric_Overhaul_Subpack/src/main/resources/assets/gh_atmospheric/shaders/core/gh_water_shafts.fsh", "action": "new" },
+    { "path": "Atmospheric_Overhaul_Subpack/src/main/resources/assets/gh_atmospheric/shaders/core/gh_ray_occlusion.fsh", "action": "modified" },
+    { "path": "Atmospheric_Overhaul_Subpack/src/main/resources/assets/gh_atmospheric/shaders/core/gh_ray_blur.fsh", "action": "modified" },
+    { "path": "Atmospheric_Overhaul_Subpack/src/main/resources/assets/gh_atmospheric/shaders/core/gh_ray_composite.fsh", "action": "modified" },
+    { "path": "Atmospheric_Overhaul_Subpack/src/main/resources/assets/gh_atmospheric/textures/particle/water_ripple.png", "action": "modified" },
+    { "path": "Atmospheric_Overhaul_Subpack/src/main/resources/assets/gh_atmospheric/textures/util/blank.png", "action": "new" }
   ],
   "notes": [
-    "Decompiled Minecraft sources for reference: .abacusai/temp/mcsrc",
-    "Root cause: maskTarget was never cleared, so it kept its initial WHITE clear colour and every pixel read as water",
-    "Second cause: the mask depth was stale, so hidden water behind terrain was still marked as water",
-    "Third cause: in Fabulous mode the translucent render type binds the game's own translucent target, stealing the mask pass"
+    "Decompiled Minecraft sources: .abacusai/temp/mcsrc (105 files) + the NeoForm sources jar in the gradle cache",
+    "Verified: RenderTarget.bindWrite() does NOT clear; TextureTarget defaults to a WHITE clear colour",
+    "Verified: SingleQuadParticle.render() is overridable -> a flat XZ quad is possible for the ripple rings",
+    "Verified: NeoForge 1.21.1 has NO entity-entered-fluid event -> the impact detector is client-side",
+    "Verified: the vanilla sun is a 60x60 quad at distance 100 with a 14px white square in a 32px texture (~15 deg across)",
+    "Verified: ParticleRenderType.PARTICLE_SHEET_TRANSLUCENT draws AFTER the translucent chunk layer, so ripples land on top of the water",
+    "Tuning knobs: SunRenderer.DISC_ANGLE / CORONA_ANGLE (sun size), GodRayRenderer BASE_INTENSITY and the two exposures (shaft strength)",
+    "Open: the sun's disc radius is seeded at 1.5x the drawn disc so a canopy's gaps can seed the shafts"
   ]
 }

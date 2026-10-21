@@ -88,10 +88,10 @@ public final class GodRayRenderer {
     private static final float BASE_INTENSITY = 0.50f;   // peak composite intensity
     private static final float BLUR1_DENSITY = 0.22f;    // pass 1: short sharp shafts
     private static final float BLUR1_DECAY = 0.955f;
-    private static final float BLUR1_EXPOSURE = 0.13f;
+    private static final float BLUR1_EXPOSURE = 0.19f;
     private static final float BLUR2_DENSITY = 1.00f;    // pass 2: full-length soft rays
     private static final float BLUR2_DECAY = 0.985f;
-    private static final float BLUR2_EXPOSURE = 0.065f;
+    private static final float BLUR2_EXPOSURE = 0.095f;
     private static final int MARCH_STEPS = 20;           // CPU sun-ray occlusion samples
     private static final double MARCH_MAX_BLOCKS = 700.0;
     private static final int MAP_SIZE = 48;              // cloud transit map cells per axis
@@ -185,8 +185,12 @@ public final class GodRayRenderer {
         float falloffInner;
         float falloffOuter;
         if (sunInFront && onScreen) {
-            // the sun is in frame: its disc IS the light source
-            seedRadius = discRadius;
+            // the sun is in frame: its disc IS the light source. The
+            // seed is a little wider than the drawn disc, because a
+            // canopy usually hides the disc itself and only lets the
+            // light through in slivers -- the shafts have to be seeded
+            // from the gaps, not from the exact pixels of the disc.
+            seedRadius = discRadius * 1.5f;
             seedStrength = 1.0f;
             falloffInner = 0.12f;
             falloffOuter = 1.05f;
