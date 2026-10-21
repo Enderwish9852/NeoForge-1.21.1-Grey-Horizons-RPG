@@ -174,9 +174,13 @@ public final class GodRayRenderer {
         if (elevation < -0.02f) return;   // sun below the horizon
 
         // where the shafts converge: the sun itself, or the anti-solar
-        // point when the sun is behind the camera
+        // point when the sun is behind the camera.
+        // The bobbing view is taken out first: MC applies the
+        // walk-cycle head bob to the projection matrix, and a source
+        // that swings with every step reads as being glued to the
+        // player's head.
         float[] conv = new float[3];
-        SunRenderer.convergencePoint(viewMatrix, projectionMatrix, dayT, conv);
+        SunRenderer.convergencePoint(viewMatrix, SunRenderer.unbobbedProjection(projectionMatrix), dayT, conv);
         boolean sunInFront = conv[2] > 0.5f;
         float sunU = conv[0];
         float sunV = conv[1];
@@ -204,7 +208,8 @@ public final class GodRayRenderer {
         // ── the light source ─────────────────────────────────────────────
         // the sun's real disc, straight off the projection matrix, so it
         // is exactly the disc SunRenderer draws
-        float discRadius = SunRenderer.angularRadiusToUv(SunRenderer.DISC_ANGLE, projectionMatrix);
+        float discRadius = SunRenderer.angularRadiusToUv(SunRenderer.DISC_ANGLE,
+                SunRenderer.unbobbedProjection(projectionMatrix));
         boolean onScreen = sunU >= 0.0f && sunU <= 1.0f && sunV >= 0.0f && sunV <= 1.0f;
         float seedRadius;
         float seedStrength;

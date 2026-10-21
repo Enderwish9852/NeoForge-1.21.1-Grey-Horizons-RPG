@@ -91,7 +91,11 @@ public final class VolumetricShaftsRenderer {
         float rain = mc.level.getRainLevel(partialTick);
         float strength = STRENGTH * (1.0f - 0.75f * rain);
 
-        Matrix4f invProj = new Matrix4f(projectionMatrix).invert();
+        // the walk-cycle head bob is applied to the projection matrix,
+        // and the shafts are real light in real air: they should not
+        // inherit a fake movement of the camera
+        Matrix4f steadyProjection = SunRenderer.unbobbedProjection(projectionMatrix);
+        Matrix4f invProj = new Matrix4f(steadyProjection).invert();
         Matrix4f invView = new Matrix4f(viewMatrix).invert();
         Vec3 cam = camera.getPosition();
 

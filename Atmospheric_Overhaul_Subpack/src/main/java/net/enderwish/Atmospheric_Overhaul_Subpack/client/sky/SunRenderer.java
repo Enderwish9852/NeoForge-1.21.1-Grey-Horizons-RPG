@@ -107,14 +107,17 @@ public final class SunRenderer {
         float elevation = sunDir.y;
         if (elevation < -0.30f) return;   // far under the horizon
 
+        // the bobbing view would swing the sun with every step
+        Matrix4f steadyProjection = SunRenderer.unbobbedProjection(projectionMatrix);
+
         float[] screen = new float[3];
-        screenPosition(frustumMatrix, projectionMatrix, dayT, screen);
+        screenPosition(frustumMatrix, steadyProjection, dayT, screen);
         if (screen[2] < 0.5f) return;     // the sun is behind the camera
         float sunU = screen[0];
         float sunV = screen[1];
 
         // screen radius of the corona, in units of the screen HEIGHT
-        float coronaUv = angularRadiusToUv(CORONA_ANGLE, projectionMatrix);
+        float coronaUv = angularRadiusToUv(CORONA_ANGLE, steadyProjection);
         var main = mc.getMainRenderTarget();
         float aspect = (float) main.width / main.height;
 
@@ -239,6 +242,36 @@ public final class SunRenderer {
         out[0] = clip.x / clip.w * 0.5f + 0.5f;
         out[1] = clip.y / clip.w * 0.5f + 0.5f;
         out[2] = inFront ? 1.0f : 0.0f;
+    }
+
+    /**
+     * The projection matrix with MC's VIEW BOBBING taken back out.
+     *
+     * GameRenderer applies the walk-cycle head bob to the PROJECTION
+     * matrix (a roll and a pitch, GameRenderer.renderLevel), so the
+     * whole world rocks as you walk. Anything computed from that
+     * matrix rocks with it -- including the screen position of the
+     * sun, and therefore the god rays, whose whole fan of shafts then
+     * swings about fifteen pixels with every step. In a sky with
+     * nothing else in it, the rays are the only thing that shows the
+     * motion, and it reads as the light source being glued to the
+     * player's head.
+     *
+     * The bob is a fake movement of the CAMERA. The shafts are real
+     * light standing in real air, so they should not inherit it.
+     *
+     * The bob is a small rotation, and a rotation leaves the ratio
+     * between the projection's m11 and m00 untouched, so the field of
+     * view and the aspect can be recovered from the matrix that was
+     * handed to us. The only error is the bob's own cosine folded into
+     * the field of view, which is under two hundredths of a percent.
+     */
+    public static Matrix4f unbobbedProjection(Matrix4f projection) {
+        float m11 = projection.m11();
+        float m00 = projection.m00();
+        float fovy = (float) (2.0 * Math.atan(1.0 / Math.max(1.0e-4, m11)));
+        float aspect = m11 / Math.max(1.0e-4f, m00);
+        return new Matrix4f().perspective(fovy, aspect, 0.05f, 1000.0f);
     }
 
     /**

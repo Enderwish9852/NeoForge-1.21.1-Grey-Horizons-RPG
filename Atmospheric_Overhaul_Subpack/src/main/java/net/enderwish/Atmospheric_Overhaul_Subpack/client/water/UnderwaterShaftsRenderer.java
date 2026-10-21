@@ -104,7 +104,11 @@ public final class UnderwaterShaftsRenderer {
         float tintG = Mth.lerp(high, 0.80f, 0.98f);
         float tintB = Mth.lerp(high, 0.58f, 0.95f);
 
-        Matrix4f invProj = new Matrix4f(projectionMatrix).invert();
+        // the walk-cycle head bob is applied to the projection matrix;
+        // the shafts are real light in real water and should not
+        // inherit a fake movement of the camera
+        Matrix4f steadyProjection = SunRenderer.unbobbedProjection(projectionMatrix);
+        Matrix4f invProj = new Matrix4f(steadyProjection).invert();
         Matrix4f invView = new Matrix4f(viewMatrix).invert();
 
         int[] boundFbo = new int[1];
