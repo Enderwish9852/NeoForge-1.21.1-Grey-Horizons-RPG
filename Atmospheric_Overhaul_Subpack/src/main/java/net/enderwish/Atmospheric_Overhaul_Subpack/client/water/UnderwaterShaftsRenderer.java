@@ -116,6 +116,12 @@ public final class UnderwaterShaftsRenderer {
         Matrix4f invProj = new Matrix4f(steadyProjection).invert();
         Matrix4f invView = new Matrix4f(viewMatrix).invert();
 
+        // the rays radiate from the sun's position on screen
+        float[] sunScreen = new float[3];
+        SunRenderer.screenPosition(viewMatrix, steadyProjection, dayT, sunScreen);
+        if (sunScreen[2] < 0.5f) return;   // the sun is behind the camera
+        float aspect = (float) main.width / main.height;
+
         int[] boundFbo = new int[1];
         GL30C.glGetIntegerv(GL30C.GL_DRAW_FRAMEBUFFER_BINDING, boundFbo);
         int prevFbo = boundFbo[0];
@@ -132,6 +138,8 @@ public final class UnderwaterShaftsRenderer {
         uniformMat(shader, "RayInvProjMat", invProj);
         uniformMat(shader, "RayInvViewMat", invView);
         uniform3(shader, "CameraPos", (float) cam.x, (float) cam.y, (float) cam.z);
+        uniform2(shader, "SunScreen", sunScreen[0], sunScreen[1]);
+        uniform1(shader, "ScreenAspect", aspect);
         uniform3(shader, "SunDir", refracted.x, refracted.y, refracted.z);
         uniform3(shader, "SunColor", tintR, tintG, tintB);
         uniform1(shader, "SunStrength", strength);
