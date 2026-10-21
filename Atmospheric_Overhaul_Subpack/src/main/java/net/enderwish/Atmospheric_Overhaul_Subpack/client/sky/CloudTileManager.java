@@ -328,11 +328,19 @@ public final class CloudTileManager {
 
     // ── Drift + eviction ─────────────────────────────────────────────────
 
-    /** Wind advection, integrated in real time (smooth at any fps). */
+    /**
+     * Wind advection, integrated in real time (smooth at any fps).
+     *
+     * It stops while the game is paused. The wall clock keeps running
+     * behind the pause screen, so without the gate the clouds kept
+     * sliding across the sky while everything else in the world was
+     * frozen.
+     */
     private void advanceDrift() {
         double now = Util.getMillis();
         double dtSec = Math.min((now - lastDriftMillis) / 1000.0, 0.25);   // clamp tab-outs
         lastDriftMillis = now;
+        if (Minecraft.getInstance().isPaused()) return;   // the world stops when the game does
         double blocksPerSec = windFactor() * DRIFT_BLOCKS_PER_TICK * 20.0;
         driftX += windX() * blocksPerSec * dtSec;
         driftZ += windZ() * blocksPerSec * dtSec;

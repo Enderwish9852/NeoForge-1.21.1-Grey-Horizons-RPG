@@ -1,5 +1,6 @@
 package net.enderwish.Belliarium_Monstrarium_Subpack.client;
 
+import net.enderwish.Atmospheric_Overhaul_Subpack.api.GameClock;
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.combat.CombatLogRowType;
 
 import java.util.ArrayList;
@@ -16,13 +17,13 @@ public final class CombatLogClientState {
     private static final List<KillFeedRow> killFeedRows = new ArrayList<>();
 
     public static void addKillFeedRow(String killerName, String weaponId, String targetName) {
-        killFeedRows.add(new KillFeedRow(killerName, weaponId, targetName, System.currentTimeMillis()));
+        killFeedRows.add(new KillFeedRow(killerName, weaponId, targetName, GameClock.millis()));
     }
 
     public static List<KillFeedRow> getKillFeedRows() { return killFeedRows; }
 
     public static void pruneKillFeed(long lingerMs, long fadeMs) {
-        killFeedRows.removeIf(row -> System.currentTimeMillis() - row.spawnedAtMillis() > lingerMs + fadeMs);
+        killFeedRows.removeIf(row -> GameClock.millis() - row.spawnedAtMillis() > lingerMs + fadeMs);
     }
 
     public static class ExpRowState {
@@ -49,14 +50,14 @@ public final class CombatLogClientState {
         row.targetValue = targetXp;
         row.visible = true;
         row.fadesOnItsOwn = fadesOnItsOwn;
-        row.shownAtMillis = System.currentTimeMillis();
+        row.shownAtMillis = GameClock.millis();
         row.fadingOut = false;
     }
 
     public static void fadeOutRow(CombatLogRowType type) {
         ExpRowState row = expRows.get(type);
         row.fadingOut = true;
-        row.fadeStartMillis = System.currentTimeMillis();
+        row.fadeStartMillis = GameClock.millis();
     }
 
     public static void restartRow(CombatLogRowType type, String label) {
@@ -75,7 +76,7 @@ public final class CombatLogClientState {
      * while it fades, instead of visibly resetting to 0 first.
      */
     public static void fadeOutAllRows() {
-        long now = System.currentTimeMillis();
+        long now = GameClock.millis();
         for (ExpRowState row : expRows.values()) {
             if (row.visible && !row.fadingOut) {
                 row.fadingOut = true;

@@ -156,9 +156,11 @@ public class BandageItem extends Item implements TargetedMedItem, GeoItem {
 
     @Override
     public double getTick(Object itemStack) {
-        // continuous 20-tick/s clock for the in-hand renderer
+        // continuous 20-tick/s clock for the in-hand renderer. It comes
+        // from GameClock rather than the system clock, so the spin
+        // freezes behind the pause screen instead of going on spinning.
         return itemStack instanceof Entity entity
                 ? entity.tickCount
-                : (double) (System.nanoTime() / 50_000_000L);
+                : net.enderwish.Atmospheric_Overhaul_Subpack.api.GameClock.millis() / 50.0;
     }
 }

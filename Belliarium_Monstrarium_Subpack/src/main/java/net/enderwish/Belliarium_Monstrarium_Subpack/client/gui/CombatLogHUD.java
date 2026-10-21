@@ -1,5 +1,6 @@
 package net.enderwish.Belliarium_Monstrarium_Subpack.client.gui;
 
+import net.enderwish.Atmospheric_Overhaul_Subpack.api.GameClock;
 import net.enderwish.Belliarium_Monstrarium_Subpack.client.CombatLogClientState;
 import net.enderwish.Belliarium_Monstrarium_Subpack.core.combat.CombatLogRowType;
 import net.minecraft.client.DeltaTracker;
@@ -66,7 +67,7 @@ public class CombatLogHUD {
         int shown = 0;
         for (int i = rows.size() - 1; i >= 0 && shown < KILL_FEED_MAX_ROWS; i--, shown++) {
             CombatLogClientState.KillFeedRow row = rows.get(i);
-            long age = System.currentTimeMillis() - row.spawnedAtMillis();
+            long age = GameClock.millis() - row.spawnedAtMillis();
             float alpha = age <= KILL_FEED_LINGER_MS
                     ? 1.0f
                     : 1.0f - Mth.clamp((age - KILL_FEED_LINGER_MS) / (float) KILL_FEED_FADE_MS, 0f, 1f);
@@ -105,7 +106,7 @@ public class CombatLogHUD {
     }
 
     private static float computeAlpha(CombatLogClientState.ExpRowState row) {
-        long now = System.currentTimeMillis();
+        long now = GameClock.millis();
         if (row.fadingOut) {
             long fadeAge = now - row.fadeStartMillis;
             return 1.0f - Mth.clamp(fadeAge / (float) COMBO_BREAK_FADE_MS, 0f, 1f);

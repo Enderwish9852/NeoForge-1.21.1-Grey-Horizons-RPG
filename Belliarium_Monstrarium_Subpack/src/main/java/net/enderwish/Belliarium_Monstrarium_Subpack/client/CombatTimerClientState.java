@@ -1,5 +1,6 @@
 package net.enderwish.Belliarium_Monstrarium_Subpack.client;
 
+import net.enderwish.Atmospheric_Overhaul_Subpack.api.GameClock;
 /**
  * CombatTimerClientState
  *
@@ -22,7 +23,7 @@ public final class CombatTimerClientState {
         elapsedSeconds = newElapsedSeconds;
         if (newEndMessage != null) {
             endMessage = newEndMessage;
-            endMessageReceivedAtMillis = System.currentTimeMillis();
+            endMessageReceivedAtMillis = GameClock.millis();
         }
 
         if (battleId != lastBattleId) {

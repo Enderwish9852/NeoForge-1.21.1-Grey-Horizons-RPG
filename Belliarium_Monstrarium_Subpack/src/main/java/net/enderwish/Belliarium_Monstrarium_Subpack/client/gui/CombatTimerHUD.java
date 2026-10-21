@@ -1,5 +1,6 @@
 package net.enderwish.Belliarium_Monstrarium_Subpack.client.gui;
 
+import net.enderwish.Atmospheric_Overhaul_Subpack.api.GameClock;
 import net.enderwish.Belliarium_Monstrarium_Subpack.client.CombatTimerClientState;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
@@ -43,7 +44,7 @@ public class CombatTimerHUD {
         String endMessage = CombatTimerClientState.getEndMessage();
         if (endMessage == null) return;
 
-        long age = System.currentTimeMillis() - CombatTimerClientState.getEndMessageReceivedAtMillis();
+        long age = GameClock.millis() - CombatTimerClientState.getEndMessageReceivedAtMillis();
         if (age >= END_MESSAGE_HOLD_MS + END_MESSAGE_FADE_MS) return;
 
         float alpha = age <= END_MESSAGE_HOLD_MS

@@ -128,7 +128,12 @@ public final class VolumetricShaftsRenderer {
         uniform1(shader, "ShaftStrength", strength);
         uniform1(shader, "MaxDistance", MAX_DISTANCE);
         uniform1(shader, "PhaseG", PHASE_G);
-        uniform1(shader, "FrameJitter", (frameCounter++ % 64) * 0.618034f);
+        // The jitter walks the ray's start offset about each frame so the
+        // discrete march turns into fine noise instead of rings. It must
+        // NOT walk while the game is paused, or the shafts would keep
+        // shimmering behind the pause screen.
+        if (!mc.isPaused()) frameCounter++;
+        uniform1(shader, "FrameJitter", (frameCounter % 64) * 0.618034f);
         uniform2(shader, "DepthRange", 0.05f, mc.gameRenderer.getDepthFar());
         drawQuad(shader);
 
