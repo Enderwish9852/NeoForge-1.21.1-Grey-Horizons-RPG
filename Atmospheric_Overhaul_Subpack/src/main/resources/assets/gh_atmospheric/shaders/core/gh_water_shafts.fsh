@@ -13,7 +13,7 @@ in vec2 texCoord;
 
 out vec4 fragColor;
 
-const int STEPS = 6;
+const int STEPS = 12;
 
 /**
  * gh_water_shafts -- sunlight coming down through the water surface.
@@ -35,6 +35,13 @@ const int STEPS = 6;
  * The bands come from the interference pattern of three sine layers
  * (a stand-in for the real caustic network) evaluated in WORLD space,
  * so the pattern is locked to the water and moves with the swell.
+ *
+ * THE PATTERN HAS TO BE COARSE ENOUGH FOR THE SAMPLING TO RESOLVE.
+ * The samples are spread along the view ray, and each one lands on a
+ * different point of the surface, so a pattern with fine features is
+ * averaged away into a flat screen-wide glow -- which is what the
+ * first version did. The wavelengths here are 5 to 10 blocks, and
+ * there are 12 samples along the ray, so the structure survives.
  */
 /**
  * The interference pattern standing in for the surface caustics.
@@ -47,9 +54,9 @@ const int STEPS = 6;
  */
 float caustic(vec2 p, float t) {
     float v = 0.0;
-    v += sin(p.x * 1.7 + t * 2.0) * sin(p.y * 1.3 - t * 1.7);
-    v += sin((p.x + p.y) * 0.9 - t * 1.3) * sin((p.x - p.y) * 1.1 + t * 0.9);
-    v += sin(p.x * 2.3 - t * 2.6) * sin(p.y * 2.1 + t * 2.2);
+    v += sin(p.x * 0.85 + t * 1.00) * sin(p.y * 0.65 - t * 0.85);
+    v += sin((p.x + p.y) * 0.45 - t * 0.65) * sin((p.x - p.y) * 0.55 + t * 0.45);
+    v += sin(p.x * 1.15 - t * 1.30) * sin(p.y * 1.05 + t * 1.10);
     return v / 3.0;
 }
 
@@ -65,7 +72,7 @@ void main() {
     vec3 dir = normalize(mat3(RayInvViewMat) * viewDir);
 
     float depth = max(0.0, SurfaceY - CameraPos.y);
-    float reach = min(depth, 18.0);
+    float reach = min(depth, 14.0);
     float stepLen = reach / float(STEPS);
 
     float acc = 0.0;

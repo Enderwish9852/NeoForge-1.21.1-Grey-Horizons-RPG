@@ -92,6 +92,19 @@ public final class GodRayRenderer {
     private static final float BLUR2_DENSITY = 1.00f;    // pass 2: full-length soft rays
     private static final float BLUR2_DECAY = 0.985f;
     private static final float BLUR2_EXPOSURE = 0.06f;
+    /**
+     * Angular radius of the god-ray light source, radians (0.075 rad =
+     * 4.3 degrees, so the source is about 58 pixels across at 1080p).
+     *
+     * This is deliberately BIGGER than the sun that is drawn (3.4
+     * degrees across). The source has to be large enough for an
+     * occluder to cut it into several pieces: a 14 pixel disc is
+     * smaller than a single gap between leaves, so the branches
+     * cannot break it up and there is nothing for the blur to fan
+     * out into separate rays. The drawn sun stays small; only the
+     * light source is wide.
+     */
+    private static final float SEED_ANGLE = 0.075f;
     private static final int MARCH_STEPS = 20;           // CPU sun-ray occlusion samples
     private static final double MARCH_MAX_BLOCKS = 700.0;
     private static final int MAP_SIZE = 48;              // cloud transit map cells per axis
@@ -129,9 +142,11 @@ public final class GodRayRenderer {
     private static int cloudMapTex = -1;
     private static java.nio.ByteBuffer cloudMapBuf;
 
-    /** Debug overlays: launch with -Dgh.raydebug=map or -Dgh.raydebug=buffer. */
+    /** Debug overlays: launch with -Dgh.raydebug=map, =buffer or =seed. */
     private static final boolean DEBUG_MAP = "map".equalsIgnoreCase(System.getProperty("gh.raydebug", ""));
     private static final boolean DEBUG_BUFFER = "buffer".equalsIgnoreCase(System.getProperty("gh.raydebug", ""));
+    /** Raw light source, before any blur: shows what the occluders cut. */
+    private static final boolean DEBUG_SEED = "seed".equalsIgnoreCase(System.getProperty("gh.raydebug", ""));
     private static int frameCounter;
     private static int mapMin, mapMax, mapSum;
     private static float mapAvg;
@@ -172,7 +187,7 @@ public final class GodRayRenderer {
         float openness = cloudOpenness(level, sunWorld, camX, camY, camZ);
         float intensity = BASE_INTENSITY * elevGate * (1.0f - 0.78f * rain) * openness;
         if (CloudTileManager.isStorm(level)) intensity *= 0.45f;
-        if (intensity <= 0.01f && !DEBUG_MAP && !DEBUG_BUFFER) return;
+        if (intensity <= 0.01f && !DEBUG_MAP && !DEBUG_BUFFER && !DEBUG_SEED) return;
 
         // tint: warm at the horizon, near-white higher up
         float high = Mth.clamp(elevation / 0.35f, 0.0f, 1.0f);
@@ -191,18 +206,18 @@ public final class GodRayRenderer {
         // is exactly the disc SunRenderer draws
         float discRadius = SunRenderer.angularRadiusToUv(SunRenderer.DISC_ANGLE, projectionMatrix);
         boolean onScreen = sunU >= 0.0f && sunU <= 1.0f && sunV >= 0.0f && sunV <= 1.0f;
-
         float seedRadius;
         float seedStrength;
         float falloffInner;
         float falloffOuter;
         if (sunInFront && onScreen) {
-            // the sun is in frame: its disc IS the light source. The
-            // seed is a little wider than the drawn disc, because a
-            // canopy usually hides the disc itself and only lets the
-            // light through in slivers -- the shafts have to be seeded
-            // from the gaps, not from the exact pixels of the disc.
-            seedRadius = discRadius * 1.2f;
+            // The sun is in frame: its GLOW is the light source. It is
+            // much wider than the drawn disc, because a canopy has to
+            // be able to cut it into several pieces -- that is what
+            // turns into separate rays. A disc the size of the drawn
+            // sun is smaller than one gap between leaves and produces
+            // nothing at all.
+            seedRadius = SunRenderer.angularRadiusToUv(SEED_ANGLE, projectionMatrix);
             seedStrength = 1.0f;
             falloffInner = 0.08f;
             falloffOuter = 1.20f;
@@ -252,7 +267,7 @@ public final class GodRayRenderer {
         drawQuad(occlusion);
 
         // pass 2 + 3: radial blur A -> B (short sharp) -> A (full-length soft)
-        if (!DEBUG_MAP) {
+        if (!DEBUG_MAP && !DEBUG_SEED) {
             passB.bindWrite(true);
             blur.setSampler("DiffuseSampler", passA.getColorTextureId());
             uniform2(blur, "SunScreen", sunU, sunV);
@@ -274,11 +289,13 @@ public final class GodRayRenderer {
         GlStateManager._glBindFramebuffer(GL30C.GL_FRAMEBUFFER, prevFbo);
         GlStateManager._viewport(0, 0, main.width, main.height);
 
-        if (DEBUG_MAP || DEBUG_BUFFER) {
+        if (DEBUG_MAP || DEBUG_BUFFER || DEBUG_SEED) {
             // debug overlay: raw view of the chosen stage, fullscreen overwrite
             RenderSystem.disableDepthTest();
             RenderSystem.disableBlend();
-            composite.setSampler("DiffuseSampler", DEBUG_MAP ? cloudMapTex : passA.getColorTextureId());
+            int source = DEBUG_MAP ? cloudMapTex
+                    : (DEBUG_SEED ? passA.getColorTextureId() : passA.getColorTextureId());
+            composite.setSampler("DiffuseSampler", source);
             uniform1(composite, "DebugMode", DEBUG_MAP ? 1.0f : 2.0f);
             drawQuad(composite);
             RenderSystem.enableDepthTest();
