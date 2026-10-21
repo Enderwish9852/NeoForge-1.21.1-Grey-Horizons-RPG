@@ -182,7 +182,9 @@ public final class LensRainRenderer {
         uniform2(shader, "ScreenSize", main.width, main.height);
         uniform1(shader, "Time", (float) (mc.level.getGameTime() % 100000L) / 20.0f + partialTick / 20.0f);
         uniform1(shader, "DropletAmount", lens);
-        uniform1(shader, "DropletSize", 0.35f + 0.45f * lens);
+        // the size of a drop, as a fraction of a grid cell: a drop is a
+        // few pixels across, not a quarter of the screen
+        uniform1(shader, "DropletSize", 0.45f + 0.55f * lens);
         uniform1(shader, "StreamBias", stream);
         uniform1(shader, "Slush", slush);
         uniform1(shader, "Aspect", (float) main.width / main.height);

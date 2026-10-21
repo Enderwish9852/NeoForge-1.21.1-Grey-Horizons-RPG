@@ -13,6 +13,9 @@ in vec2 texCoord;
 
 out vec4 fragColor;
 
+/** The droplets live on a grid of this many cells across the screen. */
+const float GRID = 7.0;
+
 float hash21(vec2 p) {
     p = fract(p * vec2(123.34, 456.21));
     p += dot(p, p + 45.32);
@@ -20,20 +23,22 @@ float hash21(vec2 p) {
 }
 
 /**
- * The water on the lens.
+ * One droplet.
  *
- * Returns the refraction offset in xy and how much of the screen the
- * water covers in z.
+ * Returns: xy = the refraction offset, in screen units; z = how much
+ * of the screen the water covers; w = the bright rim on its edge.
  *
- * Each droplet sits in a cell of a grid and slides down it, on its own
- * clock, leaving a trail behind it. The wind decides what happens:
- * when it blows into the player the rain hits the lens and runs DOWN,
- * so the droplets stream and leave long trails; when it blows the other
- * way the rain never reaches the face and all you get is the odd
- * small splash.
+ * A DROP IS A LITTLE BALL LENS. The background inside it appears
+ * magnified and INVERTED, so the sample point has to move INWARD, and
+ * in proportion to how far the pixel is from the centre. The first
+ * version normalised the offset instead, so every pixel in the drop
+ * shifted by the same amount and the drop turned into a spiky star.
+ *
+ * The drops sit in a grid, but each one is jittered inside its cell,
+ * varies in size, and some cells are empty, so they do not line up
+ * into a visible lattice.
  */
-vec3 droplets(vec2 uv, float time, float amount, float size, float stream) {
-    vec2 p = vec2(uv.x * Aspect, uv.y) * 7.0;
+vec4 oneDrop(vec2 p, float time, float amount, float size, float stream) {
     vec2 cell = floor(p);
     vec2 f = fract(p) - 0.5;
 
@@ -41,28 +46,40 @@ vec3 droplets(vec2 uv, float time, float amount, float size, float stream) {
     float h2 = hash21(cell + 17.3);
     float h3 = hash21(cell + 41.7);
 
+    // some cells have no drop at all
+    if (h3 > 0.35 + 0.6 * amount) return vec4(0.0);
+
     // how far it has run down, and how fast
     float run = fract(h1 * 7.7 + time * (0.05 + 0.10 * h2) * mix(0.35, 1.7, stream));
-    vec2 c = vec2((h2 - 0.5) * 0.6, 0.5 - run);
+    // where it sits inside its cell
+    vec2 c = vec2((h2 - 0.5) * 0.8, 0.5 - run);
 
-    // the size of the droplet, and how much of it there is
-    float r = size * (0.16 + 0.24 * h3) * mix(0.6, 1.0, amount);
-    if (r < 0.002) return vec3(0.0);
+    // the radius, in cell units: a drop is a few pixels across, not a
+    // quarter of the screen
+    float r = size * (0.030 + 0.055 * h1) * mix(0.65, 1.0, amount);
+    if (r < 0.0015) return vec4(0.0);
 
     vec2 d = f - c;
     float dist = length(d);
 
-    // a droplet is a tiny lens: it bends what is behind it
-    float inside = smoothstep(r, r * 0.25, dist);
-    vec2 offset = normalize(d + 1.0e-4) * inside * 0.022;
+    float inside = smoothstep(r, r * 0.30, dist);
+    if (inside <= 0.0) {
+        // the trail it leaves running down
+        float trail = smoothstep(r * 0.55, 0.0, abs(d.x))
+                    * smoothstep(0.0, 0.18, c.y)
+                    * (1.0 - smoothstep(0.0, 0.8, c.y))
+                    * stream * 0.5;
+        return vec4(0.0, 0.0, trail, 0.0);
+    }
 
-    // the trail it leaves running down
-    float trail = smoothstep(r * 0.45, 0.0, abs(d.x))
-                * smoothstep(0.0, 0.22, c.y)
-                * (1.0 - smoothstep(0.0, 0.85, c.y))
-                * stream * 0.45;
+    // the sample point moves inward, in proportion to the distance
+    // from the centre: the background is magnified and flipped
+    vec2 offset = -d * 0.55;
 
-    return vec3(offset, max(inside, trail));
+    // the rim of a drop catches the light
+    float rim = smoothstep(r, r * 0.72, dist) - smoothstep(r * 0.72, r * 0.34, dist);
+
+    return vec4(offset, inside, rim);
 }
 
 /**
@@ -77,32 +94,40 @@ void main() {
     vec2 uv = texCoord;
     vec2 offset = vec2(0.0);
     float cover = 0.0;
+    float rim = 0.0;
 
     if (DropletAmount > 0.001) {
-        vec3 d = droplets(uv, Time, DropletAmount, DropletSize, StreamBias);
-        offset += d.xy;
+        vec2 p = vec2(uv.x * Aspect, uv.y) * GRID;
+        vec4 d = oneDrop(p, Time, DropletAmount, DropletSize, StreamBias);
+        // the offset is in cell units: back to screen units
+        offset += vec2(d.x / Aspect, d.y) / GRID;
         cover = max(cover, d.z);
+        rim = max(rim, d.w);
     }
 
     if (Slush > 0.001) {
         // the water coming off when you surface: the same drops, but
-        // bigger, denser and running down fast, over a screen that is
-        // still wet all over
-        vec3 s = droplets(uv, Time * 3.2, 1.0, DropletSize * 1.9 + 0.35, 1.0);
-        offset += s.xy * Slush;
+        // running fast over a screen that is still wet all over
+        vec2 p = vec2(uv.x * Aspect, uv.y) * (GRID * 0.65);
+        vec4 s = oneDrop(p, Time * 3.4, 1.0, DropletSize * 1.2, 1.0);
+        offset += vec2(s.x / Aspect, s.y) / (GRID * 0.65) * Slush;
         cover = max(cover, s.z * Slush);
-        // the whole lens is running
-        offset += vec2(sin(uv.y * 70.0 + Time * 14.0) * 0.005, 0.0) * Slush;
-        cover = max(cover, Slush * 0.55);
+        rim = max(rim, s.w * Slush);
+
+        // the whole lens is running with water
+        offset += vec2(sin(uv.y * 55.0 + Time * 11.0) * 0.010,
+                       sin(uv.x * 31.0 - Time * 8.0) * 0.004) * Slush;
+        cover = max(cover, Slush * 0.85);
     }
 
-    if (cover < 0.002) {
+    if (cover < 0.002 && rim < 0.002) {
         fragColor = texture(DiffuseSampler, uv);
         return;
     }
 
     vec3 col = texture(DiffuseSampler, uv + offset).rgb;
-    // the water picks up a little light
-    col += cover * 0.05;
+    // the water catches the light: a bright rim on each drop, and a
+    // little sheen over the whole sheet
+    col += rim * 0.10 + cover * 0.045;
     fragColor = vec4(col, 1.0);
 }
