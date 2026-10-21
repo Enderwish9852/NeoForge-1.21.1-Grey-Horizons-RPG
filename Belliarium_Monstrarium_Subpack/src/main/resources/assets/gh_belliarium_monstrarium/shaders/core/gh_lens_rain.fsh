@@ -26,7 +26,7 @@ float hash21(vec2 p) {
  * One droplet.
  *
  * Returns: xy = the refraction offset, in screen units; z = how much
- * of the screen the water covers; w = the bright rim on its edge.
+ * of the screen the water covers.
  *
  * A DROP IS A LITTLE BALL LENS. The background inside it appears
  * magnified and INVERTED, so the sample point has to move INWARD, and
@@ -46,8 +46,10 @@ vec4 oneDrop(vec2 p, float time, float amount, float size, float stream) {
     float h2 = hash21(cell + 17.3);
     float h3 = hash21(cell + 41.7);
 
-    // some cells have no drop at all
-    if (h3 > 0.35 + 0.6 * amount) return vec4(0.0);
+    // Most cells have no drop at all, and the fraction that does
+    // grows with how wet the lens is: a nearly dry lens has a few
+    // scattered drops, a soaked one has a lot.
+    if (h3 > 0.85 - 0.6 * amount) return vec4(0.0);
 
     // how far it has run down, and how fast
     float run = fract(h1 * 7.7 + time * (0.05 + 0.10 * h2) * mix(0.35, 1.7, stream));
@@ -56,7 +58,7 @@ vec4 oneDrop(vec2 p, float time, float amount, float size, float stream) {
 
     // the radius, in cell units: a drop is a few pixels across, not a
     // quarter of the screen
-    float r = size * (0.030 + 0.055 * h1) * mix(0.65, 1.0, amount);
+    float r = size * (0.09 + 0.15 * h1) * mix(0.65, 1.0, amount);
     if (r < 0.0015) return vec4(0.0);
 
     vec2 d = f - c;
@@ -76,10 +78,7 @@ vec4 oneDrop(vec2 p, float time, float amount, float size, float stream) {
     // from the centre: the background is magnified and flipped
     vec2 offset = -d * 0.55;
 
-    // the rim of a drop catches the light
-    float rim = smoothstep(r, r * 0.72, dist) - smoothstep(r * 0.72, r * 0.34, dist);
-
-    return vec4(offset, inside, rim);
+    return vec4(offset, inside, 0.0);
 }
 
 /**
@@ -94,7 +93,6 @@ void main() {
     vec2 uv = texCoord;
     vec2 offset = vec2(0.0);
     float cover = 0.0;
-    float rim = 0.0;
 
     if (DropletAmount > 0.001) {
         vec2 p = vec2(uv.x * Aspect, uv.y) * GRID;
@@ -102,7 +100,6 @@ void main() {
         // the offset is in cell units: back to screen units
         offset += vec2(d.x / Aspect, d.y) / GRID;
         cover = max(cover, d.z);
-        rim = max(rim, d.w);
     }
 
     if (Slush > 0.001) {
@@ -112,22 +109,20 @@ void main() {
         vec4 s = oneDrop(p, Time * 3.4, 1.0, DropletSize * 1.2, 1.0);
         offset += vec2(s.x / Aspect, s.y) / (GRID * 0.65) * Slush;
         cover = max(cover, s.z * Slush);
-        rim = max(rim, s.w * Slush);
 
         // the whole lens is running with water
-        offset += vec2(sin(uv.y * 55.0 + Time * 11.0) * 0.010,
+        offset += vec2(sin(uv.y * 55.0 + Time * 11.0) * 0.005,
                        sin(uv.x * 31.0 - Time * 8.0) * 0.004) * Slush;
-        cover = max(cover, Slush * 0.85);
+        cover = max(cover, Slush * 0.55);
     }
 
-    if (cover < 0.002 && rim < 0.002) {
+    if (cover < 0.002) {
         fragColor = texture(DiffuseSampler, uv);
         return;
     }
 
     vec3 col = texture(DiffuseSampler, uv + offset).rgb;
-    // the water catches the light: a bright rim on each drop, and a
-    // little sheen over the whole sheet
-    col += rim * 0.10 + cover * 0.045;
+    // a little sheen over the water
+    col += cover * 0.05;
     fragColor = vec4(col, 1.0);
 }
