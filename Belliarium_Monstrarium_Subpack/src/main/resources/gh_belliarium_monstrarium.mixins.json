@@ -10,7 +10,8 @@
   "client": [
     "ItemEntityRendererMixin",
     "ItemInHandRendererMixin",
-    "GuiMixin"
+    "GuiMixin",
+    "LevelRendererLensRainMixin"
   ],
   "injectors": {
     "defaultRequire": 1
