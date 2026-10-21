@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Grey Horizons RPG - Dev Dashboard</title>
+<style>
+  :root {
+    --bg: #0e1116;
+    --panel: #151a21;
+    --panel2: #1b212a;
+    --line: #262d38;
+    --text: #d7dee8;
+    --muted: #8b97a8;
+    --accent: #7fd1a6;
+    --warn: #e0b062;
+    --bad: #e08585;
+    --blue: #79a9e8;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 13px/1.5 "Segoe UI", system-ui, sans-serif;
+  }
+  header {
+    display: flex; align-items: baseline; gap: 14px;
+    padding: 12px 18px; border-bottom: 1px solid var(--line);
+    background: var(--panel); position: sticky; top: 0; z-index: 5;
+  }
+  header h1 { font-size: 15px; margin: 0; letter-spacing: .3px; }
+  header .sub { color: var(--muted); font-size: 12px; }
+  header .grow { flex: 1; }
+  .pill {
+    border: 1px solid var(--line); border-radius: 999px;
+    padding: 1px 9px; font-size: 11px; color: var(--muted);
+  }
+  .live { color: var(--accent); }
+  .live::before {
+    content: ""; display: inline-block; width: 7px; height: 7px;
+    border-radius: 50%; background: var(--accent); margin-right: 6px;
+    animation: pulse 1.6s infinite;
+  }
+  @keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: .25 } }
+  .layout { display: flex; align-items: flex-start; }
+  aside {
+    width: 320px; flex: 0 0 320px; min-height: calc(100vh - 44px);
+    border-right: 1px solid var(--line); background: var(--panel);
+    padding: 14px 14px 40px;
+  }
+  main { flex: 1; padding: 14px 18px 60px; min-width: 0; }
+  h2 {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px;
+    color: var(--muted); margin: 20px 0 8px; font-weight: 600;
+  }
+  h2:first-child { margin-top: 0; }
+  .card {
+    background: var(--panel2); border: 1px solid var(--line);
+    border-radius: 8px; padding: 10px 12px; margin-bottom: 8px;
+  }
+  .task { display: flex; gap: 9px; align-items: flex-start; }
+  .task .dot {
+    width: 9px; height: 9px; border-radius: 50%; margin-top: 5px; flex: 0 0 auto;
+    background: var(--muted);
+  }
+  .task.done .dot { background: var(--accent); }
+  .task.doing .dot { background: var(--warn); animation: pulse 1.4s infinite; }
+  .task.todo .dot { background: #4a5462; }
+  .task .body { min-width: 0; }
+  .task .title { font-weight: 600; }
+  .task.done .title { color: var(--muted); text-decoration: line-through; }
+  .task .note { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .badge {
+    font-size: 10px; text-transform: uppercase; letter-spacing: .6px;
+    border-radius: 4px; padding: 1px 6px; border: 1px solid var(--line);
+    color: var(--muted); margin-left: 6px; vertical-align: 1px;
+  }
+  .badge.doing { color: var(--warn); border-color: #4a3d26; }
+  .badge.done { color: var(--accent); border-color: #2b4738; }
+  .badge.new { color: var(--blue); border-color: #2b3c52; }
+  .badge.modified { color: var(--warn); border-color: #4a3d26; }
+  .badge.deleted { color: var(--bad); border-color: #52302f; }
+  .badge.added { color: var(--blue); border-color: #2b3c52; }
+  .badge.renamed { color: var(--blue); border-color: #2b3c52; }
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: 1px;
+    color: var(--muted); font-weight: 600; padding: 4px 8px; border-bottom: 1px solid var(--line);
+  }
+  td { padding: 4px 8px; border-bottom: 1px solid #1e242d; vertical-align: top; }
+  td.path { font-family: Consolas, monospace; font-size: 12px; word-break: break-all; }
+  td.num { text-align: right; font-family: Consolas, monospace; font-size: 12px; white-space: nowrap; }
+  .plus { color: var(--accent); }
+  .minus { color: var(--bad); }
+  .mono { font-family: Consolas, monospace; font-size: 12px; color: var(--muted); }
+  .empty { color: var(--muted); font-style: italic; padding: 6px 0; }
+  .bar { height: 4px; background: var(--line); border-radius: 3px; overflow: hidden; margin-top: 4px; }
+  .bar > i { display: block; height: 100%; background: var(--accent); }
+  button {
+    background: var(--panel2); color: var(--text); border: 1px solid var(--line);
+    border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: 12px;
+  }
+  button:hover { border-color: var(--blue); }
+  @media (max-width: 860px) {
+    .layout { flex-direction: column; }
+    aside {
+      width: 100%; flex: 0 0 auto; min-height: 0;
+      border-right: none; border-bottom: 1px solid var(--line);
+    }
+    header { flex-wrap: wrap; gap: 8px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1 id="project">Grey Horizons RPG</h1>
+  <span class="sub" id="subtitle">NeoForge 1.21.1</span>
+  <span class="grow"></span>
+  <span class="pill" id="branch">branch</span>
+  <span class="pill live" id="live">live</span>
+  <button onclick="load()">Refresh</button>
+</header>
+
+<div class="layout">
+  <aside>
+    <h2>Current task</h2>
+    <div class="card" id="current">-</div>
+    <h2>Task list</h2>
+    <div id="tasks"></div>
+    <h2>Notes</h2>
+    <div id="notes"></div>
+  </aside>
+  <main>
+    <h2>Files in working tree (live from git)</h2>
+    <table>
+      <thead>
+        <tr><th style="width:110px">Action</th><th>File</th><th style="width:110px">Module</th><th style="width:80px">Size</th></tr>
+      </thead>
+      <tbody id="files"></tbody>
+    </table>
+    <h2>Files touched this session</h2>
+    <table>
+      <thead>
+        <tr><th style="width:110px">Action</th><th>File</th><th style="width:90px">+/-</th></tr>
+      </thead>
+      <tbody id="session"></tbody>
+    </table>
+    <h2>Recent commits</h2>
+    <div class="mono" id="commits"></div>
+    <h2>Progress</h2>
+    <div class="card" id="progress"></div>
+  </main>
+</div>
+
+<script>
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+}
+function size(b) {
+  if (b == null) return '';
+  if (b < 1024) return b + ' B';
+  if (b < 1024 * 1024) return (b / 1024).toFixed(1) + ' KB';
+  return (b / 1048576).toFixed(2) + ' MB';
+}
+function bytes(a, r) {
+  if (!a && !r) return '';
+  return '<span class="plus">+' + (a || 0) + '</span> <span class="minus">-' + (r || 0) + '</span>';
+}
+
+async function load() {
+  let s;
+  try {
+    const res = await fetch('/api/state', { cache: 'no-store' });
+    s = await res.json();
+  } catch (e) {
+    document.getElementById('live').textContent = 'offline';
+    return;
+  }
+
+  document.getElementById('project').textContent = s.project || 'Grey Horizons RPG';
+  document.getElementById('subtitle').textContent = s.subtitle || '';
+  document.getElementById('branch').textContent = (s.git && s.git.branch) || 'no-git';
+  document.getElementById('current').textContent = s.currentTask || 'idle';
+
+  document.getElementById('tasks').innerHTML = (s.tasks || []).map(t => {
+    const st = t.status || 'todo';
+    return '<div class="card task ' + esc(st) + '">' +
+      '<span class="dot"></span><div class="body">' +
+      '<div class="title">' + esc(t.title) + '<span class="badge ' + esc(st) + '">' + esc(st) + '</span></div>' +
+      (t.note ? '<div class="note">' + esc(t.note) + '</div>' : '') +
+      '</div></div>';
+  }).join('') || '<div class="empty">no tasks</div>';
+
+  document.getElementById('notes').innerHTML = (s.notes || []).map(n =>
+    '<div class="card"><div class="note">' + esc(n) + '</div></div>'
+  ).join('') || '<div class="empty">no notes</div>';
+
+  const stat = {};
+  (s.git && s.git.diffStat || []).forEach(d => { stat[d.path] = d; });
+
+  document.getElementById('files').innerHTML = ((s.git && s.git.workingFiles) || []).map(f => {
+    const d = stat[f.path];
+    return '<tr><td><span class="badge ' + esc(f.action) + '">' + esc(f.action) + '</span></td>' +
+      '<td class="path">' + esc(f.path) + '</td>' +
+      '<td class="mono">' + esc(f.module) + '</td>' +
+      '<td class="num">' + size(f.size) + (d ? ' ' + bytes(d.added, d.removed) : '') + '</td></tr>';
+  }).join('') || '<tr><td colspan="4" class="empty">working tree clean</td></tr>';
+
+  document.getElementById('session').innerHTML = (s.files || []).map(f => {
+    const d = stat[f.path];
+    return '<tr><td><span class="badge ' + esc(f.action) + '">' + esc(f.action) + '</span></td>' +
+      '<td class="path">' + esc(f.path) + '</td>' +
+      '<td class="num">' + (d ? bytes(d.added, d.removed) : '') + '</td></tr>';
+  }).join('') || '<tr><td colspan="3" class="empty">nothing touched yet</td></tr>';
+
+  document.getElementById('commits').innerHTML = ((s.git && s.git.commits) || '')
+    .split('\n').filter(Boolean).map(c => '<div>' + esc(c) + '</div>').join('') || '-';
+
+  const tasks = s.tasks || [];
+  const done = tasks.filter(t => t.status === 'done').length;
+  const pct = tasks.length ? Math.round((done / tasks.length) * 100) : 0;
+  document.getElementById('progress').innerHTML =
+    '<div>' + done + ' / ' + tasks.length + ' tasks done</div>' +
+    '<div class="bar"><i style="width:' + pct + '%"></i></div>';
+}
+
+load();
+setInterval(load, 2500);
+</script>
+</body>
+</html>

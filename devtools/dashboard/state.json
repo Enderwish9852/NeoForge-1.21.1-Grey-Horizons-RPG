@@ -1,0 +1,34 @@
+{
+  "project": "Grey Horizons RPG",
+  "subtitle": "NeoForge 1.21.1 - 5 subpacks",
+  "currentTask": "Dashboard ready - waiting for your feature plan",
+  "tasks": [
+    {
+      "title": "Build live dev dashboard on localhost",
+      "status": "done",
+      "note": "http://localhost:7645 - Node server + HTML side panel, reads git working tree live"
+    },
+    {
+      "title": "Restart helper script",
+      "status": "done",
+      "note": "powershell -ExecutionPolicy Bypass -File devtools/dashboard/start.ps1"
+    },
+    {
+      "title": "Wait for the first feature plan from the user",
+      "status": "doing",
+      "note": "Ask questions until ~95% sure, then code off verified facts"
+    }
+  ],
+  "files": [
+    { "path": "devtools/dashboard/server.js", "action": "new" },
+    { "path": "devtools/dashboard/dashboard.html", "action": "new" },
+    { "path": "devtools/dashboard/start.ps1", "action": "new" },
+    { "path": "devtools/dashboard/state.json", "action": "new" },
+    { "path": ".gitignore", "action": "modified" }
+  ],
+  "notes": [
+    "Decompiled Minecraft sources for reference: .abacusai/temp/mcsrc",
+    "Modules: Atmospheric_Overhaul, Farming_Overhaul, TerraForma, Frontier, Belliarium_Monstrarium",
+    "Uncommitted work-in-progress already in the tree before this session - left untouched"
+  ]
+}
