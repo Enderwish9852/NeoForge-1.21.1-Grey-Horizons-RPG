@@ -245,6 +245,22 @@ public final class SunRenderer {
     }
 
     /**
+     * The sun's colour at a given elevation: white high up, deep
+     * orange at the horizon.
+     *
+     * The old formula was Mth.lerp(high, 0.78, 0.99), which works out
+     * as 0.772 + 0.01 * high -- almost the same colour at every
+     * elevation, so the sun never actually reddened at sunrise. This
+     * is a plain lerp from the horizon colour to the noon colour.
+     */
+    public static Vector3f color(Vector3f sunDir) {
+        float high = Mth.clamp(sunDir.y / 0.35f, 0.0f, 1.0f);
+        return new Vector3f(1.0f,
+                Mth.lerp(0.42f, 0.97f, high),
+                Mth.lerp(0.12f, 0.92f, high));
+    }
+
+    /**
      * The projection matrix with MC's VIEW BOBBING taken back out.
      *
      * GameRenderer applies the walk-cycle head bob to the PROJECTION

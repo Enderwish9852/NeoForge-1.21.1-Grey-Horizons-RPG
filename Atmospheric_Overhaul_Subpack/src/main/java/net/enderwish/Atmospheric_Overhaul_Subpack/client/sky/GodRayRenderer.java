@@ -194,10 +194,10 @@ public final class GodRayRenderer {
         if (intensity <= 0.01f && !DEBUG_MAP && !DEBUG_BUFFER && !DEBUG_SEED) return;
 
         // tint: warm at the horizon, near-white higher up
-        float high = Mth.clamp(elevation / 0.35f, 0.0f, 1.0f);
-        float tintR = 1.0f;
-        float tintG = Mth.lerp(high, 0.78f, 0.99f);
-        float tintB = Mth.lerp(high, 0.55f, 0.96f);
+        Vector3f sunColour = SunRenderer.color(sunWorld);
+        float tintR = sunColour.x;
+        float tintG = sunColour.y;
+        float tintB = sunColour.z;
 
         com.mojang.blaze3d.pipeline.RenderTarget main = mc.getMainRenderTarget();
         float aspect = (float) main.width / main.height;

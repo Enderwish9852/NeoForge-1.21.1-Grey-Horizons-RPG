@@ -13,7 +13,7 @@
         { "name": "RayInvViewMat", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
         { "name": "CameraPos", "type": "float", "count": 3, "values": [ 0.0, 0.0, 0.0 ] },
         { "name": "DepthRange", "type": "float", "count": 2, "values": [ 0.05, 512.0 ] },
-        { "name": "ShadowStrength", "type": "float", "count": 1, "values": [ 0.28 ] },
+        { "name": "ShadowFactor", "type": "float", "count": 3, "values": [ 1.0, 1.0, 1.0 ] },
         { "name": "ShadowTexel", "type": "float", "count": 1, "values": [ 0.001 ] }
     ]
 }

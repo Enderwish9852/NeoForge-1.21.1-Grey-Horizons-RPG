@@ -59,6 +59,13 @@ public final class VolumetricShaftsRenderer {
     private static final float PHASE_G = 0.45f;
     private static final float STRENGTH = 0.90f;
 
+    /**
+     * How strongly the sun's light counts against the sky's, at the
+     * zenith. A clear noon shadow is strong -- around a third of the
+     * sunlit brightness -- and this is the number that puts it there.
+     */
+    private static final float SUN_STRENGTH = 0.65f;
+
     private static final Matrix4f IDENTITY = new Matrix4f();
 
     private static VertexBuffer quad;
@@ -84,10 +91,10 @@ public final class VolumetricShaftsRenderer {
         if (sun.y <= 0.02f) return;
 
         // warm at the horizon, near-white higher up
-        float high = Mth.clamp(sun.y / 0.35f, 0.0f, 1.0f);
-        float tintR = 1.0f;
-        float tintG = Mth.lerp(high, 0.80f, 0.98f);
-        float tintB = Mth.lerp(high, 0.60f, 0.95f);
+        Vector3f sunColour = SunRenderer.color(sun);
+        float tintR = sunColour.x;
+        float tintG = sunColour.y;
+        float tintB = sunColour.z;
         float rain = mc.level.getRainLevel(partialTick);
         float strength = STRENGTH * (1.0f - 0.75f * rain);
 
@@ -171,12 +178,49 @@ public final class VolumetricShaftsRenderer {
         Vector3f sun = SunRenderer.worldDirection(mc.level.getTimeOfDay(partialTick));
         if (sun.y <= 0.02f) return;
 
-        // the sun is worth less and less as it sinks towards the
-        // horizon, and at night it is worth nothing
-        float strength = 0.30f * Mth.clamp(sun.y / 0.30f, 0.0f, 1.0f);
+        // ── how much the sun is actually worth ──────────────────────────
+        //
+        // A surface in the open is lit by the sky AND by the sun; a
+        // surface in shadow keeps only the sky's share. So what a
+        // shadow has to multiply the surface by is
+        //
+        //     ambient / (ambient + sun)
+        //
+        // and that has to be done PER CHANNEL, because the two are
+        // different colours: the sky's light is blue and the sun's is
+        // warm. It comes out right on its own -- at noon the shadow is
+        // strong and blue, and at sunrise the sun is so weak that
+        // there is barely a shadow at all, just a faint blue one.
+        //
+        // The ambient is Minecraft's own sky light: a level, times the
+        // blue tint LightTexture puts on it.
+        float skyDarken = mc.level.getSkyDarken(1.0F);
+        float ambientLevel = skyDarken * 0.95f + 0.05f;
+        // LightTexture tints the sky light blue by mixing it 35% of the
+        // way to white; the blue channel starts at 1 and stays there.
+        float skyR = Mth.lerp(0.35f, skyDarken, 1.0f);
+        float skyG = skyR;
+        float skyB = 1.0f;
+
+        // the sun: its irradiance on a horizontal surface, and its
+        // colour -- white high up, deep orange at the horizon
         float rain = mc.level.getRainLevel(partialTick);
-        strength *= 1.0f - 0.6f * rain;
-        if (strength <= 0.005f) return;
+        float sunStrength = SUN_STRENGTH * Math.max(0.0f, sun.y) * (1.0f - 0.6f * rain);
+        Vector3f sunColour = SunRenderer.color(sun);
+        float sunR = sunColour.x;
+        float sunG = sunColour.y;
+        float sunB = sunColour.z;
+
+        float ambientR = skyR * ambientLevel;
+        float ambientG = skyG * ambientLevel;
+        float ambientB = skyB * ambientLevel;
+
+        float factorR = ambientR / Math.max(1.0e-4f, ambientR + sunStrength * sunR);
+        float factorG = ambientG / Math.max(1.0e-4f, ambientG + sunStrength * sunG);
+        float factorB = ambientB / Math.max(1.0e-4f, ambientB + sunStrength * sunB);
+        if (factorR > 0.995f && factorG > 0.995f && factorB > 0.995f) {
+            return;   // the sun is worth nothing: no shadow to cast
+        }
 
         Matrix4f steadyProjection = SunRenderer.unbobbedProjection(projectionMatrix);
         Matrix4f invProj = new Matrix4f(steadyProjection).invert();
@@ -209,9 +253,8 @@ public final class VolumetricShaftsRenderer {
         uniformMat(shader, "RayInvViewMat", invView);
         uniform3(shader, "CameraPos", (float) cam.x, (float) cam.y, (float) cam.z);
         uniform2(shader, "DepthRange", 0.05f, mc.gameRenderer.getDepthFar());
-        uniform1(shader, "ShadowStrength", strength);
-        uniform1(shader, "ShadowTexel", 1.0f / SunShadowMap.SIZE);
-        drawQuad(shader);
+        uniform3(shader, "ShadowFactor", factorR, factorG, factorB);
+        uniform1(shader, "ShadowTexel", 1.0f / SunShadowMap.SIZE);        drawQuad(shader);
 
         RenderSystem.disableBlend();
         RenderSystem.defaultBlendFunc();

@@ -7,7 +7,7 @@ uniform mat4 RayInvProjMat;
 uniform mat4 RayInvViewMat;
 uniform vec3 CameraPos;
 uniform vec2 DepthRange;          // near, far of the main projection
-uniform float ShadowStrength;     // how much the sun's light is worth
+uniform vec3 ShadowFactor;        // per channel: what a shadowed surface keeps
 uniform float ShadowTexel;        // 1 / the shadow map's size
 
 in vec2 texCoord;
@@ -71,6 +71,9 @@ void main() {
     }
     lit *= 0.25;
 
-    float factor = 1.0 - ShadowStrength * (1.0 - lit);
-    fragColor = vec4(vec3(factor), 1.0);
+    // ShadowFactor is what a shadowed surface KEEPS, per channel, and
+    // it is worked out on the CPU as ambient / (ambient + sun). The
+    // lit surfaces keep everything, the shadowed ones keep only the
+    // part of the light that came from the sky.
+    fragColor = vec4(mix(ShadowFactor, vec3(1.0), lit), 1.0);
 }
