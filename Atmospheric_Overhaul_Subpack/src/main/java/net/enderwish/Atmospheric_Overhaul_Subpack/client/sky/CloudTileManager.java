@@ -71,6 +71,24 @@ public final class CloudTileManager {
     private Level lastLevel;
     private volatile long seed;
     private volatile int epoch;
+
+    /**
+     * The weather generation the clouds are meshed for, and the rain
+     * level that goes with it.
+     *
+     * The rain changes the cloud field -- it spreads the coverage so
+     * the cumulus masses join up into weather systems, and it makes
+     * them deeper and denser -- and the coverage is baked into the
+     * mesh, so the tiles have to be meshed again when it changes.
+     *
+     * It is QUANTISED: the weather ramps up over a while, and
+     * re-meshing every visible tile on every tiny change would peg
+     * the worker thread. Eight steps means the clouds visibly build
+     * up over the course of the rain instead.
+     */
+    private static final int WEATHER_STEPS = 8;
+    private volatile int weatherGeneration = -1;
+    private float weatherRain = 0.0f;
     private long frame;
     private double driftX, driftZ;
     private double lastDriftMillis;
@@ -96,6 +114,7 @@ public final class CloudTileManager {
         double cloudCamX = camX - driftX;
         double cloudCamZ = camZ - driftZ;
 
+        updateWeather();
         ensureTiles(cloudCamX, cloudCamZ, rangeBlocks);
         processUploads();
         drawTiles(level, shader, viewMatrix, projectionMatrix, camX, camY, camZ, rangeBlocks);
@@ -103,6 +122,22 @@ public final class CloudTileManager {
     }
 
     // ── Tile lifecycle ───────────────────────────────────────────────────
+
+    /**
+     * Reads the weather and moves the generation on when the rain has
+     * changed enough to matter.
+     */
+    private void updateWeather() {
+        float rain = 0.0f;
+        if (ClientSeasonState.isPrecipitating()) {
+            rain = Math.max(0.0f, Math.min(1.0f, ClientSeasonState.getIntensity()));
+        }
+        int generation = Mth.clamp(Math.round(rain * WEATHER_STEPS), 0, WEATHER_STEPS);
+        if (generation != weatherGeneration) {
+            weatherGeneration = generation;
+            weatherRain = generation / (float) WEATHER_STEPS;
+        }
+    }
 
     private void ensureTiles(double cloudCamX, double cloudCamZ, int rangeBlocks) {
         int centerTx = (int) Math.floor(cloudCamX / CloudMesher.TILE_BLOCKS);
@@ -115,10 +150,22 @@ public final class CloudTileManager {
                 final int tileX = tx, tileZ = tz;
                 CloudTile tile = tiles.computeIfAbsent(CloudTile.packKey(tileX, tileZ), k -> new CloudTile(tileX, tileZ));
                 tile.lastNeededFrame = frame;
-                if (tile.hasMesh() || tile.queued) continue;
+                if (tile.queued) continue;
+                if (tile.hasMesh()) {
+                    if (tile.buildWeather == weatherGeneration) continue;
+                    // the weather moved on and the clouds have to be
+                    // meshed for it: the coverage is baked into the mesh
+                    if (tile.buffer != null) {
+                        tile.buffer.close();
+                        tile.buffer = null;
+                    }
+                    tile.empty = false;
+                }
                 tile.queued = true;
                 tile.buildSeed = seed;
                 tile.epoch = epoch;
+                tile.buildWeather = weatherGeneration;
+                tile.buildRain = weatherRain;
                 workQueue.add(tile);
             }
         }
@@ -144,8 +191,9 @@ public final class CloudTileManager {
             } catch (InterruptedException e) {
                 return;
             }
-            if (tile.epoch != epoch || tile.buildSeed != seed) continue;   // stale enqueue
-            tile.pendingMesh = CloudMesher.buildTile(tile.buildSeed, tile.tileX, tile.tileZ);
+            if (tile.epoch != epoch || tile.buildSeed != seed
+                    || tile.buildWeather != weatherGeneration) continue;   // stale enqueue
+            tile.pendingMesh = CloudMesher.buildTile(tile.buildSeed, tile.tileX, tile.tileZ, tile.buildRain);
             uploadQueue.add(tile);
         }
     }

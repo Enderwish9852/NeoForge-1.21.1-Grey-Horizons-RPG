@@ -27,6 +27,14 @@ final class CloudTile {
     // enqueue-time snapshot (render thread writes, worker reads)
     long buildSeed;
     int epoch;
+    /**
+     * The weather generation this tile was meshed for, and the rain
+     * level that went with it. When the weather moves on, the tile has
+     * to be meshed again: the rain changes the cloud field, and the
+     * coverage is baked into the mesh.
+     */
+    int buildWeather;
+    float buildRain;
 
     /** worker -> render handoff; consumed by the upload */
     volatile MeshData pendingMesh;

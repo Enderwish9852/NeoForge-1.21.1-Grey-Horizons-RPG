@@ -11,6 +11,7 @@ import com.mojang.blaze3d.vertex.MeshData;
 import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexBuffer;
 import com.mojang.blaze3d.vertex.VertexFormat;
+import net.enderwish.Atmospheric_Overhaul_Subpack.client.ClientSeasonState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.util.Mth;
@@ -339,6 +340,16 @@ public final class GodRayRenderer {
         }
     }
 
+    /**
+     * The current rain level, 0 to 1. The god rays' cloud map has to
+     * use the SAME field the clouds are meshed from, or the gaps in
+     * the shafts would not line up with the gaps in the sky.
+     */
+    private static double rainLevel() {
+        if (!ClientSeasonState.isPrecipitating()) return 0.0;
+        return Math.max(0.0, Math.min(1.0, ClientSeasonState.getIntensity()));
+    }
+
     // ── CPU: shafts through the voxel cloud field ────────────────────────
 
     /**
@@ -370,7 +381,8 @@ public final class GodRayRenderer {
             double d = CloudDensityField.sample(seed,
                     camX + sunWorld.x * t - driftX,
                     camY + sunWorld.y * t,
-                    camZ + sunWorld.z * t - driftZ);
+                    camZ + sunWorld.z * t - driftZ,
+                    rainLevel());
             sum += Mth.clamp(d / threshold, 0.0, 1.0);
         }
         double avg = sum / MARCH_STEPS;
@@ -449,7 +461,8 @@ public final class GodRayRenderer {
             double d = CloudDensityField.sample(seed,
                     camX + dir.x() * t - driftX,
                     camY + dir.y() * t,
-                    camZ + dir.z() * t - driftZ);
+                    camZ + dir.z() * t - driftZ,
+                    rainLevel());
             sum += Mth.clamp(d / threshold, 0.0, 1.0);
         }
         double avg = sum / MAP_LAYER_SAMPLES;

@@ -50,22 +50,46 @@ public final class CloudDensityField {
     private static final double TOP_MIN = 16.0;
     private static final double TOP_VAR = 34.0;
 
+    // ── The rain ──────────────────────────────────────────────────────
+    // The coverage's thresholds, and how far they drop in a full
+    // rainstorm -- which is how much more of the sky holds cloud, and
+    // how much the separate cumulus masses join up.
+    private static final double COVER_LO = 0.30;
+    private static final double COVER_HI = 0.58;
+    private static final double COVER_RAIN_SHIFT = 0.28;
+    /** How much deeper a rain cloud is than a cumulus one. */
+    private static final double TOP_RAIN = 26.0;
+    /** How much denser a rain cloud is. */
+    private static final double DENSITY_RAIN = 0.45;
+
     // ── The field ───────────────────────────────────────────────────────
 
     /**
      * Cloud density at (x, y, z) in cloud coordinates. Roughly [0, 1];
      * the mesher cuts cells above CloudMesher.THRESHOLD.
+     *
+     * @param rain 0 in clear weather, 1 in a full rainstorm. The rain
+     *             spreads the coverage so that the separate cumulus
+     *             masses join up into big weather systems, makes them
+     *             deeper and denser, and drops their base.
      */
-    public static double sample(long seed, double x, double y, double z) {
-        // 1) coverage: where the sky holds cloud mass at all
-        double cover = smoothstep(0.30, 0.58,
+    public static double sample(long seed, double x, double y, double z, double rain) {
+        // 1) coverage: where the sky holds cloud mass at all. In the
+        //    rain the thresholds drop, so more of the sky holds cloud
+        //    and the gaps between the masses close up.
+        double coverLo = COVER_LO - COVER_RAIN_SHIFT * rain;
+        double coverHi = COVER_HI - COVER_RAIN_SHIFT * rain;
+        double cover = smoothstep(coverLo, coverHi,
                 fbm2(seed ^ 0x1A2B3C4DL, x, z, COVER_SCALE, 4));
         if (cover <= 0.0) return 0.0;
 
-        // 2) vertical profile: flat base, rounded billowing top
-        double base = BASE_Y + BASE_WAVE * fbm2(seed ^ 0x5E6F7081L, x, z, BASE_SCALE, 3);
+        // 2) vertical profile: flat base, rounded billowing top. Rain
+        //    clouds are much deeper and their base sits lower.
+        double base = BASE_Y + BASE_WAVE * fbm2(seed ^ 0x5E6F7081L, x, z, BASE_SCALE, 3)
+                - 4.0 * rain;
         double top = base + TOP_MIN
-                + TOP_VAR * (0.5 + 0.5 * fbm2(seed ^ 0x9A0B1C2DL, x, z, SHAPE_SCALE, 3));
+                + TOP_VAR * (0.5 + 0.5 * fbm2(seed ^ 0x9A0B1C2DL, x, z, SHAPE_SCALE, 3))
+                + TOP_RAIN * rain;
         if (y <= base - 6.0 || y >= top + 6.0) return 0.0;
 
         double t = Mth.clamp((y - (base - 6.0)) / (top - base + 12.0), 0.0, 1.0);
@@ -75,7 +99,8 @@ public final class CloudDensityField {
         // 3) grain: break the flanks into puffs
         double grain = 0.68 + 0.32 * valueNoise2(seed ^ 0xC3D4E5F6L, x * GRAIN_SCALE, z * GRAIN_SCALE);
 
-        return cover * belly * cap * grain;
+        // and the rain makes the whole thing denser
+        return cover * belly * cap * grain * (1.0 + DENSITY_RAIN * rain);
     }
 
     // ── Noise ───────────────────────────────────────────────────────────

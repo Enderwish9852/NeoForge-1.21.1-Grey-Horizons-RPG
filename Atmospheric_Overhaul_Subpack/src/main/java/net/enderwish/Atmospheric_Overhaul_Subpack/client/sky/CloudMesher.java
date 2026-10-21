@@ -46,7 +46,7 @@ final class CloudMesher {
     private static final double SOFT_WINDOW = 0.24;   // corner-mean span for rim softening
 
     /** Builds the tile mesh, or null when the tile is clear sky. */
-    static MeshData buildTile(long seed, int tileX, int tileZ) {
+    static MeshData buildTile(long seed, int tileX, int tileZ, double rain) {
         double[][][] grid = new double[CELLS_XZ][CELLS_Y][CELLS_XZ];
         double ox = tileX * (double) TILE_BLOCKS;
         double oz = tileZ * (double) TILE_BLOCKS;
@@ -58,7 +58,8 @@ final class CloudMesher {
                     double d = CloudDensityField.sample(seed,
                             ox + (cx + 0.5) * CELL,
                             CloudDensityField.LAYER_BOTTOM + (cy + 0.5) * CELL,
-                            oz + (cz + 0.5) * CELL);
+                            oz + (cz + 0.5) * CELL,
+                            rain);
                     grid[cx][cy][cz] = d;
                     if (d > THRESHOLD) anyCloud = true;
                 }
@@ -76,7 +77,7 @@ final class CloudMesher {
                 for (int cz = 0; cz < CELLS_XZ; cz++) {
                     double d = grid[cx][cy][cz];
                     if (d <= THRESHOLD) continue;
-                    emitCell(buf, grid, seed, ox, oz, cx, cy, cz, d);
+                    emitCell(buf, grid, seed, ox, oz, cx, cy, cz, d, rain);
                 }
             }
         }
@@ -87,7 +88,7 @@ final class CloudMesher {
     // ── Cell emission ──────────────────────────────────────────────────
 
     private static void emitCell(BufferBuilder buf, double[][][] grid, long seed, double ox, double oz,
-                                 int cx, int cy, int cz, double d) {
+                                 int cx, int cy, int cz, double d, double rain) {
         float x0 = (float) (cx * CELL), x1 = (float) ((cx + 1) * CELL);
         float y0 = (float) (cy * CELL), y1 = (float) ((cy + 1) * CELL);
         float z0 = (float) (cz * CELL), z1 = (float) ((cz + 1) * CELL);
@@ -96,57 +97,57 @@ final class CloudMesher {
         // +Y (top): brightest, sky-lit. Corners read the 4 cells around
         // them in THIS layer (the layer above is empty -- that is why the
         // face exists).
-        if (!solid(grid, seed, ox, oz, cx, cy + 1, cz)) {
+        if (!solid(grid, seed, ox, oz, cx, cy + 1, cz, rain)) {
             quad(buf, 1.00f, core,
-                    fadeXZ(grid, seed, ox, oz, cx - 1, cx, cy, cz - 1, cz),
-                    fadeXZ(grid, seed, ox, oz, cx, cx + 1, cy, cz - 1, cz),
-                    fadeXZ(grid, seed, ox, oz, cx, cx + 1, cy, cz, cz + 1),
-                    fadeXZ(grid, seed, ox, oz, cx - 1, cx, cy, cz, cz + 1),
+                    fadeXZ(grid, seed, ox, oz, cx - 1, cx, cy, cz - 1, cz, rain),
+                    fadeXZ(grid, seed, ox, oz, cx, cx + 1, cy, cz - 1, cz, rain),
+                    fadeXZ(grid, seed, ox, oz, cx, cx + 1, cy, cz, cz + 1, rain),
+                    fadeXZ(grid, seed, ox, oz, cx - 1, cx, cy, cz, cz + 1, rain),
                     x0, y1, z0, x1, y1, z1, Plane.Y);
         }
         // -Y (base): shaded underside (same in-plane corner cells)
-        if (!solid(grid, seed, ox, oz, cx, cy - 1, cz)) {
+        if (!solid(grid, seed, ox, oz, cx, cy - 1, cz, rain)) {
             quad(buf, 0.56f, core,
-                    fadeXZ(grid, seed, ox, oz, cx - 1, cx, cy, cz - 1, cz),
-                    fadeXZ(grid, seed, ox, oz, cx, cx + 1, cy, cz - 1, cz),
-                    fadeXZ(grid, seed, ox, oz, cx, cx + 1, cy, cz, cz + 1),
-                    fadeXZ(grid, seed, ox, oz, cx - 1, cx, cy, cz, cz + 1),
+                    fadeXZ(grid, seed, ox, oz, cx - 1, cx, cy, cz - 1, cz, rain),
+                    fadeXZ(grid, seed, ox, oz, cx, cx + 1, cy, cz - 1, cz, rain),
+                    fadeXZ(grid, seed, ox, oz, cx, cx + 1, cy, cz, cz + 1, rain),
+                    fadeXZ(grid, seed, ox, oz, cx - 1, cx, cy, cz, cz + 1, rain),
                     x0, y0, z0, x1, y0, z1, Plane.Y);
         }
         // -Z (north): corners span (x, y) in this z-layer
-        if (!solid(grid, seed, ox, oz, cx, cy, cz - 1)) {
+        if (!solid(grid, seed, ox, oz, cx, cy, cz - 1, rain)) {
             quad(buf, 0.82f, core,
-                    fadeXY(grid, seed, ox, oz, cx - 1, cx, cy - 1, cy, cz),
-                    fadeXY(grid, seed, ox, oz, cx, cx + 1, cy - 1, cy, cz),
-                    fadeXY(grid, seed, ox, oz, cx, cx + 1, cy, cy + 1, cz),
-                    fadeXY(grid, seed, ox, oz, cx - 1, cx, cy, cy + 1, cz),
+                    fadeXY(grid, seed, ox, oz, cx - 1, cx, cy - 1, cy, cz, rain),
+                    fadeXY(grid, seed, ox, oz, cx, cx + 1, cy - 1, cy, cz, rain),
+                    fadeXY(grid, seed, ox, oz, cx, cx + 1, cy, cy + 1, cz, rain),
+                    fadeXY(grid, seed, ox, oz, cx - 1, cx, cy, cy + 1, cz, rain),
                     x0, y0, z0, x1, y1, z0, Plane.NS);
         }
         // +Z (south)
-        if (!solid(grid, seed, ox, oz, cx, cy, cz + 1)) {
+        if (!solid(grid, seed, ox, oz, cx, cy, cz + 1, rain)) {
             quad(buf, 0.82f, core,
-                    fadeXY(grid, seed, ox, oz, cx - 1, cx, cy - 1, cy, cz),
-                    fadeXY(grid, seed, ox, oz, cx, cx + 1, cy - 1, cy, cz),
-                    fadeXY(grid, seed, ox, oz, cx, cx + 1, cy, cy + 1, cz),
-                    fadeXY(grid, seed, ox, oz, cx - 1, cx, cy, cy + 1, cz),
+                    fadeXY(grid, seed, ox, oz, cx - 1, cx, cy - 1, cy, cz, rain),
+                    fadeXY(grid, seed, ox, oz, cx, cx + 1, cy - 1, cy, cz, rain),
+                    fadeXY(grid, seed, ox, oz, cx, cx + 1, cy, cy + 1, cz, rain),
+                    fadeXY(grid, seed, ox, oz, cx - 1, cx, cy, cy + 1, cz, rain),
                     x0, y0, z1, x1, y1, z1, Plane.NS);
         }
         // -X (west): corners span (y, z) in this x-column
-        if (!solid(grid, seed, ox, oz, cx - 1, cy, cz)) {
+        if (!solid(grid, seed, ox, oz, cx - 1, cy, cz, rain)) {
             quad(buf, 0.72f, core,
-                    fadeYZ(grid, seed, ox, oz, cy - 1, cy, cz - 1, cz, cx),
-                    fadeYZ(grid, seed, ox, oz, cy - 1, cy, cz, cz + 1, cx),
-                    fadeYZ(grid, seed, ox, oz, cy, cy + 1, cz, cz + 1, cx),
-                    fadeYZ(grid, seed, ox, oz, cy, cy + 1, cz - 1, cz, cx),
+                    fadeYZ(grid, seed, ox, oz, cy - 1, cy, cz - 1, cz, cx, rain),
+                    fadeYZ(grid, seed, ox, oz, cy - 1, cy, cz, cz + 1, cx, rain),
+                    fadeYZ(grid, seed, ox, oz, cy, cy + 1, cz, cz + 1, cx, rain),
+                    fadeYZ(grid, seed, ox, oz, cy, cy + 1, cz - 1, cz, cx, rain),
                     x0, y0, z0, x0, y1, z1, Plane.WE);
         }
         // +X (east)
-        if (!solid(grid, seed, ox, oz, cx + 1, cy, cz)) {
+        if (!solid(grid, seed, ox, oz, cx + 1, cy, cz, rain)) {
             quad(buf, 0.72f, core,
-                    fadeYZ(grid, seed, ox, oz, cy - 1, cy, cz - 1, cz, cx),
-                    fadeYZ(grid, seed, ox, oz, cy - 1, cy, cz, cz + 1, cx),
-                    fadeYZ(grid, seed, ox, oz, cy, cy + 1, cz, cz + 1, cx),
-                    fadeYZ(grid, seed, ox, oz, cy, cy + 1, cz - 1, cz, cx),
+                    fadeYZ(grid, seed, ox, oz, cy - 1, cy, cz - 1, cz, cx, rain),
+                    fadeYZ(grid, seed, ox, oz, cy - 1, cy, cz, cz + 1, cx, rain),
+                    fadeYZ(grid, seed, ox, oz, cy, cy + 1, cz, cz + 1, cx, rain),
+                    fadeYZ(grid, seed, ox, oz, cy, cy + 1, cz - 1, cz, cx, rain),
                     x1, y0, z0, x1, y1, z1, Plane.WE);
         }
     }
@@ -190,42 +191,43 @@ final class CloudMesher {
 
     /** Grid lookup for in-tile cells; direct field sample across the border. */
     private static double dens(double[][][] grid, long seed, double ox, double oz,
-                               int cx, int cy, int cz) {
+                               int cx, int cy, int cz, double rain) {
         if (cx >= 0 && cx < CELLS_XZ && cy >= 0 && cy < CELLS_Y && cz >= 0 && cz < CELLS_XZ) {
             return grid[cx][cy][cz];
         }
         return CloudDensityField.sample(seed,
                 ox + (cx + 0.5) * CELL,
                 CloudDensityField.LAYER_BOTTOM + (cy + 0.5) * CELL,
-                oz + (cz + 0.5) * CELL);
+                oz + (cz + 0.5) * CELL,
+                rain);
     }
 
     private static boolean solid(double[][][] grid, long seed, double ox, double oz,
-                                 int cx, int cy, int cz) {
-        return dens(grid, seed, ox, oz, cx, cy, cz) > THRESHOLD;
+                                 int cx, int cy, int cz, double rain) {
+        return dens(grid, seed, ox, oz, cx, cy, cz, rain) > THRESHOLD;
     }
 
     /** Corner fade for +Y/-Y faces: cells (xa..xb, y, za..zb) around the vertex. */
     private static float fadeXZ(double[][][] grid, long seed, double ox, double oz,
-                                int xa, int xb, int y, int za, int zb) {
-        double avg = (dens(grid, seed, ox, oz, xa, y, za) + dens(grid, seed, ox, oz, xb, y, za)
-                + dens(grid, seed, ox, oz, xa, y, zb) + dens(grid, seed, ox, oz, xb, y, zb)) * 0.25;
+                                int xa, int xb, int y, int za, int zb, double rain) {
+        double avg = (dens(grid, seed, ox, oz, xa, y, za, rain) + dens(grid, seed, ox, oz, xb, y, za, rain)
+                + dens(grid, seed, ox, oz, xa, y, zb, rain) + dens(grid, seed, ox, oz, xb, y, zb, rain)) * 0.25;
         return softCurve(avg);
     }
 
     /** Corner fade for east/west faces: cells (x, ya..yb, za..zb) around the vertex. */
     private static float fadeYZ(double[][][] grid, long seed, double ox, double oz,
-                                int ya, int yb, int za, int zb, int x) {
-        double avg = (dens(grid, seed, ox, oz, x, ya, za) + dens(grid, seed, ox, oz, x, yb, za)
-                + dens(grid, seed, ox, oz, x, ya, zb) + dens(grid, seed, ox, oz, x, yb, zb)) * 0.25;
+                                int ya, int yb, int za, int zb, int x, double rain) {
+        double avg = (dens(grid, seed, ox, oz, x, ya, za, rain) + dens(grid, seed, ox, oz, x, yb, za, rain)
+                + dens(grid, seed, ox, oz, x, ya, zb, rain) + dens(grid, seed, ox, oz, x, yb, zb, rain)) * 0.25;
         return softCurve(avg);
     }
 
     /** Corner fade for north/south faces: cells (xa..xb, ya..yb, z) around the vertex. */
     private static float fadeXY(double[][][] grid, long seed, double ox, double oz,
-                                int xa, int xb, int ya, int yb, int z) {
-        double avg = (dens(grid, seed, ox, oz, xa, ya, z) + dens(grid, seed, ox, oz, xb, ya, z)
-                + dens(grid, seed, ox, oz, xa, yb, z) + dens(grid, seed, ox, oz, xb, yb, z)) * 0.25;
+                                int xa, int xb, int ya, int yb, int z, double rain) {
+        double avg = (dens(grid, seed, ox, oz, xa, ya, z, rain) + dens(grid, seed, ox, oz, xb, ya, z, rain)
+                + dens(grid, seed, ox, oz, xa, yb, z, rain) + dens(grid, seed, ox, oz, xb, yb, z, rain)) * 0.25;
         return softCurve(avg);
     }
 
