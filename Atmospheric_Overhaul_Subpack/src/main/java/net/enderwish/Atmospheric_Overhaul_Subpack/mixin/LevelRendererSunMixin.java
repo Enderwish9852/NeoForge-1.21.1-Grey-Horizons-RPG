@@ -58,8 +58,19 @@ public class LevelRendererSunMixin {
         RenderSystem.setShaderTexture(slot, BLANK);
     }
 
+    /**
+     * The descriptor is written out in full, so the injection is
+     * pinned to this exact overload of renderSky.
+     *
+     * Note the "FLnet/minecraft/client/Camera;": the float's own
+     * descriptor F is followed by the object's L...; form. Writing
+     * "Fnet/minecraft/client/Camera;" instead (the L missing) looks
+     * plausible but is a malformed descriptor, and Mixin rejects it
+     * with "has invalid target descriptor" before the game even
+     * starts.
+     */
     @Inject(
-            method = "renderSky(Lorg/joml/Matrix4f;Lorg/joml/Matrix4f;Fnet/minecraft/client/Camera;ZLjava/lang/Runnable;)V",
+            method = "renderSky(Lorg/joml/Matrix4f;Lorg/joml/Matrix4f;FLnet/minecraft/client/Camera;ZLjava/lang/Runnable;)V",
             at = @At("TAIL"))
     private void gh_atmospheric$drawRealisticSun(Matrix4f frustumMatrix, Matrix4f projectionMatrix,
                                                  float partialTick, Camera camera, boolean isFoggy,
