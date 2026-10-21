@@ -125,19 +125,30 @@ public class RainDropParticle extends TextureSheetParticle {
             }
         }
 
-        if (this.level.getBlockState(pos).isSolid()) {
-            // a splash is two things: the ring it leaves on the ground,
-            // and the crown of small droplets it throws up
-            this.level.addParticle(ModParticles.RAIN_SPLASH_RING.get(), this.x, this.y, this.z, 0.0, 0.0, 0.0);
+        BlockPos below = pos.below();
+        if (this.level.getBlockState(below).isSolid()) {
+            // The drop has LANDED: the block below it is solid.
+            //
+            // The old test asked whether the block the drop had already
+            // entered was solid, which put the splash INSIDE the ground
+            // where nothing could see it. The splash belongs on TOP of
+            // the block that was hit, so the ring is spawned on that
+            // surface, a hair above it so it cannot fight with the
+            // block for the depth.
+            double top = below.getY() + 1.0;
+            this.level.addParticle(ModParticles.RAIN_SPLASH_RING.get(),
+                    this.x, top + 0.02, this.z, 0.0, 0.0, 0.0);
             for (int i = 0; i < 4; i++) {
                 double angle = this.random.nextDouble() * Math.PI * 2.0;
                 double spread = 0.05 + this.random.nextDouble() * 0.05;
-                this.level.addParticle(ModParticles.RAIN_CROWN.get(), this.x, this.y, this.z,
+                this.level.addParticle(ModParticles.RAIN_CROWN.get(),
+                        this.x, top + 0.02, this.z,
                         Math.cos(angle) * spread,
                         0.15 + this.random.nextDouble() * 0.10,
                         Math.sin(angle) * spread);
             }
             this.remove();
+            return;
         }
     }
 

@@ -24,6 +24,10 @@ in vec3 ghWorldPos;
 
 out vec4 fragColor;
 
+/** A smooth, low frequency variation, so the water pools unevenly. */
+float ghPool(vec3 p) {
+    return sin(p.x * 0.7) * sin(p.z * 0.9 + 1.3) * sin(p.y * 0.5 + 0.7);
+}
 void main() {
     vec4 color = texture(Sampler0, texCoord0) * vertexColor * ColorModulator;
     if (color.a < 0.5) {
@@ -49,20 +53,26 @@ void main() {
         }
     }
 
+    wet *= 0.72 + 0.42 * (ghPool(ghWorldPos) * 0.5 + 0.5);
+
     if (wet > 0.001) {
-        // a wet surface is darker than a dry one
-        color.rgb *= mix(1.0, 0.70, wet);
+        // Water is not a mirror. A wet surface is DARKER and a little
+        // deeper in colour, with a broad soft sheen -- not the hard
+        // rim of light a mirror throws at grazing angles.
+        vec3 base = color.rgb;
+        float lum = dot(base, vec3(0.299, 0.587, 0.114));
+        base = mix(vec3(lum), base, 1.15);          // a touch richer
+        color.rgb = base * mix(1.0, 0.74, wet);
 
         vec3 n = normalize(ghNormal);
         vec3 v = normalize(ghCameraPos - ghWorldPos);
         vec3 h = normalize(ghSunDir + v);
-        float spec = pow(max(dot(n, h), 0.0), 64.0) * wet;
-        color.rgb += spec * vec3(1.0, 0.98, 0.93) * 0.85;
-
-        // and a sheen at grazing angles, where a wet surface mirrors
-        // the whole sky
-        float fres = pow(1.0 - max(dot(n, v), 0.0), 5.0);
-        color.rgb += fres * wet * 0.10;
+        // a broad, soft highlight rather than a tight hot spot
+        float spec = pow(max(dot(n, h), 0.0), 18.0) * wet;
+        color.rgb += spec * vec3(1.0, 0.98, 0.93) * 0.28;
+        // and only a whisper of the grazing-angle sheen a mirror has
+        float fres = pow(1.0 - max(dot(n, v), 0.0), 6.0);
+        color.rgb += fres * wet * 0.022;
     }
 
     fragColor = linear_fog(color, vertexDistance, FogStart, FogEnd, FogColor);
