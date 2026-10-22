@@ -83,8 +83,18 @@ public class SeasonEnvironmentHandler {
      */
     private static final float SLEET_CHANCE = 0.006f;
 
-    /** How likely one visit is to freeze the next layer of a water column. */
-    private static final float ICE_CHANCE = 0.05f;
+    /**
+     * How likely one visit is to freeze the next layer of a water
+     * column.
+     *
+     * It was far too eager: a large amount of ice appeared within
+     * half a day, which is no time at all for a river to freeze over.
+     * The ice now takes the better part of a season to spread and
+     * thicken, which is the point of it -- a frozen river in mid
+     * winter should be the result of weeks of cold, not one cold
+     * afternoon.
+     */
+    private static final float ICE_CHANCE = 0.008f;
 
     /** How likely the shallow ice is to crack and break up in the cold-rain band. */
     private static final float CRACK_CHANCE = 0.004f;
