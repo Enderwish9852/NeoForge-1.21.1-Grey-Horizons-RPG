@@ -73,8 +73,17 @@ public final class WaterReflectionRenderer {
 
     /** Refraction: pixel shift of the bed at full wave-normal tilt. */
     private static final float REFRACT_PX = 6.0f;
-    /** Reflection strength mixed in at full fresnel (grazing mirror). */
+    /** How much the reflection is worth at grazing angles. */
     private static final float REFLECT_STRENGTH = 0.85f;
+    /**
+     * Run the ray-marched reflection at full resolution instead of
+     * half. The march is the expensive part of the water system, and
+     * at half resolution the reflection is soft exactly where it
+     * resolves near geometry -- which is where a player standing in
+     * the water is. This roughly quadruples the cost of the pass.
+     */
+    private static final boolean FULL_RES_SSR =
+            "full".equalsIgnoreCase(System.getProperty("gh.water.ssr", ""));
 
     private static final Matrix4f IDENTITY = new Matrix4f();
 
@@ -221,8 +230,15 @@ public final class WaterReflectionRenderer {
     }
 
     private static void ensureTargets(int width, int height) {
-        int hw = Math.max(1, width / 2);
-        int hh = Math.max(1, height / 2);
+        // The SSR pass runs at half resolution by default: the ray
+        // march is the expensive part of the water system, and at
+        // half res the reflection is soft where it resolves near
+        // geometry -- which is where a player standing in the
+        // water is. -Dgh.water.ssr=full runs it at full
+        // resolution, which sharpens the reflection a great deal
+        // and costs about four times as much.
+        int hw = FULL_RES_SSR ? Math.max(1, width) : Math.max(1, width / 2);
+        int hh = FULL_RES_SSR ? Math.max(1, height) : Math.max(1, height / 2);
         // The resize path calls RenderTarget.clear(), which uses the
         // target's own clear colour AND the global one -> keep both black
         // and restore the global colour afterwards.
