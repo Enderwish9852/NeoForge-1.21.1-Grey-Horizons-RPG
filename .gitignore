@@ -28,3 +28,5 @@ repo
 # dev dashboard runtime files
 devtools/dashboard/server.log
 devtools/dashboard/server.err.log
+logs/
+**/logs/
