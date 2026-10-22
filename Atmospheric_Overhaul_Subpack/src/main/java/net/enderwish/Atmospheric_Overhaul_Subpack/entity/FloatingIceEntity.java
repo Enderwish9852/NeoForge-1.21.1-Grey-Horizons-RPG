@@ -39,8 +39,18 @@ public class FloatingIceEntity extends Entity {
 
     /** How long it lasts before it melts away, in ticks. */
     private static final int LIFETIME = 90 * 20;
+    /**
+     * How long a new floe is allowed to survive out of the water.
+     *
+     * Without it, a floe summoned into the air melts on its very first
+     * tick and there is nothing at all to look at.
+     */
+    private static final int GRACE_TICKS = 60;
     /** The speed it has to be moving at to shatter on a bank. */
     private static final float SHATTER_SPEED = 0.28f;
+
+    private static final org.slf4j.Logger LOGGER =
+            org.slf4j.LoggerFactory.getLogger("GHAtmospheric/FloatingIce");
 
     private int life;
     private float bobPhase;
@@ -68,7 +78,7 @@ public class FloatingIceEntity extends Entity {
 
         this.life++;
         if (this.life > LIFETIME) {
-            this.meltAway();
+            this.meltAway("lived out its time");
             return;
         }
 
@@ -77,8 +87,11 @@ public class FloatingIceEntity extends Entity {
 
         if (!fluid.is(Fluids.WATER)) {
             // it has drifted out of the water, or the water has frozen
-            // over it: it melts
-            this.meltAway();
+            // over it: it melts. But not straight away, or a floe
+            // summoned into the air is gone before it can be seen.
+            if (this.life > GRACE_TICKS) {
+                this.meltAway("out of the water");
+            }
             return;
         }
 
@@ -112,7 +125,8 @@ public class FloatingIceEntity extends Entity {
     }
 
     /** It melts: a puff of white and it is gone. */
-    private void meltAway() {
+    private void meltAway(String why) {
+        LOGGER.info("floating ice at {} melted: {}", this.blockPosition(), why);
         if (this.level() instanceof ServerLevel server) {
             server.sendParticles(ParticleTypes.SNOWFLAKE,
                     this.getX(), this.getY() + 0.2, this.getZ(), 6, 0.15, 0.1, 0.15, 0.02);
