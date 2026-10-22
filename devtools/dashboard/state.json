@@ -1,7 +1,7 @@
 ﻿{
     "project":  "Grey Horizons RPG",
     "subtitle":  "NeoForge 1.21.1 - 5 subpacks",
-    "currentTask":  "Three sizes of floating ice: small, medium, large",
+    "currentTask":  "Rivers and currents: traced rivers, the current that carries everything, the seasonal sea",
     "tasks":  [
                   {
                       "title":  "Diagnose the 90% screen flash bang",
@@ -352,6 +352,36 @@
                       "title":  "The large floe comes apart",
                       "status":  "done",
                       "note":  "60% to break into one medium and two smalls when it breaks ice on a collision"
+                  },
+                  {
+                      "title":  "Rivers are traced, not painted on",
+                      "status":  "done",
+                      "note":  "a source on the high ground, following the broad slope until it reaches the sea; the channel is cut as it goes and widens downstream"
+                  },
+                  {
+                      "title":  "The current",
+                      "status":  "done",
+                      "note":  "fast where the channel is narrow, slow where it is wide, up to 8 blocks a second; it always points downhill, and downhill is the sea"
+                  },
+                  {
+                      "title":  "The sea has its own current",
+                      "status":  "done",
+                      "note":  "a slow wheel, anticlockwise in the north; winter turns it hardest, summer sends the warm water poleward and brings cold water up the eastern coasts"
+                  },
+                  {
+                      "title":  "The current carries everything",
+                      "status":  "done",
+                      "note":  "hooked into the movement itself, so players, mobs and dropped items are all carried; the push is added to the movement, so a fast current beats a swimmer"
+                  },
+                  {
+                      "title":  "Lakes have no current",
+                      "status":  "done",
+                      "note":  "a lake is flat, and flat ground has no slope to run down"
+                  },
+                  {
+                      "title":  "The ice that never melted",
+                      "status":  "done",
+                      "note":  "the ice formed at the bed of the water but the scan looked from the surface down, so it never melted; it now grows downward from the surface"
                   }
               ],
     "files":  [
