@@ -171,17 +171,35 @@ public final class GodRayRenderer {
 
         // sun direction in WORLD space (no camera rotation) -- elevation
         Vector3f sunWorld = SunRenderer.worldDirection(dayT);
-        float elevation = sunWorld.y;
-        if (elevation < -0.02f) return;   // sun below the horizon
 
-        // where the shafts converge: the sun itself, or the anti-solar
-        // point when the sun is behind the camera.
+        // Whichever light is up: the sun by day, the moon by night. The
+        // moon is the sun's direction reversed, so the shafts at night
+        // come from the moon and the screen-space glow sits around it.
+        boolean moon = CelestialLight.isMoon(dayT);
+        Vector3f lightDir = moon
+                ? new Vector3f(-sunWorld.x, -sunWorld.y, -sunWorld.z)
+                : sunWorld;
+        // the gates below are about the light that is up, not the sun
+        float elevation = lightDir.y;
+        if (elevation < -0.02f) return;   // no light above the horizon
+
+        // This pass is a DAYTIME effect: it stamps a hard disc of the
+        // sun's glow and smears it. At night that disc would sit in
+        // the middle of the moon and wash its phase out -- and the
+        // phase has to survive. The moon's shafts come from the
+        // volumetric pass instead, which gives a soft aureole rather
+        // than a disc, and its shadow map carries the moon's light.
+        if (moon) return;
+
+        // where the shafts converge: the light itself, or the point
+        // opposite it when it is behind the camera.
         // The bobbing view is taken out first: MC applies the
         // walk-cycle head bob to the projection matrix, and a source
         // that swings with every step reads as being glued to the
         // player's head.
         float[] conv = new float[3];
-        SunRenderer.convergencePoint(viewMatrix, SunRenderer.unbobbedProjection(projectionMatrix), dayT, conv);
+        SunRenderer.convergencePointOf(viewMatrix, SunRenderer.unbobbedProjection(projectionMatrix),
+                lightDir, conv);
         boolean sunInFront = conv[2] > 0.5f;
         float sunU = conv[0];
         float sunV = conv[1];
@@ -189,13 +207,16 @@ public final class GodRayRenderer {
         // gates: elevation ramp, rain dim, shafts through our own clouds
         float elevGate = Mth.clamp((elevation + 0.02f) / 0.14f, 0.0f, 1.0f);
         float rain = level.getRainLevel(partialTick);
-        float openness = cloudOpenness(level, sunWorld, camX, camY, camZ);
-        float intensity = BASE_INTENSITY * elevGate * (1.0f - 0.78f * rain) * openness;
+        float openness = cloudOpenness(level, lightDir, camX, camY, camZ);
+        float intensity = BASE_INTENSITY * elevGate * (1.0f - 0.78f * rain) * openness
+                * CelestialLight.strength(dayT);
         if (CloudTileManager.isStorm(level)) intensity *= 0.45f;
         if (intensity <= 0.01f && !DEBUG_MAP && !DEBUG_BUFFER && !DEBUG_SEED) return;
 
-        // tint: warm at the horizon, near-white higher up
-        Vector3f sunColour = SunRenderer.color(sunWorld);
+        // tint: warm by day, cold silver by night
+        Vector3f sunColour = moon
+                ? new Vector3f(0.60f, 0.74f, 1.00f)
+                : SunRenderer.color(sunWorld);
         float tintR = sunColour.x;
         float tintG = sunColour.y;
         float tintB = sunColour.z;

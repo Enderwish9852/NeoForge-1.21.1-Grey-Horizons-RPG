@@ -309,6 +309,27 @@ public final class SunRenderer {
     }
 
     /**
+     * The screen position of an arbitrary WORLD direction, with the
+     * anti-light fallback when it is behind the camera.
+     *
+     * This is what the god rays use, so that the shafts can converge on
+     * the MOON at night as well as on the sun by day: the moon is just
+     * the sun's direction reversed.
+     *
+     * @param out out[0] = u, out[1] = v, out[2] = 1 when the light is
+     *             in front of the camera
+     */
+    public static void convergencePointOf(Matrix4f viewMatrix, Matrix4f projectionMatrix,
+                                          Vector3f worldDirection, float[] out) {
+        Vector3f view = viewMatrix.transformDirection(new Vector3f(worldDirection));
+        // the view matrix looks down -Z, so z > 0 means behind
+        if (view.z > 0.0f) {
+            view.set(-view.x, -view.y, -view.z);
+        }
+        screenPositionOf(viewMatrix, projectionMatrix, view, out);
+    }
+
+    /**
      * Converts an ANGULAR radius into a screen radius expressed in
      * units of the screen height.
      *

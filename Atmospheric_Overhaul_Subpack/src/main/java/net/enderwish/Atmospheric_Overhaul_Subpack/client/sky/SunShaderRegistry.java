@@ -37,6 +37,9 @@ public final class SunShaderRegistry {
     /** The sun's shadow on the surfaces. */
     public static volatile ShaderInstance groundShadowShader;
 
+    /** The night, darker than vanilla. */
+    public static volatile ShaderInstance nightShader;
+
     @SubscribeEvent
     public static void onRegisterShaders(RegisterShadersEvent event) throws IOException {
         event.registerShader(
@@ -57,5 +60,11 @@ public final class SunShaderRegistry {
                         ResourceLocation.fromNamespaceAndPath(AtmosphericOverhaulSubpack.MOD_ID, "gh_sun_ground_shadow"),
                         DefaultVertexFormat.POSITION_TEX),
                 shader -> groundShadowShader = shader);
+        event.registerShader(
+                new ShaderInstance(
+                        event.getResourceProvider(),
+                        ResourceLocation.fromNamespaceAndPath(AtmosphericOverhaulSubpack.MOD_ID, "gh_night_darken"),
+                        DefaultVertexFormat.POSITION_TEX),
+                shader -> nightShader = shader);
     }
 }

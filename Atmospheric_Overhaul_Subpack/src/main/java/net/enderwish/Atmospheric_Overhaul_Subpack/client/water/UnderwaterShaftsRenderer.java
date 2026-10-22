@@ -11,6 +11,7 @@ import com.mojang.blaze3d.vertex.MeshData;
 import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexBuffer;
 import com.mojang.blaze3d.vertex.VertexFormat;
+import net.enderwish.Atmospheric_Overhaul_Subpack.client.sky.CelestialLight;
 import net.enderwish.Atmospheric_Overhaul_Subpack.client.sky.SunRenderer;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
@@ -86,8 +87,11 @@ public final class UnderwaterShaftsRenderer {
 
         // the sun, and how much of it is above the horizon
         float dayT = mc.level.getTimeOfDay(partialTick);
-        Vector3f sun = SunRenderer.worldDirection(dayT);
-        if (sun.y <= 0.0f) return;      // nothing enters the water at night
+        // whichever light is up: the sun by day, the moon by night. The
+        // moonlight refracts through the surface just as the sunlight
+        // does, so the shafts under water follow it too.
+        Vector3f sun = CelestialLight.direction(dayT);
+        if (sun.y <= 0.0f) return;      // no light above the horizon
 
         // the light bends at the surface: air -> water, eta = 1/1.333
         Vector3f refracted = refract(new Vector3f(-sun.x, -sun.y, -sun.z),
@@ -98,16 +102,18 @@ public final class UnderwaterShaftsRenderer {
         double surfaceY = findSurfaceY(mc.level, cam);
         if (Double.isNaN(surfaceY)) return;
 
-        float strength = MAX_STRENGTH * Mth.clamp(sun.y / HORIZON_FADE, 0.0f, 1.0f);
+        float strength = MAX_STRENGTH * Mth.clamp(sun.y / HORIZON_FADE, 0.0f, 1.0f)
+                * CelestialLight.strength(dayT);
         float rain = mc.level.getRainLevel(partialTick);
         strength *= 1.0f - 0.6f * rain;
         if (strength <= 0.001f) return;
 
-        // warm at the horizon, near-white higher up
+        // warm by day, cold silver by night
         float high = Mth.clamp(sun.y / 0.35f, 0.0f, 1.0f);
+        boolean moon = CelestialLight.isMoon(dayT);
         float tintR = 1.0f;
-        float tintG = Mth.lerp(high, 0.80f, 0.98f);
-        float tintB = Mth.lerp(high, 0.58f, 0.95f);
+        float tintG = moon ? 0.74f : Mth.lerp(high, 0.80f, 0.98f);
+        float tintB = moon ? 1.00f : Mth.lerp(high, 0.58f, 0.95f);
 
         // the walk-cycle head bob is applied to the projection matrix;
         // the shafts are real light in real water and should not

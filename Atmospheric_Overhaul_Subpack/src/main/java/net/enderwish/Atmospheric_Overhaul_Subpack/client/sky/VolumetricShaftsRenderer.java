@@ -87,16 +87,20 @@ public final class VolumetricShaftsRenderer {
         ensureTargets(main.width, main.height);
         ensureQuad();
 
-        Vector3f sun = SunRenderer.worldDirection(mc.level.getTimeOfDay(partialTick));
+        // whichever light is up: the sun by day, the moon by night
+        float dayT = mc.level.getTimeOfDay(partialTick);
+        Vector3f sun = CelestialLight.direction(dayT);
         if (sun.y <= 0.02f) return;
 
-        // warm at the horizon, near-white higher up
-        Vector3f sunColour = SunRenderer.color(sun);
+        // warm by day, cold silver by night
+        Vector3f sunColour = CelestialLight.isMoon(dayT)
+                ? new Vector3f(0.60f, 0.74f, 1.00f)
+                : SunRenderer.color(sun);
         float tintR = sunColour.x;
         float tintG = sunColour.y;
         float tintB = sunColour.z;
         float rain = mc.level.getRainLevel(partialTick);
-        float strength = STRENGTH * (1.0f - 0.75f * rain);
+        float strength = STRENGTH * CelestialLight.strength(dayT) * (1.0f - 0.75f * rain);
 
         // the walk-cycle head bob is applied to the projection matrix,
         // and the shafts are real light in real air: they should not

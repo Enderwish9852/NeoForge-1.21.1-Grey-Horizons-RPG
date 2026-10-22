@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.enderwish.Atmospheric_Overhaul_Subpack.client.sky.CloudTileManager;
 import net.enderwish.Atmospheric_Overhaul_Subpack.client.sky.GodRayRenderer;
+import net.enderwish.Atmospheric_Overhaul_Subpack.client.sky.NightDarkeningRenderer;
 import net.enderwish.Atmospheric_Overhaul_Subpack.client.sky.SunShadowMap;
 import net.enderwish.Atmospheric_Overhaul_Subpack.client.sky.VolumetricShaftsRenderer;
 import net.enderwish.Atmospheric_Overhaul_Subpack.client.sky.VoxelCloudEngine;
@@ -109,10 +110,12 @@ public class LevelRendererCloudsMixin {
             //    clouds, so the map knows all three as occluders
             renderSunShadowMap(camera, partialTick);
 
-            // 3. the sun's shadow on the surfaces, then the shafts
-            //    (which are light in the air, so they are added after
-            //    the surfaces have been darkened)
+            // 3. the sun's shadow on the surfaces, then the night is
+            //    darkened, then the shafts (which are light in the air,
+            //    so they are added after the world has been darkened --
+            //    that is what gives them their contrast)
             VolumetricShaftsRenderer.renderGroundShadow(camera, frustumMatrix, projectionMatrix, partialTick);
+            NightDarkeningRenderer.render(partialTick);
 
             // 4. the true volumetric shafts, marched against the map
             VolumetricShaftsRenderer.render(camera, frustumMatrix, projectionMatrix, partialTick);

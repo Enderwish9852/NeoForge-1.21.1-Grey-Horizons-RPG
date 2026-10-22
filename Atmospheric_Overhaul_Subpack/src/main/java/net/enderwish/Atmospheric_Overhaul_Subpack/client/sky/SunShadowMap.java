@@ -154,9 +154,9 @@ public final class SunShadowMap {
         Level level = mc.level;
         if (level == null) return false;
 
-        Vector3f sun = SunRenderer.worldDirection(level.getTimeOfDay(partialTick));
+        Vector3f sun = CelestialLight.direction(level.getTimeOfDay(partialTick));
         if (sun.y <= 0.02f) {
-            valid = false;      // the sun is down: no shafts
+            valid = false;      // no light: no shafts
             return false;
         }
 
