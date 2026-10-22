@@ -27,10 +27,16 @@ public class SnowFlakeParticle extends TextureSheetParticle {
 
     /** How fast a flake falls. Snow drifts; rain drops. */
     private static final float FALL_SPEED = 0.075f;
-    /** How much of the wind a flake picks up. Snow is light. */
-    private static final float WIND_CATCH = 1.6f;
-    /** The sideways wander, in blocks. */
-    private static final float SWAY = 0.35f;
+    /**
+     * How much of the wind a flake picks up, against the wind's own
+     * speed. The wind's effective velocity is already a movement per
+     * tick, so this has to be small: at 1.6 the flakes were travelling
+     * sideways at several times their own falling speed and never came
+     * down at all.
+     */
+    private static final float WIND_CATCH = 0.15f;
+    /** The sideways wander, in blocks per tick. */
+    private static final float SWAY = 0.03f;
 
     private final float swayPhase;
     private final float swaySpeed;

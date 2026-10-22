@@ -80,6 +80,8 @@ public final class WaterShaderUniforms {
 
     private static final ResourceLocation WATER_STILL =
             ResourceLocation.withDefaultNamespace("block/water_still");
+    private static final ResourceLocation ICE =
+            ResourceLocation.withDefaultNamespace("block/ice");
     private static final ResourceLocation WATER_FLOW =
             ResourceLocation.withDefaultNamespace("block/water_flow");
 
@@ -166,6 +168,11 @@ public final class WaterShaderUniforms {
                 still.getU0(), still.getV0(), still.getU1(), still.getV1());
         set(shader, "WaterFlowUV",
                 flow.getU0(), flow.getV0(), flow.getU1(), flow.getV1());
+
+        // the ice gets its own rectangle: it is a mirror, not a wave
+        TextureAtlasSprite ice = atlas.getSprite(ICE);
+        set(shader, "IceUV",
+                ice.getU0(), ice.getV0(), ice.getU1(), ice.getV1());
 
         // smoothed wind drives wave direction/speed/choppiness
         set(shader, "WindVec", windDx, windDz);

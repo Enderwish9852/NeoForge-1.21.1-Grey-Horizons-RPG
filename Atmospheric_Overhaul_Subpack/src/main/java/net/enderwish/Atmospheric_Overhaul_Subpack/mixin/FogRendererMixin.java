@@ -42,6 +42,15 @@ public class FogRendererMixin {
             case "heatwave" -> applyHeatwaveFog();
             // All other weathers — do nothing, vanilla fog handles it
         }
+
+        // Snow, though, is not a weather of its own: it is the same
+        // weather as the rain, falling as snow because it is cold
+        // enough. Falling snow cuts the visibility far more than
+        // falling rain does, so it wants its own fog.
+        if (!weatherId.equals("blizzard") && !weatherId.equals("heatwave")
+                && ClientSeasonState.isSnowing()) {
+            applySnowFog();
+        }
     }
 
     @Inject(
@@ -62,11 +71,31 @@ public class FogRendererMixin {
         switch (weatherId) {
             case "blizzard" -> applyBlizzardFogDistance(intensity);
             case "heatwave" -> applyHeatwaveFogDistance(intensity);
+            default -> {
+                if (ClientSeasonState.isSnowing()) applySnowFogDistance(intensity);
+            }
         }
     }
 
     // ── Blizzard ──────────────────────────────────────────────────────────────
 
+    /**
+     * Snow fog: a cold white-grey that closes the world in. It is
+     * not a whiteout like a blizzard, but falling snow takes the
+     * distance away far more than rain does.
+     */
+    private static void applySnowFog() {
+        RenderSystem.clearColor(0.86f, 0.89f, 0.94f, 1.0f);
+    }
+
+    /**
+     * Snow fog distance. Start: 10 blocks, End: 45, and it closes in
+     * further as the snow gets heavier.
+     */
+    private static void applySnowFogDistance(float intensity) {
+        RenderSystem.setShaderFogStart(10.0f);
+        RenderSystem.setShaderFogEnd(45.0f * (1.0f - intensity * 0.45f));
+    }
     /**
      * Dense white fog — near whiteout conditions.
      * RGB: (0.92, 0.95, 1.0) — cold white with slight blue tint

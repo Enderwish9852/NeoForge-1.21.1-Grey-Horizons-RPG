@@ -24,6 +24,7 @@ in vec4 vertexColor;
 in vec2 texCoord0;
 in vec3 ghWorldPos;
 in float ghWater;
+in float ghIce;
 
 out vec4 fragColor;
 
@@ -65,8 +66,7 @@ void main() {
 
     vec4 color = texture(Sampler0, texCoord0) * vertexColor * ColorModulator;
 
-    if (ghWater > 0.5) {
-        // wave normal via finite differences of the same height field
+    if (ghWater > 0.5) {        // wave normal via finite differences of the same height field
         float eps = 0.10;
         float hL = ghWave(ghWorldPos.xz - vec2(eps, 0.0));
         float hR = ghWave(ghWorldPos.xz + vec2(eps, 0.0));
@@ -100,6 +100,37 @@ void main() {
         // semi-transparent: the bed shows through looking down,
         // mirror-like at grazing angles (fresnel), never fully opaque
         color = vec4(col, min((0.55 + 0.35 * fresnel) * WaterParams.z, 0.95));
+    }
+
+    // ── The ice ──────────────────────────────────────────────────────
+    // Ice is a mirror. It shows the sky at a grazing angle and its own
+    // cold slate looking straight down, and it is the same slate the
+    // water is, so a frozen river belongs to the water around it.
+    if (ghIce > 0.5) {
+        vec3 n = normalize(vec3(0.0, 1.0, 0.0));
+        vec3 v = normalize(ghWorldPos - CameraPos);
+        float ndv = max(dot(n, -v), 0.0);
+        // a much stronger fresnel than the water's: ice really does
+        // turn into a mirror at a glancing angle
+        float fresnel = 0.12 + 0.88 * pow(1.0 - ndv, 3.0);
+
+        float lum = dot(color.rgb, vec3(0.2126, 0.7152, 0.0722));
+        vec3 slate = vec3(0.31, 0.37, 0.42) * (0.30 + 0.80 * lum);
+        // the sky it reflects, which is the fog colour at the horizon
+        vec3 col = mix(slate, FogColor.rgb, fresnel);
+
+        // the sun glint off the ice
+        vec3 r = reflect(v, n);
+        float g = pow(max(dot(r, SunDir), 0.0), 220.0);
+        bool sunUp = SunDir.y > -0.02;
+        vec3 glintCol = sunUp
+            ? mix(vec3(1.0, 0.60, 0.32), vec3(1.0, 0.98, 0.92),
+                  clamp(SunDir.y * 2.5, 0.0, 1.0))
+            : vec3(0.62, 0.72, 1.0);
+        col += glintCol * g * (0.35 + 0.65 * fresnel);
+
+        // you can still see the water under the ice
+        color = vec4(col, 0.86);
     }
 
     fragColor = linear_fog(color, vertexDistance, FogStart, FogEnd, FogColor);

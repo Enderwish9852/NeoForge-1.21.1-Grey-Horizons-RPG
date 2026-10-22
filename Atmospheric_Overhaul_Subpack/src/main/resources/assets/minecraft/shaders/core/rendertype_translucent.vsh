@@ -23,6 +23,7 @@ uniform vec2 WindVec;
 uniform vec3 SunDir;
 uniform vec4 WaterStillUV;
 uniform vec4 WaterFlowUV;
+uniform vec4 IceUV;
 uniform vec4 WaterParams;
 
 out float vertexDistance;
@@ -30,6 +31,7 @@ out vec4 vertexColor;
 out vec2 texCoord0;
 out vec3 ghWorldPos;
 out float ghWater;
+out float ghIce;
 
 // shared wave model (identical in the fragment shader) ---------------
 bool ghWaterSprite(vec2 uv) {
@@ -37,6 +39,12 @@ bool ghWaterSprite(vec2 uv) {
          && uv.y > WaterStillUV.y && uv.y < WaterStillUV.w)
         || (uv.x > WaterFlowUV.x && uv.x < WaterFlowUV.z
          && uv.y > WaterFlowUV.y && uv.y < WaterFlowUV.w);
+}
+
+// the ice is the other block that wants its own surface treatment
+bool ghIceSprite(vec2 uv) {
+    return uv.x > IceUV.x && uv.x < IceUV.z
+        && uv.y > IceUV.y && uv.y < IceUV.w;
 }
 
 float ghWave(vec2 wp) {
@@ -66,6 +74,7 @@ void main() {
     vec3 pos = Position + ChunkOffset;
     ghWorldPos = pos + CameraPos;                       // world-space anchor
     ghWater = ghWaterSprite(UV0) ? 1.0 : 0.0;
+    ghIce = ghIceSprite(UV0) ? 1.0 : 0.0;
     if (ghWater > 0.5) {
         pos.y += ghWave(ghWorldPos.xz);                // vertical displacement
     }

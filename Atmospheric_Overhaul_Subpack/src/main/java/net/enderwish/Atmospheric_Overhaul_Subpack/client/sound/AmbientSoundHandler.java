@@ -30,11 +30,16 @@ public class AmbientSoundHandler {
         if (mc.level == null || mc.player == null || mc.isPaused()) return;
 
         if (ClientSeasonState.isPrecipitating()) {
-            if (rainTimer <= 0) {
-                float volume = 0.3f + ClientSeasonState.getIntensity() * 0.5f;
-                mc.getSoundManager().play(SimpleSoundInstance.forLocalAmbience(ModSounds.RAIN_AMBIENCE.get(), volume, 1.0f));
-                rainTimer = CLIP_LENGTH_TICKS;
-            } else rainTimer--;
+            // Snow makes no sound. The rain ambience has to stop when
+            // the same weather starts falling as snow, or the whole
+            // winter is played over a patter of rain.
+            if (!ClientSeasonState.isSnowing()) {
+                if (rainTimer <= 0) {
+                    float volume = 0.3f + ClientSeasonState.getIntensity() * 0.5f;
+                    mc.getSoundManager().play(SimpleSoundInstance.forLocalAmbience(ModSounds.RAIN_AMBIENCE.get(), volume, 1.0f));
+                    rainTimer = CLIP_LENGTH_TICKS;
+                } else rainTimer--;
+            } else rainTimer = 0;
         } else rainTimer = 0;
 
         float windSpeed = ClientSeasonState.getWindSpeed();

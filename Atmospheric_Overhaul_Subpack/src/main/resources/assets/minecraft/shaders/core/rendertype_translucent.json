@@ -20,6 +20,7 @@
         { "name": "SunDir", "type": "float", "count": 3, "values": [ 0.0, 1.0, 0.0 ] },
         { "name": "WaterStillUV", "type": "float", "count": 4, "values": [ -1.0, -1.0, -1.0, -1.0 ] },
         { "name": "WaterFlowUV", "type": "float", "count": 4, "values": [ -1.0, -1.0, -1.0, -1.0 ] },
+        { "name": "IceUV", "type": "float", "count": 4, "values": [ -1.0, -1.0, -1.0, -1.0 ] },
         { "name": "WaterParams", "type": "float", "count": 4, "values": [ 0.0, 0.0, 0.0, 0.0 ] },
         { "name": "MaskMode", "type": "float", "count": 1, "values": [ 0 ] }
     ]
