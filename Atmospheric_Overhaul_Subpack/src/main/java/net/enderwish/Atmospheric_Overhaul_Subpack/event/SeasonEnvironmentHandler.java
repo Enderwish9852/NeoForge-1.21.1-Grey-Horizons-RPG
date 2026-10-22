@@ -1,12 +1,16 @@
 package net.enderwish.Atmospheric_Overhaul_Subpack.event;
 
 import net.enderwish.Atmospheric_Overhaul_Subpack.core.season.SeasonData;
+import net.enderwish.Atmospheric_Overhaul_Subpack.entity.FloatingIceEntity;
+import net.enderwish.Atmospheric_Overhaul_Subpack.entity.ModEntities;
 import net.enderwish.Atmospheric_Overhaul_Subpack.core.season.SeasonTemperature;
 import net.enderwish.Atmospheric_Overhaul_Subpack.core.weather.WeatherRegistry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.Level;
@@ -78,6 +82,15 @@ public class SeasonEnvironmentHandler {
      * snow with it. It is the early thaw of late winter.
      */
     private static final float SLEET_CHANCE = 0.006f;
+
+    /** How likely one visit is to freeze the next layer of a water column. */
+    private static final float ICE_CHANCE = 0.05f;
+
+    /** How likely the shallow ice is to crack and break up in the cold-rain band. */
+    private static final float CRACK_CHANCE = 0.004f;
+
+    /** How much colder a shaded spot is, for each level of sky light lost. */
+    private static final float SHADE_PER_LEVEL = 0.018f;
 
     /** The sweep cursor per dimension. */
     private static final Map<ResourceKey<Level>, Integer> CURSORS = new HashMap<>();
@@ -153,17 +166,78 @@ public class SeasonEnvironmentHandler {
 
         float temp = SeasonTemperature.calculate(level, surface);
 
+        // The shade makes it colder. A hollow under a rock, or the
+        // ground under a tree, keeps its ice long after the open
+        // ground has thawed -- and the sky light is a cheap way to
+        // know how shaded a spot is.
+        int skyLight = level.getLightEngine()
+                .getLayerListener(net.minecraft.world.level.LightLayer.SKY)
+                .getLightValue(surface);
+        temp -= (15 - skyLight) * SHADE_PER_LEVEL;
+
         // ── Ice ────────────────────────────────────────────────────────────
         // The ice's own job, and it is the one that has to happen
         // whether or not it is raining: it forms at the banks and
         // pushes out over the season.
-        if (airState.is(Blocks.WATER) && level.canSeeSky(surface)) {
+        //
+        // HOW THICK IT GETS depends on how deep the water is. A shallow
+        // puddle gets a skin of ice, a deep river gets a sheet of it.
+        // The ice fills the water column from the BED upwards, so it
+        // is always supported and the surface of a frozen river stays
+        // at the height the water was.
+        int ice = 0;
+        int waterDepth = 0;
+        BlockPos lowestIce = null;
+        BlockPos lowestWater = null;
+        BlockPos p = ground;
+        while (ice < 8 && level.getBlockState(p).is(Blocks.ICE)) {
+            lowestIce = p;
+            ice++;
+            p = p.below();
+        }
+        while (waterDepth < 24 && level.getBlockState(p).is(Blocks.WATER)) {
+            lowestWater = p;
+            waterDepth++;
+            p = p.below();
+        }
+
+        if (ice > 0) {
+            // ── the ice is here already ───────────────────────────────────
+            if (temp > SeasonTemperature.MELT_THRESHOLD) {
+                // It thins from the BOTTOM. The water under a sheet of
+                // ice is warmer than the air above it, so that is
+                // where it goes first -- and what is left, no longer
+                // supported from below, breaks off and floats away.
+                float speed = SeasonTemperature.getMeltSpeed(temp);
+                if (rand.nextFloat() < MELT_CHANCE * speed) {
+                    level.setBlockAndUpdate(lowestIce, Blocks.WATER.defaultBlockState());
+                    if (ice > 1) {
+                        breakOffIce(level, surface);
+                    }
+                }
+            } else if (temp > SeasonTemperature.NO_FORM_THRESHOLD && ice == 1) {
+                // ── the cracking ───────────────────────────────────────────
+                // The shallow ice, in the cold-rain band of late
+                // winter, starts to crack and break up.
+                if (rand.nextFloat() < CRACK_CHANCE) {
+                    level.setBlockAndUpdate(lowestIce, Blocks.WATER.defaultBlockState());
+                    spawnFloatingIce(level, surface);
+                    playCrack(level, surface);
+                }
+            }
+            return;
+        }
+
+        if (lowestWater != null && level.canSeeSky(surface)) {
+            // ── the ice forms ─────────────────────────────────────────────
             int iceSpread = SeasonTemperature.getIceSpread(temp);
             if (iceSpread > 0 && isNearEdge(level, surface, iceSpread)) {
                 float formSpeed = SeasonTemperature.getFormationSpeed(temp);
-                if (rand.nextFloat() < formSpeed * 0.05f) {
-                    level.setBlockAndUpdate(surface, Blocks.ICE.defaultBlockState());
-                    return;
+                // the deeper the water, the thicker the ice it takes
+                int target = iceLayersForDepth(ice + waterDepth);
+                if (rand.nextFloat() < formSpeed * ICE_CHANCE) {
+                    // from the bed upwards, so the ice is supported
+                    level.setBlockAndUpdate(lowestWater, Blocks.ICE.defaultBlockState());
                 }
             }
         }
@@ -181,6 +255,15 @@ public class SeasonEnvironmentHandler {
                 if (layers < maxDepth && rand.nextFloat() < SNOW_CHANCE * speed) {
                     level.setBlockAndUpdate(ground,
                             groundState.setValue(SnowLayerBlock.LAYERS, layers + 1));
+                } else if (layers >= maxDepth && maxDepth >= 8
+                        && temp <= SeasonTemperature.EXTREME_THRESHOLD
+                        && rand.nextFloat() < SNOW_CHANCE * speed * 0.25f) {
+                    // At the very bottom of the cold the drift itself
+                    // turns to powder snow. It replaces the top layer
+                    // rather than sitting on top of it, so the ground
+                    // does not rise, and when it melts the layers come
+                    // back and there is no hole.
+                    level.setBlockAndUpdate(ground, Blocks.POWDER_SNOW.defaultBlockState());
                 }
             } else if (!snowAbove && isPrecipitating) {
                 if (groundState.isFaceSturdy(level, ground, Direction.UP)
@@ -199,6 +282,11 @@ public class SeasonEnvironmentHandler {
             }
             if (snowAbove && rand.nextFloat() < MELT_CHANCE * speed) {
                 meltSnow(level, surface, airState);
+            }
+            // the powder snow goes back to being a drift
+            if (groundState.is(Blocks.POWDER_SNOW) && rand.nextFloat() < MELT_CHANCE * speed) {
+                level.setBlockAndUpdate(ground,
+                        Blocks.SNOW.defaultBlockState().setValue(SnowLayerBlock.LAYERS, 8));
             }
         } else if (isPrecipitating) {
             // ── the sleet band ─────────────────────────────────────────────
@@ -223,6 +311,52 @@ public class SeasonEnvironmentHandler {
         } else {
             level.setBlockAndUpdate(pos, state.setValue(SnowLayerBlock.LAYERS, layers - 1));
         }
+    }
+
+    /**
+     * How thick the ice should be for a water of this depth.
+     *
+     * A shallow puddle takes a skin, a deep river takes a sheet. Three
+     * blocks is the most: past that it is a frozen lake rather than a
+     * frozen river, and a thick sheet takes so long to thaw that it
+     * would still be there in late spring.
+     */
+    private static int iceLayersForDepth(int depth) {
+        if (depth <= 1) return 1;
+        if (depth <= 2) return 1;
+        if (depth <= 3) return 2;
+        if (depth <= 4) return 2;
+        return 3;
+    }
+
+    /**
+     * The sheet of ice has lost its support underneath, so it breaks
+     * up and floats away as one of the floating ice clumps.
+     */
+    private static void breakOffIce(ServerLevel level, BlockPos surface) {
+        // clear whatever ice is left in the column
+        BlockPos p = surface.below();
+        int guard = 0;
+        while (guard++ < 8 && level.getBlockState(p).is(Blocks.ICE)) {
+            level.setBlockAndUpdate(p, Blocks.WATER.defaultBlockState());
+            p = p.below();
+        }
+        spawnFloatingIce(level, surface);
+        playCrack(level, surface);
+    }
+
+    /** A clump of ice breaks off and starts drifting. */
+    private static void spawnFloatingIce(ServerLevel level, BlockPos pos) {
+        if (!(level instanceof ServerLevel server)) return;
+        FloatingIceEntity ice = new FloatingIceEntity(ModEntities.FLOATING_ICE.get(), level);
+        ice.setPos(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5);
+        server.addFreshEntity(ice);
+    }
+
+    /** The ice cracking. Vanilla has no ice crack, so it borrows glass. */
+    private static void playCrack(ServerLevel level, BlockPos pos) {
+        if (!(level instanceof ServerLevel server)) return;
+        server.playSound(null, pos, SoundEvents.GLASS_BREAK, SoundSource.BLOCKS, 0.45f, 1.3f);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

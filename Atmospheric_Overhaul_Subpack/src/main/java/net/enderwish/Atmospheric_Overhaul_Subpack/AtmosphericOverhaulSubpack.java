@@ -2,6 +2,7 @@ package net.enderwish.Atmospheric_Overhaul_Subpack;
 
 import net.enderwish.Atmospheric_Overhaul_Subpack.client.particle.ModParticles;
 import net.enderwish.Atmospheric_Overhaul_Subpack.client.sound.ModSounds;
+import net.enderwish.Atmospheric_Overhaul_Subpack.entity.ModEntities;
 import net.enderwish.Atmospheric_Overhaul_Subpack.command.SeasonCommand;
 import net.enderwish.Atmospheric_Overhaul_Subpack.command.WeatherCommand;
 import net.enderwish.Atmospheric_Overhaul_Subpack.core.temperature.HeatBlockRegistry;
@@ -31,6 +32,7 @@ public class AtmosphericOverhaulSubpack {
         modEventBus.addListener(this::registerNetworking);
         ModParticles.register(modEventBus);
         ModSounds.register(modEventBus);
+        ModEntities.register(modEventBus);
 
         NeoForge.EVENT_BUS.addListener(this::onRegisterCommands);
         NeoForge.EVENT_BUS.addListener(this::onLevelTick);
