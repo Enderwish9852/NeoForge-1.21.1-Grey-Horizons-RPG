@@ -218,23 +218,25 @@ public class SeasonEnvironmentHandler {
         }
 
         if (ice > 0) {
-            // ── the ice is here already ───────────────────────────────────
+            // -- the ice is here already ----------------------------------
             if (temp > SeasonTemperature.MELT_THRESHOLD) {
                 // It thins from the BOTTOM. The water under a sheet of
                 // ice is warmer than the air above it, so that is
-                // where it goes first -- and what is left, no longer
-                // supported from below, breaks off and floats away.
+                // where it goes first.
                 float speed = SeasonTemperature.getMeltSpeed(temp);
                 if (rand.nextFloat() < MELT_CHANCE * speed) {
-                    if (ice > 1) {
-                        breakOffIce(level, lowestIce);
-                    } else {
-                        level.setBlockAndUpdate(lowestIce, Blocks.WATER.defaultBlockState());
+                    level.setBlockAndUpdate(lowestIce, Blocks.WATER.defaultBlockState());
+                    // What comes off the edge of a melting sheet is a
+                    // floe: the edge is where a sheet breaks up, and
+                    // the middle of a river just gets thinner.
+                    if (isIceEdge(level, lowestIce)) {
+                        spawnFloatingIce(level, surface);
+                        playCrack(level, surface);
                     }
                 }
             } else if (temp > SeasonTemperature.NO_FORM_THRESHOLD && ice == 1
                     && isIceEdge(level, lowestIce)) {
-                // ── the cracking ───────────────────────────────────────────
+                // -- the cracking ------------------------------------------
                 // The shallow ice, in the cold-rain band of late
                 // winter, starts to crack and break up. It goes from the
                 // EDGE of the sheet inwards, the way a sheet of ice
@@ -242,23 +244,33 @@ public class SeasonEnvironmentHandler {
                 // long after the edges have broken away.
                 if (rand.nextFloat() < CRACK_CHANCE) {
                     level.setBlockAndUpdate(lowestIce, Blocks.WATER.defaultBlockState());
-                    spawnFloatingIce(level, lowestIce);
+                    spawnFloatingIce(level, surface);
                     playCrack(level, surface);
                 }
             }
             return;
         }
 
-        if (lowestWater != null && level.canSeeSky(surface)) {
-            // ── the ice forms ─────────────────────────────────────────────
+        if (lowestWater != null && level.canSeeSky(surface)
+                && level.getBlockState(surface).is(Blocks.WATER)) {
+            // -- the ice forms --------------------------------------------
             int iceSpread = SeasonTemperature.getIceSpread(temp);
             if (iceSpread > 0 && isNearEdge(level, surface, iceSpread)) {
                 float formSpeed = SeasonTemperature.getFormationSpeed(temp);
                 // the deeper the water, the thicker the ice it takes
                 int target = iceLayersForDepth(ice + waterDepth);
-                if (rand.nextFloat() < formSpeed * ICE_CHANCE) {
-                    // from the bed upwards, so the ice is supported
-                    level.setBlockAndUpdate(lowestWater, Blocks.ICE.defaultBlockState());
+                if (ice < target && rand.nextFloat() < formSpeed * ICE_CHANCE) {
+                    // It grows DOWNWARD from the surface. The sheet
+                    // always reaches the water and always touches the
+                    // top, so it is always found again -- which is the
+                    // whole of the melt.
+                    //
+                    // An earlier version put the ice at the bed of the
+                    // water instead. A sheet down there was never seen
+                    // again: the scan looks for ice from the surface
+                    // down, so it neither melted nor got any thicker.
+                    BlockPos place = (ice == 0) ? surface : lowestIce.below();
+                    level.setBlockAndUpdate(place, Blocks.ICE.defaultBlockState());
                 }
             }
         }
@@ -350,21 +362,6 @@ public class SeasonEnvironmentHandler {
         return 3;
     }
 
-    /**
-     * The sheet of ice has lost its support underneath, so it breaks
-     * up and floats away as one of the floating ice clumps. The ice
-     * that is left in the column goes back to water.
-     */
-    private static void breakOffIce(ServerLevel level, BlockPos icePos) {
-        BlockPos p = icePos;
-        int guard = 0;
-        while (guard++ < 8 && level.getBlockState(p).is(Blocks.ICE)) {
-            level.setBlockAndUpdate(p, Blocks.WATER.defaultBlockState());
-            p = p.above();
-        }
-        spawnFloatingIce(level, icePos);
-        playCrack(level, icePos);
-    }
 
     /**
      * Is this the edge of the ice sheet?
