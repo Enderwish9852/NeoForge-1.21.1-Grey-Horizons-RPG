@@ -96,8 +96,15 @@ public class SeasonEnvironmentHandler {
      */
     private static final float ICE_CHANCE = 0.008f;
 
-    /** How likely the shallow ice is to crack and break up in the cold-rain band. */
-    private static final float CRACK_CHANCE = 0.004f;
+    /**
+     * How likely the shallow ice at the edge of a sheet is to crack
+     * and break up in the cold-rain band.
+     *
+     * It was three times too eager, and every column of ice was
+     * breaking up, not just the edges, so a frozen river came apart
+     * all at once.
+     */
+    private static final float CRACK_CHANCE = 0.0012f;
 
     /** How much colder a shaded spot is, for each level of sky light lost. */
     private static final float SHADE_PER_LEVEL = 0.018f;
@@ -220,18 +227,23 @@ public class SeasonEnvironmentHandler {
                 // supported from below, breaks off and floats away.
                 float speed = SeasonTemperature.getMeltSpeed(temp);
                 if (rand.nextFloat() < MELT_CHANCE * speed) {
-                    level.setBlockAndUpdate(lowestIce, Blocks.WATER.defaultBlockState());
                     if (ice > 1) {
-                        breakOffIce(level, surface);
+                        breakOffIce(level, lowestIce);
+                    } else {
+                        level.setBlockAndUpdate(lowestIce, Blocks.WATER.defaultBlockState());
                     }
                 }
-            } else if (temp > SeasonTemperature.NO_FORM_THRESHOLD && ice == 1) {
+            } else if (temp > SeasonTemperature.NO_FORM_THRESHOLD && ice == 1
+                    && isIceEdge(level, lowestIce)) {
                 // ── the cracking ───────────────────────────────────────────
                 // The shallow ice, in the cold-rain band of late
-                // winter, starts to crack and break up.
+                // winter, starts to crack and break up. It goes from the
+                // EDGE of the sheet inwards, the way a sheet of ice
+                // really does, so the middle of a river stays solid
+                // long after the edges have broken away.
                 if (rand.nextFloat() < CRACK_CHANCE) {
                     level.setBlockAndUpdate(lowestIce, Blocks.WATER.defaultBlockState());
-                    spawnFloatingIce(level, surface);
+                    spawnFloatingIce(level, lowestIce);
                     playCrack(level, surface);
                 }
             }
@@ -341,18 +353,37 @@ public class SeasonEnvironmentHandler {
 
     /**
      * The sheet of ice has lost its support underneath, so it breaks
-     * up and floats away as one of the floating ice clumps.
+     * up and floats away as one of the floating ice clumps. The ice
+     * that is left in the column goes back to water.
      */
-    private static void breakOffIce(ServerLevel level, BlockPos surface) {
-        // clear whatever ice is left in the column
-        BlockPos p = surface.below();
+    private static void breakOffIce(ServerLevel level, BlockPos icePos) {
+        BlockPos p = icePos;
         int guard = 0;
         while (guard++ < 8 && level.getBlockState(p).is(Blocks.ICE)) {
             level.setBlockAndUpdate(p, Blocks.WATER.defaultBlockState());
-            p = p.below();
+            p = p.above();
         }
-        spawnFloatingIce(level, surface);
-        playCrack(level, surface);
+        spawnFloatingIce(level, icePos);
+        playCrack(level, icePos);
+    }
+
+    /**
+     * Is this the edge of the ice sheet?
+     *
+     * A sheet breaks up from its edges inwards, so only the ice that
+     * has open water beside it cracks. The middle of a frozen river
+     * stays solid long after the edges have gone.
+     */
+    private static boolean isIceEdge(ServerLevel level, BlockPos icePos) {
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dz = -1; dz <= 1; dz++) {
+                if (dx == 0 && dz == 0) continue;
+                if (!level.getBlockState(icePos.offset(dx, 0, dz)).is(Blocks.ICE)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /** A clump of ice breaks off and starts drifting. */
