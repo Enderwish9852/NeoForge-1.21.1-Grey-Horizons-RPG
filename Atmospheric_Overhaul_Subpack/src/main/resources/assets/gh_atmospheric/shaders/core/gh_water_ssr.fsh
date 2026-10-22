@@ -91,7 +91,10 @@ const float MARCH_REACH   = 40.0;   // blocks the reflection ray travels
 const float DEPTH_BIAS    = 0.00035;// "in front of the ray" margin
 
 void main() {
-    if (texture(MaskSampler, texCoord).r < 0.5) {
+    // The mask's value, sampled with LINEAR filtering so the edge of
+    // the water fades across the pixel rather than cutting.
+    float mask = texture(MaskSampler, texCoord).r;
+    if (mask < 0.02) {
         fragColor = vec4(0.0);       // not water: no reflection here
         return;
     }
@@ -106,15 +109,24 @@ void main() {
 
     // march in world space, project each step back to the screen
     vec3 p = wSurf + n * 0.10 + r * 0.15;    // start off the surface
-    float stepLen = MARCH_REACH / float(MARCH_STEPS);
 
     vec2 prevUv = texCoord;
+    vec3 prevP = p;
     float prevRayDepth = 0.0;
     bool hit = false;
     vec2 hitUv = texCoord;
 
+    // The step GROWS with the distance from the camera. A constant
+    // step cannot resolve anything thin and near: a player standing
+    // in a puddle is 0.6 blocks wide, and a 1.7 block step steps
+    // straight over them without ever noticing they were there. Near
+    // geometry is exactly what a puddle reflects.
+    float travelled = 0.0;
     for (int i = 0; i < MARCH_STEPS; i++) {
-        p += r * stepLen;
+        float t = float(i + 1) / float(MARCH_STEPS);
+        float next = MARCH_REACH * t * t;      // quadratic: fine near, coarse far
+        p += r * (next - travelled);
+        travelled = next;
         vec4 vClip = RayProjMat * (RayViewMat * vec4(p - CameraPos, 1.0));
         if (vClip.w <= 0.0) continue;        // behind the camera
         vec2 uv = vClip.xy / vClip.w * 0.5 + 0.5;
@@ -138,27 +150,39 @@ void main() {
             break;
         }
         if (sampleDepth < rayDepth - DEPTH_BIAS) {
-            // geometry in front of the ray point: candidate hit, refine
-            vec2 a = prevUv;
-            float da = prevRayDepth;
-            vec2 b = uv;
-            float db = rayDepth;
+            // Geometry in front of the ray point: a candidate hit.
+            //
+            // The refinement bisects the DISTANCE ALONG THE RAY, in
+            // world space. Bisecting the screen position and mixing
+            // the two depths is not the same thing: the two ends of
+            // the interval are at different distances, and at grazing
+            // angles the screen space and the world space have wildly
+            // different scales, so mixing the depths lands somewhere
+            // that is not on the ray at all. That is what made the
+            // reflections look broken and left hard, block-shaped
+            // edges.
+            vec3 a = prevP;
+            vec3 b = p;
+            vec2 hitPoint = uv;
             for (int j = 0; j < REFINE_STEPS; j++) {
-                vec2 m = (a + b) * 0.5;
-                float dm = mix(da, db, 0.5);
-                if (texture(MainDepth, m).x < dm - DEPTH_BIAS) {
+                vec3 m = (a + b) * 0.5;
+                vec4 mc = RayProjMat * (RayViewMat * vec4(m - CameraPos, 1.0));
+                if (mc.w <= 0.0) { a = m; continue; }
+                vec2 muv = mc.xy / mc.w * 0.5 + 0.5;
+                float mrayDepth = mc.z / mc.w * 0.5 + 0.5;
+                if (texture(MainDepth, muv).x < mrayDepth - DEPTH_BIAS) {
                     b = m;
-                    db = dm;
+                    hitPoint = muv;
                 } else {
                     a = m;
-                    da = dm;
                 }
             }
-            hitUv = b;
+            hitUv = hitPoint;
             hit = true;
             break;
         }
         prevUv = uv;
+        prevP = p;
         prevRayDepth = rayDepth;
     }
 
@@ -166,5 +190,11 @@ void main() {
         fragColor = vec4(0.0);       // nothing found: composite keeps the look
         return;
     }
-    fragColor = vec4(texture(DiffuseSampler, hitUv).rgb, 1.0);
+    // The alpha is the mask's own value, not a hard 1. This pass runs
+    // at half resolution, so the full-resolution mask is sampled
+    // across a pixel and a half: a hard < 0.5 test made the puddle's
+    // edge a jagged, aliased line, and the reflection stopped dead
+    // along it. Fading out over the edge instead is what makes the
+    // borders of a puddle read as a boundary rather than a glitch.
+    fragColor = vec4(texture(DiffuseSampler, hitUv).rgb, mask);
 }

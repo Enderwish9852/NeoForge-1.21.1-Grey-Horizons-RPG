@@ -15,6 +15,14 @@ uniform vec4 WaterParams;    // x: amplitude (mirrors the surface render)
 uniform vec4 RefractParams;  // x: refraction px, y: reflection strength
 uniform vec2 ScreenSize;
 
+/**
+ * How much of the scene the water reflects when you look straight
+ * down at it. Pure water is 2%, which is physically right and reads
+ * as no reflection at all; this is the wet-surface sheen that keeps a
+ * puddle looking like a puddle from above.
+ */
+const float MIN_REFLECTANCE = 0.12;
+
 in vec2 texCoord;
 
 out vec4 fragColor;
@@ -96,7 +104,12 @@ void main() {
 
     // fresnel (same curve as the surface shader)
     float ndv = max(dot(n, -v), 0.0);
-    float fresnel = 0.025 + 0.975 * pow(1.0 - ndv, 5.0);
+    // A wet surface keeps a sheen even when you look straight down at
+    // it. Pure water reflects 2% at normal incidence, which reads as
+    // no reflection at all from above -- the puddle effect simply
+    // vanished when you looked down at it. The floor keeps the
+    // grazing-angle curve and adds a wet-surface sheen on top.
+    float fresnel = MIN_REFLECTANCE + (1.0 - MIN_REFLECTANCE) * pow(1.0 - ndv, 5.0);
 
     // 1. refraction: the bed (and tint) resampled through the wave tilt
     vec2 refractPx = n.xz * RefractParams.x;

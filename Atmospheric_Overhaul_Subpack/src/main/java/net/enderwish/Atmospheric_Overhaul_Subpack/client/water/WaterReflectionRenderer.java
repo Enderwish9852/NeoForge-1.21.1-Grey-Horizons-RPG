@@ -232,6 +232,14 @@ public final class WaterReflectionRenderer {
                 // BLACK, not the RenderTarget default (white): the mask
                 // sampler reads red < 0.5 as "not water".
                 maskTarget.setClearColor(0.0F, 0.0F, 0.0F, 0.0F);
+                // LINEAR on the mask's colour: the SSR pass runs at half
+                // resolution and samples this full-resolution mask, so
+                // with NEAREST the edge of the water was a jagged,
+                // aliased line across the puddle.
+                GL11C.glBindTexture(GL11C.GL_TEXTURE_2D, maskTarget.getColorTextureId());
+                GL11C.glTexParameteri(GL11C.GL_TEXTURE_2D, GL11C.GL_TEXTURE_MIN_FILTER, GL11C.GL_LINEAR);
+                GL11C.glTexParameteri(GL11C.GL_TEXTURE_2D, GL11C.GL_TEXTURE_MAG_FILTER, GL11C.GL_LINEAR);
+                GL11C.glBindTexture(GL11C.GL_TEXTURE_2D, 0);
                 ssrTarget = new TextureTarget(hw, hh, false, false);
                 compTarget = new TextureTarget(width, height, false, false);
             } else if (maskTarget.width != width || maskTarget.height != height) {
