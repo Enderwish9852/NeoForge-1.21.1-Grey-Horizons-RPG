@@ -87,6 +87,34 @@ public final class ClientSeasonState {
     public static String getWeatherId() { return activeWeatherId; }
     public static float getIntensity() { return activeIntensity; }
 
+    /**
+     * The temperature at a position, on the client.
+     *
+     * The same calculation the server does, so the two agree on where
+     * the freezing line is: below it the precipitation falls as snow,
+     * above it as rain.
+     */
+    public static float temperatureAt(net.minecraft.core.BlockPos pos) {
+        net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
+        if (mc.level == null) return 0.0f;
+        float biomeTemp = mc.level.getBiome(pos).value().getBaseTemperature();
+        return net.enderwish.Atmospheric_Overhaul_Subpack.core.season.SeasonTemperature.calculateClient(
+                biomeTemp, getSeason(), getPhase(), getWeatherId(), getIntensity(), mc.level.getDayTime());
+    }
+
+    /**
+     * Is it cold enough for the precipitation to fall as snow?
+     *
+     * The threshold is the same one the server uses to let snow
+     * settle, so what falls and what settles always agree.
+     */
+    public static boolean isSnowing() {
+        net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
+        if (mc.player == null) return false;
+        return temperatureAt(mc.player.blockPosition())
+                <= net.enderwish.Atmospheric_Overhaul_Subpack.core.season.SeasonTemperature.NO_FORM_THRESHOLD;
+    }
+
     public static boolean isPrecipitating() {
         return !activeWeatherId.equals("clear")
                 && !activeWeatherId.equals("fog")
@@ -121,8 +149,7 @@ public final class ClientSeasonState {
 
     // ── Getters — local (felt) environment ────────────────────────────────────
 
-    public static WindDirection getFeltWindDirection() { return feltWindDirection; }
-    public static float getFeltWindSpeed() { return feltWindSpeed; }
+    public static WindDirection getFeltWindDirection() { return feltWindDirection; }    public static float getFeltWindSpeed() { return feltWindSpeed; }
     public static float getFeltWindDx() { return feltWindDirection.dx * feltWindSpeed; }
     public static float getFeltWindDz() { return feltWindDirection.dz * feltWindSpeed; }
     public static float getFeelsLikeTemp() { return feelsLikeTemp; }

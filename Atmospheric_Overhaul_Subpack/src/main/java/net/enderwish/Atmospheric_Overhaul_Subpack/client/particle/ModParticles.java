@@ -27,6 +27,10 @@ public class ModParticles {
     public static final DeferredHolder<ParticleType<?>, SimpleParticleType> RAIN_CROWN =
         PARTICLE_TYPES.register("rain_crown", () -> new SimpleParticleType(false));
 
+    /** A falling flake, for the winter precipitation. */
+    public static final DeferredHolder<ParticleType<?>, SimpleParticleType> SNOW_FLAKE =
+        PARTICLE_TYPES.register("snow_flake", () -> new SimpleParticleType(false));
+
     public static final DeferredHolder<ParticleType<?>, SimpleParticleType> SWIRLING_LEAVES =
             PARTICLE_TYPES.register("swirling_leaves", () -> new SimpleParticleType(false));
 

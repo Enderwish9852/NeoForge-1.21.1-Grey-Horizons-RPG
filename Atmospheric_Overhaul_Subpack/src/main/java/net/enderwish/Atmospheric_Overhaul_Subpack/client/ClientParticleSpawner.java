@@ -33,6 +33,8 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 public class ClientParticleSpawner {
 
     private static final int BASE_RAIN_COUNT    = 20;
+    /** Snow is slower and drifts, so fewer of them read better. */
+    private static final int BASE_SNOW_COUNT    = 14;
     private static final int SPAWN_RADIUS       = 40;
     private static final int SPAWN_HEIGHT_ABOVE = 15;
     private static final float UPWIND_BIAS_STRENGTH = 0.3f;
@@ -63,7 +65,12 @@ public class ClientParticleSpawner {
         float intensity = ClientSeasonState.getIntensity();
         if (intensity <= 0f) return;
 
-        int count = Math.round(BASE_RAIN_COUNT * intensity);
+        // Below the freezing line the same weather falls as snow. The
+        // threshold is the one the server uses to let snow settle,
+        // so what falls and what settles always agree.
+        boolean snowing = ClientSeasonState.isSnowing();
+
+        int count = Math.round((snowing ? BASE_SNOW_COUNT : BASE_RAIN_COUNT) * intensity);
         if (count <= 0) return;
 
         RandomSource random = level.getRandom();
@@ -92,7 +99,11 @@ public class ClientParticleSpawner {
             double z = colZ + random.nextDouble();
             double y = player.getY() + SPAWN_HEIGHT_ABOVE + random.nextDouble() * 5.0;
 
-            level.addParticle(ModParticles.RAIN_DROP.get(), x, y, z, 0.0, intensity, 0.0);
+            if (snowing) {
+                level.addParticle(ModParticles.SNOW_FLAKE.get(), x, y, z, 0.0, 0.0, 0.0);
+            } else {
+                level.addParticle(ModParticles.RAIN_DROP.get(), x, y, z, 0.0, intensity, 0.0);
+            }
         }
     }
 
