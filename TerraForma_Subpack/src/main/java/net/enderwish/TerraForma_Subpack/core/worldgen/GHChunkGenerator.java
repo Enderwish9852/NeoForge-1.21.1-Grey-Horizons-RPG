@@ -6,6 +6,7 @@ import net.enderwish.TerraForma_Subpack.core.biome.GHBiomeSource;
 import net.enderwish.TerraForma_Subpack.core.climate.ClimateMap;
 import net.enderwish.TerraForma_Subpack.core.worldgen.noise.BiomeTerrainProfile;
 import net.enderwish.TerraForma_Subpack.core.worldgen.noise.GHNoiseRouter;
+import net.enderwish.TerraForma_Subpack.core.worldgen.river.RiverNetwork;
 import net.enderwish.TerraForma_Subpack.core.worldgen.noise.SurfacePalette;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
@@ -117,11 +118,21 @@ public class GHChunkGenerator extends ChunkGenerator {
                 SurfacePalette palette = SurfacePaletteRegistry.get(biomeKey);
                 int surfaceY = noiseRouter.getSurfaceHeight(x, z, profile);
 
-                for (int y = GHNoiseRouter.MIN_HEIGHT; y <= Math.max(surfaceY, GHNoiseRouter.SEA_LEVEL); y++) {
+                // Is there a river here? If so the channel is cut into
+                // the ground and the water stands in it, below the
+                // banks so that it stays in its bed.
+                RiverNetwork.RiverColumn river = RiverNetwork.columnAt(x, z);
+                int waterLevel = GHNoiseRouter.SEA_LEVEL;
+                if (river != null) {
+                    surfaceY = river.bedY();
+                    waterLevel = river.waterY();
+                }
+
+                for (int y = GHNoiseRouter.MIN_HEIGHT; y <= Math.max(surfaceY, waterLevel); y++) {
                     BlockPos pos = new BlockPos(x, y, z);
 
                     if (y > surfaceY) {
-                        if (y <= GHNoiseRouter.SEA_LEVEL) {
+                        if (y <= waterLevel) {
                             chunk.setBlockState(pos, waterState, false);
                         }
                         continue;

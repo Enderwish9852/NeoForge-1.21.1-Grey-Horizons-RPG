@@ -8,6 +8,9 @@ version = "1.0.0"
 displayName = "TerraForma Subpack"
 description = "Grey Horizons RPG — World Generation & Biomes"
 
+[[mixins]]
+config="terraforma.mixins.json"
+
 [[dependencies.gh_terraforma]]
 modId = "neoforge"
 type = "required"

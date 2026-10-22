@@ -1,7 +1,7 @@
 ﻿{
     "project":  "Grey Horizons RPG",
     "subtitle":  "NeoForge 1.21.1 - 5 subpacks",
-    "currentTask":  "Winter feedback round: snow fall, snow sound, snow fog, snow on the lens, mirror ice",
+    "currentTask":  "Three sizes of floating ice: small, medium, large",
     "tasks":  [
                   {
                       "title":  "Diagnose the 90% screen flash bang",
@@ -337,6 +337,21 @@
                       "title":  "The ice is a mirror",
                       "status":  "done",
                       "note":  "the sky at a grazing angle, the water own slate from above, and the sun glint"
+                  },
+                  {
+                      "title":  "Three sizes of floating ice",
+                      "status":  "done",
+                      "note":  "small 3-5 blocks, medium 6-9, large 12-18 - each with its own melt rate, drift, collision health and appetite for the sheet"
+                  },
+                  {
+                      "title":  "One roll per break",
+                      "status":  "done",
+                      "note":  "30% small, 20% medium, 10% large, 40% nothing comes off"
+                  },
+                  {
+                      "title":  "The large floe comes apart",
+                      "status":  "done",
+                      "note":  "60% to break into one medium and two smalls when it breaks ice on a collision"
                   }
               ],
     "files":  [
