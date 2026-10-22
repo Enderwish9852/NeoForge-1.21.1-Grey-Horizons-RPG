@@ -2,7 +2,6 @@ package net.enderwish.Atmospheric_Overhaul_Subpack.event;
 
 import net.enderwish.Atmospheric_Overhaul_Subpack.core.season.SeasonData;
 import net.enderwish.Atmospheric_Overhaul_Subpack.entity.FloatingIceEntity;
-import net.enderwish.Atmospheric_Overhaul_Subpack.entity.ModEntities;
 import net.enderwish.Atmospheric_Overhaul_Subpack.core.season.SeasonTemperature;
 import net.enderwish.Atmospheric_Overhaul_Subpack.core.weather.WeatherRegistry;
 import net.minecraft.core.BlockPos;
@@ -386,12 +385,59 @@ public class SeasonEnvironmentHandler {
         return false;
     }
 
-    /** A clump of ice breaks off and starts drifting. */
+    /**
+     * A clump of ice breaks off and starts drifting.
+     *
+     * There is one roll for it, and it decides what comes off: a small
+     * piece most of the time, a medium one now and then, a large raft
+     * rarely, and four times in ten nothing at all comes off and the
+     * ice simply melts back to water.
+     *
+     * The bigger ones take a bite of the sheet with them as they go,
+     * which is why a floe is often found floating in a hole it made
+     * for itself.
+     */
     private static void spawnFloatingIce(ServerLevel level, BlockPos pos) {
         if (!(level instanceof ServerLevel server)) return;
-        FloatingIceEntity ice = new FloatingIceEntity(ModEntities.FLOATING_ICE.get(), level);
-        ice.setPos(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5);
-        server.addFreshEntity(ice);
+
+        float roll = server.getRandom().nextFloat();
+        FloatingIceEntity.Kind kind;
+        if (roll < 0.30f) {
+            kind = FloatingIceEntity.Kind.SMALL;
+        } else if (roll < 0.50f) {
+            kind = FloatingIceEntity.Kind.MEDIUM;
+        } else if (roll < 0.60f) {
+            kind = FloatingIceEntity.Kind.LARGE;
+        } else {
+            // four times in ten, nothing comes off
+            return;
+        }
+
+        // it takes a bite of the sheet with it
+        breakIceAround(server, pos, kind);
+
+        FloatingIceEntity.spawn(server, pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, kind);
+    }
+
+    /**
+     * The ice the floe takes with it as it comes off.
+     *
+     * A medium takes three or four blocks, a large one takes a dozen
+     * and more, and a small one takes none at all.
+     */
+    private static void breakIceAround(ServerLevel level, BlockPos pos, FloatingIceEntity.Kind kind) {
+        if (kind.iceTaken <= 0) return;
+        int radius = kind == FloatingIceEntity.Kind.LARGE ? 2 : 1;
+        int removed = 0;
+        for (int dx = -radius; dx <= radius && removed < kind.iceTaken; dx++) {
+            for (int dz = -radius; dz <= radius && removed < kind.iceTaken; dz++) {
+                BlockPos p = pos.offset(dx, 0, dz);
+                if (level.getBlockState(p).is(Blocks.ICE)) {
+                    level.setBlockAndUpdate(p, Blocks.WATER.defaultBlockState());
+                    removed++;
+                }
+            }
+        }
     }
 
     /** The ice cracking. Vanilla has no ice crack, so it borrows glass. */

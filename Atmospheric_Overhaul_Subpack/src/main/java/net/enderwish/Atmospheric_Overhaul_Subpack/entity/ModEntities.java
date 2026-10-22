@@ -23,7 +23,7 @@ public class ModEntities {
             ENTITY_TYPES.register("floating_ice", () -> EntityType.Builder
                     .<FloatingIceEntity>of(FloatingIceEntity::new, MobCategory.MISC)
                     .sized(0.9f, 0.4f)
-                    .clientTrackingRange(10)
+                    .clientTrackingRange(64)
                     .updateInterval(2)
                     .build("floating_ice"));
 

@@ -1,7 +1,7 @@
 ﻿{
     "project":  "Grey Horizons RPG",
     "subtitle":  "NeoForge 1.21.1 - 5 subpacks",
-    "currentTask":  "Pause screen: the world no longer moves behind it",
+    "currentTask":  "Winter feedback round: snow fall, snow sound, snow fog, snow on the lens, mirror ice",
     "tasks":  [
                   {
                       "title":  "Diagnose the 90% screen flash bang",
@@ -197,6 +197,146 @@
                       "title":  "HUD clocks on the pause-aware clock",
                       "status":  "done",
                       "note":  "kill feed rows, combat timer message, bandage in-hand spin"
+                  },
+                  {
+                      "title":  "CelestialLight: the sun or the moon, whichever is up",
+                      "status":  "done",
+                      "note":  "the moon is the sun direction reversed - vanilla draws both in the same rotated frame"
+                  },
+                  {
+                      "title":  "The shadow map follows the light",
+                      "status":  "done",
+                      "note":  "so the trees block the moonlight too and the shafts come through the canopy at night"
+                  },
+                  {
+                      "title":  "Cold silver moon shafts",
+                      "status":  "done",
+                      "note":  "silver-blue tint, a fraction of the sun strength"
+                  },
+                  {
+                      "title":  "A darker night",
+                      "status":  "done",
+                      "note":  "NightDarkeningRenderer: a fullscreen multiply, run BEFORE the shafts are added"
+                  },
+                  {
+                      "title":  "The moon\u0027s phase survives",
+                      "status":  "done",
+                      "note":  "the screen-space pass is daytime only - its hard disc would wash the phase out"
+                  },
+                  {
+                      "title":  "The player was not reflected",
+                      "status":  "done",
+                      "note":  "the march stepped 1.7 blocks at a time and stepped straight over a 0.6 block wide player"
+                  },
+                  {
+                      "title":  "The march step now grows with distance",
+                      "status":  "done",
+                      "note":  "fine near, coarse far - near geometry is what a puddle reflects"
+                  },
+                  {
+                      "title":  "The refinement bisected screen space",
+                      "status":  "done",
+                      "note":  "it mixed the depths of two points at different distances; now it bisects the distance along the ray in world space"
+                  },
+                  {
+                      "title":  "The puddle edge was a hard aliased line",
+                      "status":  "done",
+                      "note":  "the mask is now linearly filtered and its value is the reflection alpha, so it fades over the edge"
+                  },
+                  {
+                      "title":  "Looking straight down lost the reflection",
+                      "status":  "done",
+                      "note":  "pure water is 2% at normal incidence; MIN_REFLECTANCE 0.12 gives the wet-surface sheen"
+                  },
+                  {
+                      "title":  "The season had no effect on the terrain",
+                      "status":  "done",
+                      "note":  "not broken - starved: 8 random blocks per second, 36000 to cover"
+                  },
+                  {
+                      "title":  "The sweep",
+                      "status":  "done",
+                      "note":  "one chunk per player per tick, 13x13 grid, every column revisited every 169 ticks"
+                  },
+                  {
+                      "title":  "Rain falls as snow below the freezing line",
+                      "status":  "done",
+                      "note":  "the same threshold the server uses to settle snow"
+                  },
+                  {
+                      "title":  "A snow particle, not the rain",
+                      "status":  "done",
+                      "note":  "slow fall, catches the wind, wanders sideways"
+                  },
+                  {
+                      "title":  "The sleet band",
+                      "status":  "done",
+                      "note":  "cold rain between the snow and melt thresholds washes the snow away"
+                  },
+                  {
+                      "title":  "The ice now actually runs",
+                      "status":  "done",
+                      "note":  "the banks freeze first and the ice pushes out over the season"
+                  },
+                  {
+                      "title":  "Stage 2: the ice thickens, the floating ice, the sounds",
+                      "status":  "open",
+                      "note":  "2-3 stacked ice layers, melting from the bottom, the floating ice entity, the cracking sounds, the powdered snow"
+                  },
+                  {
+                      "title":  "Stage 2: the ice thickens with the depth",
+                      "status":  "done",
+                      "note":  "a skin in a puddle, a sheet in a deep river, three blocks at the most"
+                  },
+                  {
+                      "title":  "Stage 2: the ice thins from the bottom",
+                      "status":  "done",
+                      "note":  "the water under the ice is warmer than the air above it"
+                  },
+                  {
+                      "title":  "Stage 2: the floating ice entity",
+                      "status":  "done",
+                      "note":  "a clump that drifts on the current, bobs, and shatters on a bank"
+                  },
+                  {
+                      "title":  "Stage 2: the cracking and its sound",
+                      "status":  "done",
+                      "note":  "the shallow ice in the cold-rain band of late winter"
+                  },
+                  {
+                      "title":  "Stage 2: the powder snow",
+                      "status":  "done",
+                      "note":  "at the bottom of the cold the drift itself turns to powder, without raising the ground"
+                  },
+                  {
+                      "title":  "Stage 2: the dark places keep their ice",
+                      "status":  "done",
+                      "note":  "the shade makes it colder, from the sky light"
+                  },
+                  {
+                      "title":  "The snow flew sideways",
+                      "status":  "done",
+                      "note":  "the wind catch was 1.6 on a velocity that is already a movement per tick - the flakes went sideways faster than they fell"
+                  },
+                  {
+                      "title":  "The rain sound played over the snow",
+                      "status":  "done",
+                      "note":  "the rain ambience now stops when the weather falls as snow"
+                  },
+                  {
+                      "title":  "Denser fog for snow",
+                      "status":  "done",
+                      "note":  "snow is not a weather of its own, so it could not be a case in the fog switch - it keys off the temperature"
+                  },
+                  {
+                      "title":  "Snow on the lens",
+                      "status":  "done",
+                      "note":  "flakes stick as the snow builds and melt off unevenly as it lets up"
+                  },
+                  {
+                      "title":  "The ice is a mirror",
+                      "status":  "done",
+                      "note":  "the sky at a grazing angle, the water own slate from above, and the sun glint"
                   }
               ],
     "files":  [
@@ -285,6 +425,8 @@
                   "The shadow pass is the expensive part: 2 extra chunk layers over the near sections, every other frame",
                   "MC view bobbing is applied to the projection matrix in GameRenderer.renderLevel - anything computed from it rocks with the walk cycle",
                   "The shadow map is now 224 blocks across (112 either side) so it reaches the cloud layer",
-                  "Minecraft.isPaused() is only true for a singleplayer pause screen - in multiplayer the world keeps running, which is correct"
+                  "Minecraft.isPaused() is only true for a singleplayer pause screen - in multiplayer the world keeps running, which is correct",
+                  "CelestialLight.NIGHT_DARKEN = 0.42 and MOON_STRENGTH = 0.20 are the two numbers to tune",
+                  "The SSR pass is half resolution - full resolution would sharpen the player reflection but costs 4x"
               ]
 }
