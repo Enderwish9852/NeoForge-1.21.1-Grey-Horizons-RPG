@@ -241,10 +241,27 @@ public final class WaterReflectionRenderer {
                 GL11C.glTexParameteri(GL11C.GL_TEXTURE_2D, GL11C.GL_TEXTURE_MAG_FILTER, GL11C.GL_LINEAR);
                 GL11C.glBindTexture(GL11C.GL_TEXTURE_2D, 0);
                 ssrTarget = new TextureTarget(hw, hh, false, false);
+                // LINEAR on the SSR result too: the composite samples
+                // this half-resolution buffer, and with NEAREST the
+                // puddle's edge came out as a dotted line of half-res
+                // texels and the reflection was blocky.
+                GL11C.glBindTexture(GL11C.GL_TEXTURE_2D, ssrTarget.getColorTextureId());
+                GL11C.glTexParameteri(GL11C.GL_TEXTURE_2D, GL11C.GL_TEXTURE_MIN_FILTER, GL11C.GL_LINEAR);
+                GL11C.glTexParameteri(GL11C.GL_TEXTURE_2D, GL11C.GL_TEXTURE_MAG_FILTER, GL11C.GL_LINEAR);
+                GL11C.glBindTexture(GL11C.GL_TEXTURE_2D, 0);
                 compTarget = new TextureTarget(width, height, false, false);
             } else if (maskTarget.width != width || maskTarget.height != height) {
                 maskTarget.resize(width, height, true);
                 ssrTarget.resize(hw, hh, false);
+                // a resize makes NEW textures, so the filters have to be
+                // put back on them
+                GL11C.glBindTexture(GL11C.GL_TEXTURE_2D, maskTarget.getColorTextureId());
+                GL11C.glTexParameteri(GL11C.GL_TEXTURE_2D, GL11C.GL_TEXTURE_MIN_FILTER, GL11C.GL_LINEAR);
+                GL11C.glTexParameteri(GL11C.GL_TEXTURE_2D, GL11C.GL_TEXTURE_MAG_FILTER, GL11C.GL_LINEAR);
+                GL11C.glBindTexture(GL11C.GL_TEXTURE_2D, ssrTarget.getColorTextureId());
+                GL11C.glTexParameteri(GL11C.GL_TEXTURE_2D, GL11C.GL_TEXTURE_MIN_FILTER, GL11C.GL_LINEAR);
+                GL11C.glTexParameteri(GL11C.GL_TEXTURE_2D, GL11C.GL_TEXTURE_MAG_FILTER, GL11C.GL_LINEAR);
+                GL11C.glBindTexture(GL11C.GL_TEXTURE_2D, 0);
                 compTarget.resize(width, height, false);
             }
         });

@@ -19,9 +19,10 @@ uniform vec2 ScreenSize;
  * How much of the scene the water reflects when you look straight
  * down at it. Pure water is 2%, which is physically right and reads
  * as no reflection at all; this is the wet-surface sheen that keeps a
- * puddle looking like a puddle from above.
+ * puddle looking like a puddle from above, and it has to be high
+ * enough to carry a player.
  */
-const float MIN_REFLECTANCE = 0.12;
+const float MIN_REFLECTANCE = 0.38;
 
 in vec2 texCoord;
 
@@ -90,7 +91,11 @@ vec3 viewPos(vec2 uv, float depth) {
 void main() {
     vec3 base = texture(DiffuseSampler, texCoord).rgb;
 
-    if (texture(MaskSampler, texCoord).r < 0.5) {
+    // The mask's own value, not a hard test. This is a FULL
+    // resolution sample, so the water's edge fades over a texel
+    // instead of stopping dead along a hard line.
+    float mask = texture(MaskSampler, texCoord).r;
+    if (mask < 0.02) {
         fragColor = vec4(base, 1.0);   // not water: untouched copy
         return;
     }
@@ -105,11 +110,17 @@ void main() {
     // fresnel (same curve as the surface shader)
     float ndv = max(dot(n, -v), 0.0);
     // A wet surface keeps a sheen even when you look straight down at
-    // it. Pure water reflects 2% at normal incidence, which reads as
-    // no reflection at all from above -- the puddle effect simply
-    // vanished when you looked down at it. The floor keeps the
-    // grazing-angle curve and adds a wet-surface sheen on top.
-    float fresnel = MIN_REFLECTANCE + (1.0 - MIN_REFLECTANCE) * pow(1.0 - ndv, 5.0);
+    // it. Pure water reflects 2% at normal incidence, which is
+    // physically right and reads as no reflection at all: from above,
+    // the reflection was a tenth of a tenth of the sky and the puddle
+    // simply vanished into the ground.
+    //
+    // The floor is high on purpose. The reflection has to be strong
+    // enough to carry a PLAYER -- a dark object in a bright sky at
+    // ten percent is nothing at all. Wet asphalt from above is
+    // genuinely reflective, so this is not as far from the truth as
+    // two percent is.
+    float fresnel = MIN_REFLECTANCE + (1.0 - MIN_REFLECTANCE) * pow(1.0 - ndv, 3.0);
 
     // 1. refraction: the bed (and tint) resampled through the wave tilt
     vec2 refractPx = n.xz * RefractParams.x;
@@ -118,6 +129,8 @@ void main() {
     // 2. reflection: the ray-marched result, fresnel-weighted
     vec4 ssr = texture(SSRSampler, texCoord);
 
-    vec3 col = mix(body, ssr.rgb, fresnel * RefractParams.y * ssr.a);
+    // The mask's value is folded in here as well, at full resolution,
+    // so the water's edge fades over a texel rather than cutting.
+    vec3 col = mix(body, ssr.rgb, fresnel * RefractParams.y * ssr.a * mask);
     fragColor = vec4(col, 1.0);
 }
