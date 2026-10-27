@@ -62,6 +62,11 @@ public class MapRenderer {
         return zoomLevel;
     }
 
+    /** Current screen-pixels-per-block scale (used for panning input conversion). */
+    public float currentScale(int screenW, int screenH) {
+        return Math.min(screenW, screenH) / (float) visibleRange();
+    }
+
     public void zoomIn() {
         if (zoomLevel < ZOOM_LEVELS - 1) zoomLevel++;
     }

@@ -64,8 +64,6 @@ public class MapScreen extends Screen {
     // ── Panning state (middle mouse drag) ─────────────────────────────────
 
     private boolean panning = false;
-    private int panLastX;
-    private int panLastZ;
 
     public MapScreen() {
         super(Component.literal("Map"));
@@ -321,20 +319,21 @@ public class MapScreen extends Screen {
 
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
-        // Middle mouse drag pans the map.
+        // Middle mouse drag pans the map. dragX/dragY are screen-pixel deltas
+        // since the last frame; dragging left (negative dragX) moves the
+        // content left, so centerX decreases by the same amount in world units.
         if (button == 2) {
             if (!panning) {
                 panning = true;
-                panLastX = renderer.screenToWorldX((int) mouseX);
-                panLastZ = renderer.screenToWorldZ((int) mouseY);
             }
-            int worldX = renderer.screenToWorldX((int) mouseX);
-            int worldZ = renderer.screenToWorldZ((int) mouseY);
-            int dx = panLastX - worldX;
-            int dz = panLastZ - worldZ;
-            renderer.pan(dx, dz);
-            panLastX = worldX;
-            panLastZ = worldZ;
+            Minecraft mc = Minecraft.getInstance();
+            Level level = mc.level;
+            if (level != null) {
+                float scale = renderer.currentScale(mc.getWindow().getWidth(), mc.getWindow().getHeight());
+                int dxWorld = (int) (dragX / scale);
+                int dzWorld = (int) (dragY / scale);
+                renderer.pan(dxWorld, dzWorld);
+            }
             return true;
         }
 
