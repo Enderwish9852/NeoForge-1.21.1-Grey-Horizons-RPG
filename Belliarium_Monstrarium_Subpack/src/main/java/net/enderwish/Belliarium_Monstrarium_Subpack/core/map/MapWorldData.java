@@ -51,8 +51,10 @@ public class MapWorldData {
     /** Mark a chunk as explored, sampling its surface height. */
     public void markExplored(int chunkX, int chunkZ, int surfaceHeight) {
         long packed = pack(chunkX, chunkZ);
-        exploredChunks.add(packed);
-        chunkHeights.put(packed, surfaceHeight);
+        if (!exploredChunks.contains(packed)) {
+            exploredChunks.add(packed);
+            chunkHeights.put(packed, surfaceHeight);
+        }
     }
 
     public boolean isExplored(int chunkX, int chunkZ) {

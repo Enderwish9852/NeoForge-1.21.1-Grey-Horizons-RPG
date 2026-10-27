@@ -35,8 +35,17 @@ public class MapExplorationHandler {
 
         int cx = SectionPos.blockToSectionCoord(player.getX());
         int cz = SectionPos.blockToSectionCoord(player.getZ());
-        int surfaceHeight = (int) player.getY();
 
-        MapWorldData.get(level).markExplored(cx, cz, surfaceHeight);
+        // Mark a 3x3 chunk area around the player as explored, so walking
+        // through an area fills in the map faster than one chunk per tick.
+        MapWorldData data = MapWorldData.get(level);
+        for (int dz = -1; dz <= 1; dz++) {
+            for (int dx = -1; dx <= 1; dx++) {
+                int wx = cx + dx;
+                int wz = cz + dz;
+                int surfaceHeight = (int) player.getY();
+                data.markExplored(wx, wz, surfaceHeight);
+            }
+        }
     }
 }
