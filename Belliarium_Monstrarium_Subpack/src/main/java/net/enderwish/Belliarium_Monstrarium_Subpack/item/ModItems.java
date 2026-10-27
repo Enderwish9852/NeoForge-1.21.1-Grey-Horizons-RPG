@@ -78,6 +78,10 @@ public class ModItems {
             () -> new net.enderwish.Belliarium_Monstrarium_Subpack.item.SurvivorsDiaryItem(
                     new Item.Properties().stacksTo(1).rarity(Rarity.EPIC)));
 
+    // ── Legendary map (creative only; one per adventure) ────────────────────
+    public static final DeferredItem<Item> LEGENDARY_MAP = ITEMS.register("legendary_map",
+            () -> new MapItem(new Item.Properties().stacksTo(1).rarity(Rarity.RARE)));
+
     public static void register(IEventBus modEventBus) {
         ITEMS.register(modEventBus);
     }

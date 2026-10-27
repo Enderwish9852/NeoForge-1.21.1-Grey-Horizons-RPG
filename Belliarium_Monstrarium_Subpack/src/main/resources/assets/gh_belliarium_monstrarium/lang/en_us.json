@@ -16,6 +16,8 @@
   "item.gh_belliarium_monstrarium.adrenaline": "Adrenaline",
   "key.categories.gh_belliarium_monstrarium": "Belliarium Monstrarium",
   "key.gh_belliarium_monstrarium.fast_use_first_aid": "Fast-Use First Aid Kit",
+  "key.gh_belliarium_monstrarium.open_map": "Open Legendary Map",
   "key.gh_belliarium_monstrarium.quick_slot_left": "Quick Slot (Left)",
-  "key.gh_belliarium_monstrarium.quick_slot_right": "Quick Slot (Right)"
+  "key.gh_belliarium_monstrarium.quick_slot_right": "Quick Slot (Right)",
+  "item.gh_belliarium_monstrarium.legendary_map": "Legendary Map"
 }

@@ -1,7 +1,7 @@
 ﻿{
     "project":  "Grey Horizons RPG",
     "subtitle":  "NeoForge 1.21.1 - 5 subpacks",
-    "currentTask":  "Rivers and currents: traced rivers, the current that carries everything, the seasonal sea",
+    "currentTask":  "Map system: legendary map item, M keybind, zoomable GUI",
     "tasks":  [
                   {
                       "title":  "Diagnose the 90% screen flash bang",
@@ -382,6 +382,31 @@
                       "title":  "The ice that never melted",
                       "status":  "done",
                       "note":  "the ice formed at the bed of the water but the scan looked from the surface down, so it never melted; it now grows downward from the surface"
+                  },
+                  {
+                      "title":  "Fix EntityCurrentMixin @ModifyArg crash",
+                      "status":  "done",
+                      "note":  "Replaced @ModifyArg with @ModifyVariable(argsOnly=true,index=1) on Entity::move; method args live in locals, not on the stack at HEAD"
+                  },
+                  {
+                      "title":  "Seed GHNoiseRouter with real world seed",
+                      "status":  "done",
+                      "note":  "Added NoiseRouterSeeder listening on LevelEvent.Load; calls GHNoiseRouter.setSeed(levelSeed) instead of hard-coded 12345L"
+                  },
+                  {
+                      "title":  "Map system: legendary map item, M keybind, zoomable GUI",
+                      "status":  "doing",
+                      "note":  "Belliarium subpack; creative-only item; full-screen MapScreen with middle-mouse zoom; explored/unexplored pencil-sketch rendering"
+                  },
+                  {
+                      "title":  "Map drawing toolbar: arrow, circle, text box",
+                      "status":  "open",
+                      "note":  "Right-side toolbar; drag-to-resize; click-to-apply; persistence to world data"
+                  },
+                  {
+                      "title":  "Map: Frontier expand-storage setting + structure names",
+                      "status":  "open",
+                      "note":  "50k*50k default / 100k*100k with setting; major structure names wired in later"
                   }
               ],
     "files":  [
@@ -455,6 +480,14 @@
                   },
                   {
                       "path":  "Atmospheric_Overhaul_Subpack/src/main/resources/assets/gh_atmospheric/textures/util/blank.png",
+                      "action":  "new"
+                  },
+                  {
+                      "path":  "TerraForma_Subpack/src/main/java/net/enderwish/TerraForma_Subpack/mixin/EntityCurrentMixin.java",
+                      "action":  "modified"
+                  },
+                  {
+                      "path":  "TerraForma_Subpack/src/main/java/net/enderwish/TerraForma_Subpack/event/NoiseRouterSeeder.java",
                       "action":  "new"
                   }
               ],

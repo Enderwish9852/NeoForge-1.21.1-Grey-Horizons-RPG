@@ -59,11 +59,20 @@ public class ModKeyMappings {
             CATEGORY
     );
 
+    public static final KeyMapping OPEN_MAP = new KeyMapping(
+            "key." + BelliariumMonstrariumSubpack.MODID + ".open_map",
+            KeyConflictContext.IN_GAME,
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_M,
+            CATEGORY
+    );
+
     @SubscribeEvent
     public static void onRegisterKeyMappings(RegisterKeyMappingsEvent event) {
         event.register(FAST_USE_FIRST_AID);
         event.register(OPEN_BACKPACK);
         event.register(QUICK_SLOT_LEFT);
         event.register(QUICK_SLOT_RIGHT);
+        event.register(OPEN_MAP);
     }
 }
