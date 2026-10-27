@@ -164,7 +164,13 @@ public class MapScreen extends Screen {
                 renderDraw(graphics, pendingDraw, true);
             }
 
-            // Draw the locator dot at the player position.
+            // Draw the spawn anchor dot (grey) at world spawn.
+            net.minecraft.core.BlockPos spawn = level.getSharedSpawnPos();
+            int sx = renderer.worldToScreenX(spawn.getX());
+            int sz = renderer.worldToScreenZ(spawn.getZ());
+            graphics.fill(sx - 2, sz - 2, sx + 2, sz + 2, 0xFF808080);
+
+            // Draw the player locator dot (red).
             int lx = renderer.worldToScreenX((int) mc.player.getX());
             int lz = renderer.worldToScreenZ((int) mc.player.getZ());
             graphics.fill(lx - 2, lz - 2, lx + 2, lz + 2, 0xFFFF0000);
@@ -191,7 +197,7 @@ public class MapScreen extends Screen {
         graphics.drawCenteredString(this.font, this.title.getString(),
                 this.width / 2, 16, INK);
         graphics.drawCenteredString(this.font,
-                "Zoom: " + renderer.getZoomLevel() + "  (middle mouse wheel)",
+                "Zoom: " + renderer.getZoomPercent() + "%  (middle mouse wheel)",
                 this.width / 2, this.height - 20, INK);
         graphics.drawCenteredString(this.font,
                 "Press M or Escape to close",
@@ -355,15 +361,12 @@ public class MapScreen extends Screen {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.level == null) return true;
 
-        int px = (int) mc.player.getX();
-        int pz = (int) mc.player.getZ();
-
         // Scroll forward (away from you) zooms in, back (toward you) zooms out.
-        // Zoom keeps the player at screen center.
+        // Zoom keeps the current screen center — it does not recenter to player.
         if (scrollY > 0) {
-            renderer.zoomInAt(px, pz);
+            renderer.zoomIn();
         } else if (scrollY < 0) {
-            renderer.zoomOutAt(px, pz);
+            renderer.zoomOut();
         }
         return true;
     }

@@ -6,21 +6,23 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
+import net.minecraft.util.Mth;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
 
 /**
  * MapRenderer
  *
- * Xaero-style top-down terrain renderer. Each screen pixel samples the
- * top-most solid block at its world position and draws the biome color,
- * so the map reads as a smooth terrain view rather than chunky flat
- * colours.
+ * Xaero-style top-down terrain renderer with 10 zoom levels (10% to 100%).
+ * At 10% zoom the viewport shows 1000 blocks; at 100% zoom it shows 100
+ * blocks. Each scroll step changes zoom by 10%.
  *
- * Zoom levels: 0 (full range) to 4 (max detail). Middle mouse wheel
- * changes the zoom; middle-mouse drag pans the map.
+ * Explored chunks are drawn with biome colours — large flat colours at low
+ * zoom (green for forests, blue for water), more detail and shading at high
+ * zoom. Unexplored chunks are drawn as black fill with terrain edges.
  *
- * Only explored chunks are drawn — unexplored areas stay dark.
+ * The map pans within a 50k×50k world (100k×100k with the Frontier
+ * expand-storage setting).
  */
 public class MapRenderer {
 
@@ -29,17 +31,24 @@ public class MapRenderer {
     /** Expanded map range with Frontier setting: 100k * 100k blocks. */
     public static final int EXPANDED_RANGE = 100_000;
 
-    private static final int ZOOM_LEVELS = 5;
+    /** 10 zoom levels: 10%, 20%, ... 100%. */
+    private static final int ZOOM_LEVELS = 10;
+    /** Blocks shown at 10% zoom (most zoomed out). */
+    private static final int MAX_VIEWPORT_BLOCKS = 1000;
+    /** Blocks shown at 100% zoom (most zoomed in). */
+    private static final int MIN_VIEWPORT_BLOCKS = 100;
+    /** Blocks removed per zoom level step. */
+    private static final int BLOCKS_PER_STEP = (MAX_VIEWPORT_BLOCKS - MIN_VIEWPORT_BLOCKS) / (ZOOM_LEVELS - 1);
+
     private static final int CHUNK_SIZE = 16;
 
-    private int zoomLevel = 0;
+    private int zoomLevel = 1; // 1 = 10%, 10 = 100%
     private int centerX = 0;
     private int centerZ = 0;
 
-    /** Current visible range in blocks, based on zoom. */
+    /** Current visible range in blocks, based on zoom level. */
     public int visibleRange() {
-        int range = mapRange();
-        return range >> zoomLevel; // halve per zoom level
+        return MAX_VIEWPORT_BLOCKS - (zoomLevel - 1) * BLOCKS_PER_STEP;
     }
 
     /** Map range: 100k if Frontier expand-storage is on, 50k otherwise. */
@@ -58,21 +67,26 @@ public class MapRenderer {
         centerZ += dz;
     }
 
-    public int getZoomLevel() {
-        return zoomLevel;
-    }
-
     /** Current screen-pixels-per-block scale (used for panning input conversion). */
     public float currentScale(int screenW, int screenH) {
         return Math.min(screenW, screenH) / (float) visibleRange();
     }
 
+    public int getZoomLevel() {
+        return zoomLevel;
+    }
+
+    /** Zoom percentage (10 to 100). */
+    public int getZoomPercent() {
+        return zoomLevel * 10;
+    }
+
     public void zoomIn() {
-        if (zoomLevel < ZOOM_LEVELS - 1) zoomLevel++;
+        if (zoomLevel < ZOOM_LEVELS) zoomLevel++;
     }
 
     public void zoomOut() {
-        if (zoomLevel > 0) zoomLevel--;
+        if (zoomLevel > 1) zoomLevel--;
     }
 
     /** Zoom in while keeping the given world position at screen center. */
@@ -102,16 +116,7 @@ public class MapRenderer {
         int right = startX + (int) (range * scale);
         int bottom = startZ + (int) (range * scale);
 
-        // At low zoom every chunk is sub-pixel; fill with flat unexplored
-        // colour instead of sampling millions of individual blocks.
-        if (scale < 0.02f) { // less than 1 block per 50 px
-            graphics.fill(startX, startZ, right, bottom, 0xFF2A2A2A);
-            drawBorder(graphics, startX, startZ, right, bottom);
-            return;
-        }
-
-        // Sample each screen pixel: convert to world XZ, find top solid
-        // block, draw its biome colour. Only for explored chunks.
+        // Sample each screen pixel.
         for (int sx = startX; sx < right; sx++) {
             int worldX = left + (int) (sx / scale);
             for (int sz = startZ; sz < bottom; sz++) {
@@ -120,7 +125,10 @@ public class MapRenderer {
                 int cx = worldX >> 4;
                 int cz = worldZ >> 4;
                 if (!MapWorldData.get(level).isExplored(cx, cz)) {
-                    continue; // leave parchment showing through
+                    // Unexplored: black fill with terrain edges.
+                    int color = sampleUnexploredPixel(level, worldX, worldZ, sx, sz, startX, startZ, scale, screenW, screenH);
+                    graphics.fill(sx, sz, sx + 1, sz + 1, color);
+                    continue;
                 }
 
                 int color = samplePixel(level, worldX, worldZ);
@@ -131,7 +139,7 @@ public class MapRenderer {
         drawBorder(graphics, startX, startZ, right, bottom);
     }
 
-    /** Sample one pixel: top-most solid block's biome colour, or fluid if on top. */
+    /** Sample one explored pixel: top-most solid block's biome colour, or fluid if on top. */
     private int samplePixel(Level level, int worldX, int worldZ) {
         int topY = BiomeColors.topSolidHeight(level, worldX, worldZ);
 
@@ -141,7 +149,70 @@ public class MapRenderer {
 
         // Otherwise draw the biome colour of the top block.
         Holder<Biome> biome = level.getBiome(new BlockPos(worldX, topY, worldZ));
-        return BiomeColors.colorFor(biome);
+        int color = BiomeColors.colorFor(biome);
+
+        // At higher zoom levels, add height-based shading for detail.
+        if (zoomLevel >= 6) {
+            color = applyHeightShade(color, topY);
+        }
+
+        return color;
+    }
+
+    /** Sample one unexplored pixel: black fill with terrain edges. */
+    private int sampleUnexploredPixel(Level level, int worldX, int worldZ, int sx, int sz,
+                                      int startX, int startZ, float scale, int screenW, int screenH) {
+        // Default: black fill.
+        int color = 0xFF1A1A1A;
+
+        // Check edges: sample neighbours to detect terrain transitions.
+        // Water/land edges and biome edges.
+        boolean isEdge = false;
+        for (int dx = -1; dx <= 1 && !isEdge; dx++) {
+            for (int dz = -1; dz <= 1 && !isEdge; dz++) {
+                if (dx == 0 && dz == 0) continue;
+                int nx = worldX + dx;
+                int nz = worldZ + dz;
+                int ncx = nx >> 4;
+                int ncz = nz >> 4;
+                boolean neighbourExplored = MapWorldData.get(level).isExplored(ncx, ncz);
+                // Edge if neighbour is explored (different state) or different terrain type.
+                if (neighbourExplored) {
+                    isEdge = true;
+                    break;
+                }
+                // Also edge if height changes significantly (terrain shape).
+                int hereY = BiomeColors.topSolidHeight(level, worldX, worldZ);
+                int thereY = BiomeColors.topSolidHeight(level, nx, nz);
+                if (Math.abs(hereY - thereY) > 2) {
+                    isEdge = true;
+                    break;
+                }
+            }
+        }
+
+        if (isEdge) {
+            color = 0xFF4A3F35; // dark brown edge line
+        }
+
+        return color;
+    }
+
+    /** Apply height-based shading: lighter for higher, darker for lower. */
+    private int applyHeightShade(int color, int height) {
+        // Sea level is 63. Shift shade based on height relative to sea level.
+        float shift = (height - 63) * 0.015f;
+        shift = Mth.clamp(shift, -0.3f, 0.3f);
+
+        int r = (color >> 16) & 0xFF;
+        int g = (color >> 8) & 0xFF;
+        int b = color & 0xFF;
+
+        r = Mth.clamp((int) (r * (1.0f + shift)), 0, 255);
+        g = Mth.clamp((int) (g * (1.0f + shift)), 0, 255);
+        b = Mth.clamp((int) (b * (1.0f + shift)), 0, 255);
+
+        return (0xFF << 24) | (r << 16) | (g << 8) | b;
     }
 
     private void drawBorder(GuiGraphics graphics, int startX, int startZ, int right, int bottom) {
