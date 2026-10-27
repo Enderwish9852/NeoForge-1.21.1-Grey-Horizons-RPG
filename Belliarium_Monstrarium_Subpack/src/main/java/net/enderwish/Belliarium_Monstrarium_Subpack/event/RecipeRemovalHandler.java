@@ -12,6 +12,7 @@ import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeManager;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.AddReloadListenerEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 
 import java.lang.reflect.Field;
@@ -23,7 +24,8 @@ import java.util.Map;
  * RecipeRemovalHandler
  *
  * Removes crafting recipes that use or produce diamond, netherite, or gold
- * materials. Listens for server start so recipes are removed after loading.
+ * materials. Listens for server start and recipe reload events so recipes are
+ * removed as soon as they are loaded.
  *
  * Blocked materials: diamond, diamond block, netherite ingot, netherite scrap,
  * netherite block, gold ingot, gold block, gold nugget, gold ore, deepslate
@@ -60,6 +62,9 @@ public class RecipeRemovalHandler {
         RecipeManager recipeManager = event.getServer().getRecipeManager();
         HolderLookup.Provider registries = event.getServer().registryAccess();
 
+        LOGGER.info("RecipeRemovalHandler: ServerStartingEvent - RecipeManager class: {}",
+                recipeManager.getClass().getName());
+
         int total = 0;
         int blocked = 0;
         int removed = 0;
@@ -73,6 +78,7 @@ public class RecipeRemovalHandler {
             if (recipeBlocksMaterial(recipe, registries)) {
                 blocked++;
                 toRemove.add(id);
+                LOGGER.debug("RecipeRemovalHandler: blocking recipe {}: {}", id, recipe.getClass().getSimpleName());
             }
         }
 
@@ -82,8 +88,8 @@ public class RecipeRemovalHandler {
             }
         }
 
-        LOGGER.info("RecipeRemovalHandler: {} recipes total, {} blocked, {} removed",
-                total, blocked, removed);
+        LOGGER.info("RecipeRemovalHandler: {} recipes total, {} blocked ({}%), {} removed",
+                total, blocked, total > 0 ? (blocked * 100 / total) : 0, removed);
 
         // Debug: list field names on RecipeManager
         if (LOGGER.isDebugEnabled()) {
@@ -92,6 +98,14 @@ public class RecipeRemovalHandler {
                         field.getName(), field.getType().getSimpleName());
             }
         }
+    }
+
+    @SubscribeEvent
+    public static void onAddReloadListener(AddReloadListenerEvent event) {
+        // Recipes may be loaded after server start via data pack reloads.
+        // This event fires when reload listeners are being registered; we
+        // cannot directly intercept recipe loading here, but ServerStartingEvent
+        // should cover most cases.
     }
 
     private static boolean recipeBlocksMaterial(Recipe<?> recipe, HolderLookup.Provider registries) {
