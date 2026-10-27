@@ -401,7 +401,7 @@
                   {
                       "title":  "Map rendering: explored/unexplored, zoom, pencil sketch",
                       "status":  "done",
-                      "note":  "MapRenderer with 5 zoom levels, explored/unexplored pencil-sketch areas, locator glides from spawn to player; 50k/100k range via FrontierConfig.MAP_EXPANDED_STORAGE; freeze at zoom out fixed by skipping sub-pixel chunks"
+                      "note":  "MapRenderer with 5 zoom levels, explored/unexplored pencil-sketch areas, locator glides from spawn to player; 50k/100k range via FrontierConfig.MAP_EXPANDED_STORAGE; freeze at zoom out fixed by skipping sub-pixel chunks; border drawn as thin lines not filled rectangle"
                   },
                   {
                       "title":  "Map drawing toolbar: arrow, circle, text box",
