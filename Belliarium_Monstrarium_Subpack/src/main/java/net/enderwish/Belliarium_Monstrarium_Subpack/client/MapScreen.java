@@ -30,6 +30,7 @@ import java.util.UUID;
  * Controls:
  *   M or Escape - close
  *   Middle mouse wheel - zoom in / out
+ *   Middle mouse drag - pan the map around
  *   Left click on toolbar - select a drawing tool
  *   Left click on map - place / apply a draw
  *   Left drag on map - resize the pending draw
@@ -59,6 +60,12 @@ public class MapScreen extends Screen {
     private int toolbarY;
     private final int toolbarW = 44;
     private final int toolbarH = 100;
+
+    // ── Panning state (middle mouse drag) ─────────────────────────────────
+
+    private boolean panning = false;
+    private int panLastX;
+    private int panLastZ;
 
     public MapScreen() {
         super(Component.literal("Legendary Map"));
@@ -303,7 +310,34 @@ public class MapScreen extends Screen {
     }
 
     @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        // End middle-mouse drag panning.
+        if (button == 2 && panning) {
+            panning = false;
+            return true;
+        }
+        return super.mouseReleased(mouseX, mouseY, button);
+    }
+
+    @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+        // Middle mouse drag pans the map.
+        if (button == 2) {
+            if (!panning) {
+                panning = true;
+                panLastX = renderer.screenToWorldX((int) mouseX);
+                panLastZ = renderer.screenToWorldZ((int) mouseY);
+            }
+            int worldX = renderer.screenToWorldX((int) mouseX);
+            int worldZ = renderer.screenToWorldZ((int) mouseY);
+            int dx = panLastX - worldX;
+            int dz = panLastZ - worldZ;
+            renderer.pan(dx, dz);
+            panLastX = worldX;
+            panLastZ = worldZ;
+            return true;
+        }
+
         if (button != 0 || pendingDraw == null) return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
 
         // Resize the pending draw based on drag distance.

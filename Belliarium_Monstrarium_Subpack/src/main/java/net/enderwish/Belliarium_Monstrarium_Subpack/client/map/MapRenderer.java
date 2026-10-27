@@ -17,6 +17,9 @@ import net.minecraft.world.level.Level;
  *
  * Explored areas are drawn with terrain contours (height lines, water).
  * Unexplored areas are black-and-white pencil outlines.
+ *
+ * Panning: call pan(dx, dz) to shift the center by the given world-space
+ * delta, used for middle-mouse drag panning.
  */
 public class MapRenderer {
 
@@ -48,6 +51,12 @@ public class MapRenderer {
         this.centerZ = z;
     }
 
+    /** Pan the map center by the given world-space delta. */
+    public void pan(int dx, int dz) {
+        centerX += dx;
+        centerZ += dz;
+    }
+
     public int getZoomLevel() {
         return zoomLevel;
     }
@@ -74,16 +83,17 @@ public class MapRenderer {
 
         int startX = (int) (left * scale);
         int startZ = (int) (top * scale);
+        int right = startX + (int) (range * scale);
+        int bottom = startZ + (int) (range * scale);
 
-        // At full zoom out every chunk is sub-pixel; draw just a thin border
-        // so we never loop millions of times and never fill the whole screen.
-        if (chunkScreenW < 1.0f && chunkScreenH < 1.0f) {
-            int right = startX + (int) (range * scale);
-            int bottom = startZ + (int) (range * scale);
-            // Top and bottom edges.
+        // When chunks are sub-pixel (< 2px), fill the whole area with a flat
+        // unexplored color instead of drawing individual chunk cells — this
+        // avoids a noisy grid pattern at low zoom.
+        if (chunkScreenW < 2.0f || chunkScreenH < 2.0f) {
+            graphics.fill(startX, startZ, right, bottom, 0xFF2A2A2A);
+            // Draw the range border as thin lines.
             graphics.fill(startX, startZ, right, startZ + 1, 0xFF4A3F35);
             graphics.fill(startX, bottom - 1, right, bottom, 0xFF4A3F35);
-            // Left and right edges.
             graphics.fill(startX, startZ, startX + 1, bottom, 0xFF4A3F35);
             graphics.fill(right - 1, startZ, right, bottom, 0xFF4A3F35);
             return;
@@ -102,9 +112,7 @@ public class MapRenderer {
             }
         }
 
-        // Draw the range border as thin lines, not a filled rectangle.
-        int right = startX + (int) (range * scale);
-        int bottom = startZ + (int) (range * scale);
+        // Draw the range border as thin lines.
         graphics.fill(startX, startZ, right, startZ + 1, 0xFF4A3F35);
         graphics.fill(startX, bottom - 1, right, bottom, 0xFF4A3F35);
         graphics.fill(startX, startZ, startX + 1, bottom, 0xFF4A3F35);
@@ -128,17 +136,14 @@ public class MapRenderer {
             int color = terrainColor(height);
             graphics.fill(screenX, screenZ, screenX + chunkScreenW, screenZ + chunkScreenH, color);
 
-            // Draw a contour line based on height.
+            // Draw contour lines when zoomed in enough.
             if (scale >= 0.5f) {
                 graphics.fill(screenX, screenZ, screenX + 1, screenZ + chunkScreenH, 0xFF2E2218);
                 graphics.fill(screenX, screenZ, screenX + chunkScreenW, screenZ + 1, 0xFF2E2218);
             }
         } else {
-            // Unexplored: black-and-white pencil outline.
+            // Unexplored: flat dark fill.
             graphics.fill(screenX, screenZ, screenX + chunkScreenW, screenZ + chunkScreenH, 0xFF2A2A2A);
-            if (chunkScreenW > 2 && chunkScreenH > 2) {
-                graphics.fill(screenX + 1, screenZ + 1, screenX + chunkScreenW - 1, screenZ + chunkScreenH - 1, 0xFF1A1A1A);
-            }
         }
     }
 
