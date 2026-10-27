@@ -401,7 +401,7 @@
                   {
                       "title":  "Map rendering: explored/unexplored, zoom, pencil sketch",
                       "status":  "done",
-                      "note":  "MapRenderer reworked: Xaero-style per-pixel biome-colored terrain (top-most solid block sampling), fluids as water/lava/swamp colors, middle-mouse drag panning; unexplored areas stay dark; BiomeColors utility with temperature-keyed palette"
+                      "note":  "MapRenderer reworked: Xaero-style per-pixel biome-colored terrain (top-most solid block sampling), fluids as water/lava/swamp colors, middle-mouse drag panning fixed (correct direction, no jitter via dragX/dragY deltas); unexplored areas stay dark; BiomeColors utility with temperature-keyed palette"
                   },
                   {
                       "title":  "Map drawing toolbar: arrow, circle, text box",
