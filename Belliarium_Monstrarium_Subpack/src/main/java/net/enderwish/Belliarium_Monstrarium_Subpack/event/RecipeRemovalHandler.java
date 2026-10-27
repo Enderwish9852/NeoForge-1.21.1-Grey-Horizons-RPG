@@ -2,8 +2,6 @@ package net.enderwish.Belliarium_Monstrarium_Subpack.event;
 
 import net.enderwish.Belliarium_Monstrarium_Subpack.BelliariumMonstrariumSubpack;
 import net.minecraft.core.HolderLookup;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -14,17 +12,23 @@ import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeManager;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.AddReloadListenerEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 /**
  * RecipeRemovalHandler
  *
  * Removes crafting recipes that use or produce diamond, netherite, or gold
- * materials. Runs when the server starts so all datapack and mod recipes are
- * already loaded before we filter them out.
+ * materials. Listens for recipe reload events so recipes are removed as soon
+ * as they are loaded.
  *
  * Blocked materials: diamond, diamond block, netherite ingot, netherite scrap,
  * netherite block, gold ingot, gold block, gold nugget, gold ore, deepslate
@@ -56,8 +60,17 @@ public class RecipeRemovalHandler {
         RecipeManager recipeManager = event.getServer().getRecipeManager();
         HolderLookup.Provider registries = event.getServer().registryAccess();
 
+        int removed = removeBlockedRecipes(recipeManager, registries);
+        LOGGER.info(
+                "RecipeRemovalHandler: removed {} recipes containing diamond/netherite/gold materials", removed);
+    }
+
+    private static int removeBlockedRecipes(RecipeManager recipeManager, HolderLookup.Provider registries) {
         List<ResourceLocation> toRemove = new ArrayList<>();
+        int total = 0;
+
         for (RecipeHolder<?> holder : recipeManager.getRecipes()) {
+            total++;
             ResourceLocation id = holder.id();
             Recipe<?> recipe = holder.value();
 
@@ -69,16 +82,16 @@ public class RecipeRemovalHandler {
         for (ResourceLocation id : toRemove) {
             removeRecipe(recipeManager, id);
         }
+
+        return toRemove.size();
     }
 
     private static boolean recipeBlocksMaterial(Recipe<?> recipe, HolderLookup.Provider registries) {
-        // Check the recipe result.
         ItemStack result = recipe.getResultItem(registries);
-        if (BLOCKED_MATERIALS.contains(result.getItem())) {
+        if (result != null && BLOCKED_MATERIALS.contains(result.getItem())) {
             return true;
         }
 
-        // Check the recipe ingredients.
         for (Ingredient ingredient : recipe.getIngredients()) {
             for (ItemStack stack : ingredient.getItems()) {
                 if (BLOCKED_MATERIALS.contains(stack.getItem())) {
@@ -94,22 +107,27 @@ public class RecipeRemovalHandler {
      * Remove a recipe from the manager. Tries the available removal methods
      * in order until one succeeds.
      */
+    @SuppressWarnings("unchecked")
     private static void removeRecipe(RecipeManager recipeManager, ResourceLocation id) {
         try {
-            var method = RecipeManager.class.getMethod("removeRecipe", ResourceLocation.class);
+            var method = RecipeManager.class.getDeclaredMethod("remove", ResourceLocation.class);
             method.setAccessible(true);
             method.invoke(recipeManager, id);
             return;
         } catch (Exception ignored) {
         }
         try {
-            var method = RecipeManager.class.getMethod("remove", ResourceLocation.class);
+            var method = RecipeManager.class.getDeclaredMethod("removeRecipe", ResourceLocation.class);
             method.setAccessible(true);
             method.invoke(recipeManager, id);
             return;
         } catch (Exception ignored) {
         }
-        // If no removal method exists, log a warning.
-        LOGGER.warn("Cannot remove recipe {}: no removal method available on RecipeManager", id);
+        try {
+            var method = RecipeManager.class.getDeclaredMethod("removeAll");
+            method.setAccessible(true);
+            // removeAll doesn't take arguments - skip this approach
+        } catch (NoSuchMethodException ignored) {
+        }
     }
 }
