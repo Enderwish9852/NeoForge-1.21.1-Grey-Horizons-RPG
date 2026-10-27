@@ -14,6 +14,9 @@ import net.neoforged.neoforge.event.tick.PlayerTickEvent;
  * Marks the chunk a player is standing in as explored, so it shows up on
  * the map. Runs on the server tick so exploration is tracked server-side
  * and shared between all players in the world.
+ *
+ * Registered on PlayerTickEvent.Post (a concrete subclass) because
+ * PlayerTickEvent itself is abstract and NeoForge rejects listeners on it.
  */
 @EventBusSubscriber(modid = "gh_belliarium_monstrarium")
 public class MapExplorationHandler {
@@ -21,7 +24,7 @@ public class MapExplorationHandler {
     private static long lastTick = -1;
 
     @SubscribeEvent
-    public static void onPlayerTick(PlayerTickEvent event) {
+    public static void onPlayerTick(PlayerTickEvent.Post event) {
         Player player = event.getEntity();
         Level level = player.level();
         if (level.isClientSide) return;
