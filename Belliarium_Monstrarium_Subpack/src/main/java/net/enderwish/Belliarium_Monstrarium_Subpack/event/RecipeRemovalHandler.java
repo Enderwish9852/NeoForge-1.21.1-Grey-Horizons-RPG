@@ -24,8 +24,7 @@ import java.util.Map;
  * RecipeRemovalHandler
  *
  * Removes crafting recipes that use or produce diamond, netherite, or gold
- * materials. Listens for server start and recipe reload events so recipes are
- * removed as soon as they are loaded.
+ * materials. Listens for server start and recipe reload events.
  *
  * Blocked materials: diamond, diamond block, netherite ingot, netherite scrap,
  * netherite block, gold ingot, gold block, gold nugget, gold ore, deepslate
@@ -33,10 +32,6 @@ import java.util.Map;
  *
  * A recipe is removed when its result OR any of its ingredients is a blocked
  * material.
- *
- * Since RecipeManager in NeoForge 1.21.1 has no public removal API, this
- * handler accesses the internal recipe map via reflection to remove entries.
- * Logs how many recipes were found/removed for debugging.
  */
 @EventBusSubscriber(modid = BelliariumMonstrariumSubpack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public class RecipeRemovalHandler {
@@ -91,7 +86,6 @@ public class RecipeRemovalHandler {
         LOGGER.info("RecipeRemovalHandler: {} recipes total, {} blocked ({}%), {} removed",
                 total, blocked, total > 0 ? (blocked * 100 / total) : 0, removed);
 
-        // Debug: list field names on RecipeManager
         if (LOGGER.isDebugEnabled()) {
             for (Field field : RecipeManager.class.getDeclaredFields()) {
                 LOGGER.debug("RecipeManager field: {} (type={})",
@@ -102,10 +96,7 @@ public class RecipeRemovalHandler {
 
     @SubscribeEvent
     public static void onAddReloadListener(AddReloadListenerEvent event) {
-        // Recipes may be loaded after server start via data pack reloads.
-        // This event fires when reload listeners are being registered; we
-        // cannot directly intercept recipe loading here, but ServerStartingEvent
-        // should cover most cases.
+        LOGGER.debug("RecipeRemovalHandler: AddReloadListenerEvent - recipe reload may happen next");
     }
 
     private static boolean recipeBlocksMaterial(Recipe<?> recipe, HolderLookup.Provider registries) {
