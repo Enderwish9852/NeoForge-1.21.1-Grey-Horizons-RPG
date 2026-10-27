@@ -2,13 +2,11 @@ package net.enderwish.TerraForma_Subpack.mixin;
 
 import net.enderwish.TerraForma_Subpack.core.current.CurrentField;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.MoverType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.ModifyArg;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.ModifyVariable;
 
 /**
  * EntityCurrentMixin
@@ -29,8 +27,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(Entity.class)
 public class EntityCurrentMixin {
 
-    @ModifyArg(method = "move", at = @At("HEAD"), index = 1)
-    private Vec3 gh_terraforma$carriedByTheCurrent(MoverType type, Vec3 movement) {
+    @ModifyVariable(method = "move", at = @At("HEAD"), argsOnly = true, index = 1)
+    private Vec3 gh_terraforma$carriedByTheCurrent(Vec3 movement) {
         Entity self = (Entity) (Object) this;
         Level level = self.level();
         if (level == null) return movement;
