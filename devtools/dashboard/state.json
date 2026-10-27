@@ -401,12 +401,12 @@
                   {
                       "title":  "Map rendering: explored/unexplored, zoom, pencil sketch",
                       "status":  "done",
-                      "note":  "MapRenderer with 5 zoom levels, explored/unexplored pencil-sketch areas, locator glides from spawn to player; 50k/100k range via FrontierConfig.MAP_EXPANDED_STORAGE; freeze at zoom out fixed by skipping sub-pixel chunks; border drawn as thin lines; GUI filter effect fixed by calling super.render() before custom drawing"
+                      "note":  "MapRenderer reworked: Xaero-style per-pixel biome-colored terrain (top-most solid block sampling), fluids as water/lava/swamp colors, middle-mouse drag panning; unexplored areas stay dark; BiomeColors utility with temperature-keyed palette"
                   },
                   {
                       "title":  "Map drawing toolbar: arrow, circle, text box",
                       "status":  "done",
-                      "note":  "Right-side toolbar with arrow/circle/text tool buttons; click to place at cursor, drag to resize, click to apply; drawings persist in memory per world"
+                      "note":  "Right-side toolbar with arrow/circle/text tool buttons; click to place at cursor, drag to resize, click to apply; drawings persist in memory per world; disk persistence deferred"
                   },
                   {
                       "title":  "Map: Frontier expand-storage setting + structure names",
@@ -509,6 +509,10 @@
                   },
                   {
                       "path":  "Belliarium_Monstrarium_Subpack/src/main/java/net/enderwish/Belliarium_Monstrarium_Subpack/client/map/MapRenderer.java",
+                      "action":  "modified"
+                  },
+                  {
+                      "path":  "Belliarium_Monstrarium_Subpack/src/main/java/net/enderwish/Belliarium_Monstrarium_Subpack/client/map/BiomeColors.java",
                       "action":  "new"
                   },
                   {
