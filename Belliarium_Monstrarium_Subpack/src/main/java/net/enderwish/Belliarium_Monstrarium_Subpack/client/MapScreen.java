@@ -132,7 +132,11 @@ public class MapScreen extends Screen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        // Full-screen parchment background.
+        // Call super first so widgets render and the dark background overlay
+        // gets applied; we then cover it with our parchment fill.
+        super.render(graphics, mouseX, mouseY, partialTick);
+
+        // Full-screen parchment background (covers the dark overlay from super.render()).
         graphics.fill(0, 0, this.width, this.height, PARCHMENT);
         graphics.fill(0, 0, this.width, 4, BORDER);
         graphics.fill(0, this.height - 4, this.width, 4, BORDER);
@@ -198,8 +202,6 @@ public class MapScreen extends Screen {
                     "Drag to resize, click to apply, right-click to cancel",
                     this.width / 2, this.height - 40, 0xFF888888);
         }
-
-        super.render(graphics, mouseX, mouseY, partialTick);
     }
 
     private void renderDraw(GuiGraphics graphics, MapDraw draw, boolean pending) {
