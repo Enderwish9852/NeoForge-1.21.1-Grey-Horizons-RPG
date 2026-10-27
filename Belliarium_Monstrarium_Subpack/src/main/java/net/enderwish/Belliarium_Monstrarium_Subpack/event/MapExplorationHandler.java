@@ -6,6 +6,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.level.LevelEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
 /**
@@ -15,6 +16,8 @@ import net.neoforged.neoforge.event.tick.PlayerTickEvent;
  * the map. Runs on the server tick so exploration is tracked server-side
  * and shared between all players in the world.
  *
+ * Also loads/saves map data to disk on level load/save.
+ *
  * Registered on PlayerTickEvent.Post (a concrete subclass) because
  * PlayerTickEvent itself is abstract and NeoForge rejects listeners on it.
  */
@@ -22,6 +25,20 @@ import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 public class MapExplorationHandler {
 
     private static long lastTick = -1;
+
+    @SubscribeEvent
+    public static void onLevelLoad(LevelEvent.Load event) {
+        if (event.getLevel() instanceof Level level) {
+            MapWorldData.loadFor(level);
+        }
+    }
+
+    @SubscribeEvent
+    public static void onLevelSave(LevelEvent.Save event) {
+        if (event.getLevel() instanceof Level level) {
+            MapWorldData.saveAll(level);
+        }
+    }
 
     @SubscribeEvent
     public static void onPlayerTick(PlayerTickEvent.Post event) {
