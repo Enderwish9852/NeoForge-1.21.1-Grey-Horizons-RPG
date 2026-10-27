@@ -75,13 +75,17 @@ public class MapRenderer {
         int startX = (int) (left * scale);
         int startZ = (int) (top * scale);
 
-        // At full zoom out every chunk is sub-pixel; skip per-chunk rendering
-        // entirely and just draw the range border so we never loop millions of times.
+        // At full zoom out every chunk is sub-pixel; draw just a thin border
+        // so we never loop millions of times and never fill the whole screen.
         if (chunkScreenW < 1.0f && chunkScreenH < 1.0f) {
-            graphics.fill(startX, startZ,
-                    startX + (int) (range * scale),
-                    startZ + (int) (range * scale),
-                    0xFF4A3F35);
+            int right = startX + (int) (range * scale);
+            int bottom = startZ + (int) (range * scale);
+            // Top and bottom edges.
+            graphics.fill(startX, startZ, right, startZ + 1, 0xFF4A3F35);
+            graphics.fill(startX, bottom - 1, right, bottom, 0xFF4A3F35);
+            // Left and right edges.
+            graphics.fill(startX, startZ, startX + 1, bottom, 0xFF4A3F35);
+            graphics.fill(right - 1, startZ, right, bottom, 0xFF4A3F35);
             return;
         }
 
@@ -98,11 +102,13 @@ public class MapRenderer {
             }
         }
 
-        // Draw the range border.
-        graphics.fill(startX, startZ,
-                startX + (int) (range * scale),
-                startZ + (int) (range * scale),
-                0xFF4A3F35);
+        // Draw the range border as thin lines, not a filled rectangle.
+        int right = startX + (int) (range * scale);
+        int bottom = startZ + (int) (range * scale);
+        graphics.fill(startX, startZ, right, startZ + 1, 0xFF4A3F35);
+        graphics.fill(startX, bottom - 1, right, bottom, 0xFF4A3F35);
+        graphics.fill(startX, startZ, startX + 1, bottom, 0xFF4A3F35);
+        graphics.fill(right - 1, startZ, right, bottom, 0xFF4A3F35);
     }
 
     private void renderChunk(GuiGraphics graphics, Level level, int chunkX, int chunkZ,
