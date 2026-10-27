@@ -352,10 +352,18 @@ public class MapScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-        if (scrollY < 0) {
-            renderer.zoomIn();
-        } else if (scrollY > 0) {
-            renderer.zoomOut();
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null || mc.level == null) return true;
+
+        int px = (int) mc.player.getX();
+        int pz = (int) mc.player.getZ();
+
+        // Scroll forward (away from you) zooms in, back (toward you) zooms out.
+        // Zoom keeps the player at screen center.
+        if (scrollY > 0) {
+            renderer.zoomInAt(px, pz);
+        } else if (scrollY < 0) {
+            renderer.zoomOutAt(px, pz);
         }
         return true;
     }

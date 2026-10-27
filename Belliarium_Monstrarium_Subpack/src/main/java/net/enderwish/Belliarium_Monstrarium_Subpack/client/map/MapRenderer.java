@@ -75,6 +75,18 @@ public class MapRenderer {
         if (zoomLevel > 0) zoomLevel--;
     }
 
+    /** Zoom in while keeping the given world position at screen center. */
+    public void zoomInAt(int worldX, int worldZ) {
+        zoomIn();
+        setCenter(worldX, worldZ);
+    }
+
+    /** Zoom out while keeping the given world position at screen center. */
+    public void zoomOutAt(int worldX, int worldZ) {
+        zoomOut();
+        setCenter(worldX, worldZ);
+    }
+
     /** Render the map into the given screen area. */
     public void render(GuiGraphics graphics, int screenW, int screenH, Level level) {
         int range = visibleRange();
