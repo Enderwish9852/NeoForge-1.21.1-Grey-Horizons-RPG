@@ -58,7 +58,14 @@ public class RecipeRemovalHandler {
 
     @SubscribeEvent
     public static void onLevelLoad(Load event) {
-        Level level = (Level) event.getLevel();
+        if (!(event.getLevel() instanceof Level level)) {
+            return;
+        }
+        // Only run on server side - client level has no server
+        if (level.isClientSide()) {
+            return;
+        }
+
         RecipeManager recipeManager = level.getServer().getRecipeManager();
         HolderLookup.Provider registries = level.registryAccess();
 
