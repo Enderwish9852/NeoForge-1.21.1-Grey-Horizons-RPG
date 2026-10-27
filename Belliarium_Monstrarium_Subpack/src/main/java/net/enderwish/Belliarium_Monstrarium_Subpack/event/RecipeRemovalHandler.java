@@ -15,12 +15,9 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.AddReloadListenerEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -36,11 +33,15 @@ import java.util.Map;
  *
  * A recipe is removed when its result OR any of its ingredients is a blocked
  * material.
+ *
+ * Since RecipeManager in NeoForge 1.21.1 has no public removal API, this
+ * handler accesses the internal recipe map via reflection to remove entries.
  */
 @EventBusSubscriber(modid = BelliariumMonstrariumSubpack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public class RecipeRemovalHandler {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(RecipeRemovalHandler.class);
+    private static final org.slf4j.Logger LOGGER =
+            org.slf4j.LoggerFactory.getLogger(RecipeRemovalHandler.class);
 
     private static final List<Item> BLOCKED_MATERIALS = List.of(
             Items.DIAMOND,
@@ -61,16 +62,19 @@ public class RecipeRemovalHandler {
         HolderLookup.Provider registries = event.getServer().registryAccess();
 
         int removed = removeBlockedRecipes(recipeManager, registries);
-        LOGGER.info(
-                "RecipeRemovalHandler: removed {} recipes containing diamond/netherite/gold materials", removed);
+        LOGGER.info("RecipeRemovalHandler: removed {} recipes containing diamond/netherite/gold materials", removed);
+    }
+
+    @SubscribeEvent
+    public static void onAddReloadListener(AddReloadListenerEvent event) {
+        // Hook into recipe reloads to catch recipes loaded after server start
+        // This is a no-op hook; actual removal happens on ServerStartingEvent
     }
 
     private static int removeBlockedRecipes(RecipeManager recipeManager, HolderLookup.Provider registries) {
         List<ResourceLocation> toRemove = new ArrayList<>();
-        int total = 0;
 
         for (RecipeHolder<?> holder : recipeManager.getRecipes()) {
-            total++;
             ResourceLocation id = holder.id();
             Recipe<?> recipe = holder.value();
 
@@ -79,11 +83,14 @@ public class RecipeRemovalHandler {
             }
         }
 
+        int removed = 0;
         for (ResourceLocation id : toRemove) {
-            removeRecipe(recipeManager, id);
+            if (removeRecipe(recipeManager, id)) {
+                removed++;
+            }
         }
 
-        return toRemove.size();
+        return removed;
     }
 
     private static boolean recipeBlocksMaterial(Recipe<?> recipe, HolderLookup.Provider registries) {
@@ -104,30 +111,45 @@ public class RecipeRemovalHandler {
     }
 
     /**
-     * Remove a recipe from the manager. Tries the available removal methods
-     * in order until one succeeds.
+     * Remove a recipe from the manager via reflection.
+     * Tries: remove(ResourceLocation), removeRecipe(ResourceLocation),
+     * and direct field access to the internal recipes map.
      */
     @SuppressWarnings("unchecked")
-    private static void removeRecipe(RecipeManager recipeManager, ResourceLocation id) {
+    private static boolean removeRecipe(RecipeManager recipeManager, ResourceLocation id) {
+        // Try remove(ResourceLocation)
         try {
             var method = RecipeManager.class.getDeclaredMethod("remove", ResourceLocation.class);
             method.setAccessible(true);
             method.invoke(recipeManager, id);
-            return;
+            return true;
         } catch (Exception ignored) {
         }
+
+        // Try removeRecipe(ResourceLocation)
         try {
             var method = RecipeManager.class.getDeclaredMethod("removeRecipe", ResourceLocation.class);
             method.setAccessible(true);
             method.invoke(recipeManager, id);
-            return;
+            return true;
         } catch (Exception ignored) {
         }
+
+        // Try direct field access to internal recipes map
         try {
-            var method = RecipeManager.class.getDeclaredMethod("removeAll");
-            method.setAccessible(true);
-            // removeAll doesn't take arguments - skip this approach
-        } catch (NoSuchMethodException ignored) {
+            for (Field field : RecipeManager.class.getDeclaredFields()) {
+                if (Map.class.isAssignableFrom(field.getType())) {
+                    field.setAccessible(true);
+                    Map<ResourceLocation, RecipeHolder<?>> recipes =
+                            (Map<ResourceLocation, RecipeHolder<?>>) field.get(recipeManager);
+                    if (recipes != null && recipes.remove(id) != null) {
+                        return true;
+                    }
+                }
+            }
+        } catch (Exception ignored) {
         }
+
+        return false;
     }
 }
