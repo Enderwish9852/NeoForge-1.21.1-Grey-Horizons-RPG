@@ -400,18 +400,18 @@
                   },
                   {
                       "title":  "Map rendering: explored/unexplored, zoom, pencil sketch",
-                      "status":  "doing",
-                      "note":  "50k*50k default / 100k*100k with Frontier setting; only explored areas shown; pencil-sketched art style; middle-mouse zoom"
+                      "status":  "done",
+                      "note":  "MapRenderer with 5 zoom levels, explored/unexplored pencil-sketch areas, locator glides from spawn to player; 50k/100k range via FrontierConfig.MAP_EXPANDED_STORAGE"
                   },
                   {
                       "title":  "Map drawing toolbar: arrow, circle, text box",
-                      "status":  "open",
+                      "status":  "doing",
                       "note":  "Right-side toolbar; drag-to-resize; click-to-apply; persistence to world data"
                   },
                   {
                       "title":  "Map: Frontier expand-storage setting + structure names",
-                      "status":  "open",
-                      "note":  "50k*50k default / 100k*100k with setting; major structure names wired in later"
+                      "status":  "done",
+                      "note":  "FrontierConfig.MAP_EXPANDED_STORAGE added; map range reads it (50k default / 100k expanded); structure names still open"
                   }
               ],
     "files":  [
@@ -494,6 +494,46 @@
                   {
                       "path":  "TerraForma_Subpack/src/main/java/net/enderwish/TerraForma_Subpack/event/NoiseRouterSeeder.java",
                       "action":  "new"
+                  },
+                  {
+                      "path":  "Belliarium_Monstrarium_Subpack/src/main/java/net/enderwish/Belliarium_Monstrarium_Subpack/client/MapScreen.java",
+                      "action":  "modified"
+                  },
+                  {
+                      "path":  "Belliarium_Monstrarium_Subpack/src/main/java/net/enderwish/Belliarium_Monstrarium_Subpack/client/MapKeyHandler.java",
+                      "action":  "new"
+                  },
+                  {
+                      "path":  "Belliarium_Monstrarium_Subpack/src/main/java/net/enderwish/Belliarium_Monstrarium_Subpack/client/map/MapRenderer.java",
+                      "action":  "new"
+                  },
+                  {
+                      "path":  "Belliarium_Monstrarium_Subpack/src/main/java/net/enderwish/Belliarium_Monstrarium_Subpack/core/map/MapWorldData.java",
+                      "action":  "new"
+                  },
+                  {
+                      "path":  "Belliarium_Monstrarium_Subpack/src/main/java/net/enderwish/Belliarium_Monstrarium_Subpack/event/MapExplorationHandler.java",
+                      "action":  "new"
+                  },
+                  {
+                      "path":  "Belliarium_Monstrarium_Subpack/src/main/java/net/enderwish/Belliarium_Monstrarium_Subpack/item/MapItem.java",
+                      "action":  "new"
+                  },
+                  {
+                      "path":  "Belliarium_Monstrarium_Subpack/src/main/java/net/enderwish/Belliarium_Monstrarium_Subpack/BelliariumMonstrariumSubpack.java",
+                      "action":  "modified"
+                  },
+                  {
+                      "path":  "Belliarium_Monstrarium_Subpack/src/main/java/net/enderwish/Belliarium_Monstrarium_Subpack/client/ModKeyMappings.java",
+                      "action":  "modified"
+                  },
+                  {
+                      "path":  "Belliarium_Monstrarium_Subpack/build.gradle",
+                      "action":  "modified"
+                  },
+                  {
+                      "path":  "Frontier_Subpack/src/main/java/net/enderwish/Frontier_Subpack/FrontierConfig.java",
+                      "action":  "modified"
                   }
               ],
     "notes":  [

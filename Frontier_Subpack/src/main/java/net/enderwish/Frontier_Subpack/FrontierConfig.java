@@ -68,7 +68,14 @@ public class FrontierConfig {
                         "Players can otherwise NEVER spawn in Volcanic Lowlands; this is the one exception.")
                 .define("exoticStart", false);
 
+        MAP_EXPANDED_STORAGE = COMMON_BUILDER
+                .comment("Whether the legendary map's range is expanded from 50k*50k to 100k*100k blocks.",
+                        "Only read by Belliarium's map system.")
+                .define("mapExpandedStorage", false);
+
         COMMON_BUILDER.pop();
         COMMON_SPEC = COMMON_BUILDER.build();
     }
+
+    public static final ModConfigSpec.BooleanValue MAP_EXPANDED_STORAGE;
 }
