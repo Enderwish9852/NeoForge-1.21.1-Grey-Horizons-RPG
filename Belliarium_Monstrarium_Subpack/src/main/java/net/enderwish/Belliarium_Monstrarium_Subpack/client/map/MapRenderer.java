@@ -4,22 +4,23 @@ import net.enderwish.Belliarium_Monstrarium_Subpack.core.map.MapWorldData;
 import net.enderwish.Frontier_Subpack.FrontierConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.biome.Biome;
 
 /**
  * MapRenderer
  *
- * Renders the legendary map with zoom and explored / unexplored areas.
+ * Xaero-style top-down terrain renderer. Each screen pixel samples the
+ * top-most solid block at its world position and draws the biome color,
+ * so the map reads as a smooth terrain view rather than chunky flat
+ * colours.
  *
  * Zoom levels: 0 (full range) to 4 (max detail). Middle mouse wheel
- * changes the zoom. Each zoom level halves the visible area and doubles
- * the detail.
+ * changes the zoom; middle-mouse drag pans the map.
  *
- * Explored areas are drawn with terrain contours (height lines, water).
- * Unexplored areas are black-and-white pencil outlines.
- *
- * Panning: call pan(dx, dz) to shift the center by the given world-space
- * delta, used for middle-mouse drag panning.
+ * Only explored chunks are drawn — unexplored areas stay dark.
  */
 public class MapRenderer {
 
@@ -76,87 +77,64 @@ public class MapRenderer {
         int left = centerX - halfRange;
         int top = centerZ - halfRange;
 
-        // How many screen pixels per block.
+        // Screen pixels per world block at this zoom.
         float scale = Math.min(screenW, screenH) / (float) range;
-        float chunkScreenW = 16.0f * scale;
-        float chunkScreenH = 16.0f * scale;
 
         int startX = (int) (left * scale);
         int startZ = (int) (top * scale);
         int right = startX + (int) (range * scale);
         int bottom = startZ + (int) (range * scale);
 
-        // When chunks are sub-pixel (< 2px), fill the whole area with a flat
-        // unexplored color instead of drawing individual chunk cells — this
-        // avoids a noisy grid pattern at low zoom.
-        if (chunkScreenW < 2.0f || chunkScreenH < 2.0f) {
+        // At low zoom every chunk is sub-pixel; fill with flat unexplored
+        // colour instead of sampling millions of individual blocks.
+        if (scale < 0.02f) { // less than 1 block per 50 px
             graphics.fill(startX, startZ, right, bottom, 0xFF2A2A2A);
-            // Draw the range border as thin lines.
-            graphics.fill(startX, startZ, right, startZ + 1, 0xFF4A3F35);
-            graphics.fill(startX, bottom - 1, right, bottom, 0xFF4A3F35);
-            graphics.fill(startX, startZ, startX + 1, bottom, 0xFF4A3F35);
-            graphics.fill(right - 1, startZ, right, bottom, 0xFF4A3F35);
+            drawBorder(graphics, startX, startZ, right, bottom);
             return;
         }
 
-        // Only iterate over chunks that intersect the visible range.
-        // Math.floorDiv handles negative coordinates correctly.
-        int startCX = Math.floorDiv(left, CHUNK_SIZE);
-        int endCX = Math.floorDiv(left + range - 1, CHUNK_SIZE);
-        int startCZ = Math.floorDiv(top, CHUNK_SIZE);
-        int endCZ = Math.floorDiv(top + range - 1, CHUNK_SIZE);
+        // Sample each screen pixel: convert to world XZ, find top solid
+        // block, draw its biome colour. Only for explored chunks.
+        for (int sx = startX; sx < right; sx++) {
+            int worldX = left + (int) (sx / scale);
+            for (int sz = startZ; sz < bottom; sz++) {
+                int worldZ = top + (int) (sz / scale);
 
-        for (int cz = startCZ; cz <= endCZ; cz++) {
-            for (int cx = startCX; cx <= endCX; cx++) {
-                renderChunk(graphics, level, cx, cz, scale, left, top);
+                int cx = worldX >> 4;
+                int cz = worldZ >> 4;
+                if (!MapWorldData.get(level).isExplored(cx, cz)) {
+                    continue; // leave parchment showing through
+                }
+
+                int color = samplePixel(level, worldX, worldZ);
+                graphics.fill(sx, sz, sx + 1, sz + 1, color);
             }
         }
 
-        // Draw the range border as thin lines.
+        drawBorder(graphics, startX, startZ, right, bottom);
+    }
+
+    /** Sample one pixel: top-most solid block's biome colour, or fluid if on top. */
+    private int samplePixel(Level level, int worldX, int worldZ) {
+        int topY = BiomeColors.topSolidHeight(level, worldX, worldZ);
+
+        // If there's a fluid at the surface, show its colour instead.
+        int fluid = BiomeColors.fluidColorAt(level, worldX, topY, worldZ);
+        if (fluid != 0) return fluid;
+
+        // Otherwise draw the biome colour of the top block.
+        Holder<Biome> biome = level.getBiome(new BlockPos(worldX, topY, worldZ));
+        return BiomeColors.colorFor(biome);
+    }
+
+    private void drawBorder(GuiGraphics graphics, int startX, int startZ, int right, int bottom) {
         graphics.fill(startX, startZ, right, startZ + 1, 0xFF4A3F35);
         graphics.fill(startX, bottom - 1, right, bottom, 0xFF4A3F35);
         graphics.fill(startX, startZ, startX + 1, bottom, 0xFF4A3F35);
         graphics.fill(right - 1, startZ, right, bottom, 0xFF4A3F35);
     }
 
-    private void renderChunk(GuiGraphics graphics, Level level, int chunkX, int chunkZ,
-                             float scale, int left, int top) {
-        int screenX = (int) ((chunkX * 16L - left) * scale);
-        int screenZ = (int) ((chunkZ * 16L - top) * scale);
-        int chunkScreenW = Math.max(1, (int) (16 * scale));
-        int chunkScreenH = Math.max(1, (int) (16 * scale));
-
-        boolean explored = MapWorldData.get(level).isExplored(chunkX, chunkZ);
-
-        if (explored) {
-            // Sample the terrain height at the chunk center.
-            int height = MapWorldData.get(level).getSurfaceHeight(chunkX, chunkZ);
-
-            // Pencil-sketch style: earth tone for land.
-            int color = terrainColor(height);
-            graphics.fill(screenX, screenZ, screenX + chunkScreenW, screenZ + chunkScreenH, color);
-
-            // Draw contour lines when zoomed in enough.
-            if (scale >= 0.5f) {
-                graphics.fill(screenX, screenZ, screenX + 1, screenZ + chunkScreenH, 0xFF2E2218);
-                graphics.fill(screenX, screenZ, screenX + chunkScreenW, screenZ + 1, 0xFF2E2218);
-            }
-        } else {
-            // Unexplored: flat dark fill.
-            graphics.fill(screenX, screenZ, screenX + chunkScreenW, screenZ + chunkScreenH, 0xFF2A2A2A);
-        }
-    }
-
-    /** Earth-tone pencil color based on terrain height. */
-    private int terrainColor(int height) {
-        if (height < 63) return 0xFF5C6B73; // shallow water
-        if (height < 70) return 0xFF7A8B6A; // low land
-        if (height < 90) return 0xFF8B9A7B; // hills
-        if (height < 120) return 0xFF6B7A6A; // high hills
-        return 0xFF5A6A5A; // mountains
-    }
-
-    /** Convert a world block position to screen coordinates. */
+    /** Convert a world block position to screen x. */
     public int worldToScreenX(int worldX) {
         int range = visibleRange();
         int left = centerX - range / 2;
@@ -165,6 +143,7 @@ public class MapRenderer {
         return (int) ((worldX - left) * scale);
     }
 
+    /** Convert a world block position to screen z. */
     public int worldToScreenZ(int worldZ) {
         int range = visibleRange();
         int top = centerZ - range / 2;
