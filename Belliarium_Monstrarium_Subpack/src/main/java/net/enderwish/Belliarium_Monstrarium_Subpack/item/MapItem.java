@@ -54,7 +54,7 @@ public class MapItem extends Item {
 
     @Override
     public Component getName(ItemStack stack) {
-        return Component.literal("Legendary Map")
+        return Component.literal("Map")
                 .withStyle(style -> style.withColor(0xFFAA00).withBold(true));
     }
 

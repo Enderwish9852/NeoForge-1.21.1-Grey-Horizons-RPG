@@ -68,7 +68,7 @@ public class MapScreen extends Screen {
     private int panLastZ;
 
     public MapScreen() {
-        super(Component.literal("Legendary Map"));
+        super(Component.literal("Map"));
     }
 
     @Override

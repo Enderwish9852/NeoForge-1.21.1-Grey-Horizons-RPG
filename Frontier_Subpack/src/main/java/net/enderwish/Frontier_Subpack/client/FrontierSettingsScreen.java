@@ -39,6 +39,7 @@ public class FrontierSettingsScreen extends Screen {
         boolean hardcore = FrontierConfig.HARDCORE_MODE.get();
         boolean devMode = FrontierConfig.DEV_MODE.get();
         boolean exoticStart = FrontierConfig.EXOTIC_START.get();
+        boolean mapExpanded = FrontierConfig.MAP_EXPANDED_STORAGE.get();
 
         this.addRenderableWidget(Button.builder(
                 Component.literal("Adventure Mode: " + (adventureEnabled ? "ON" : "OFF")),
@@ -93,13 +94,22 @@ public class FrontierSettingsScreen extends Screen {
         ).bounds(centerX - 100, startY + 72, 200, 20).build());
 
         this.addRenderableWidget(Button.builder(
+                Component.literal("Map Storage: " + (mapExpanded ? "100k" : "50k")),
+                button -> {
+                    FrontierConfig.MAP_EXPANDED_STORAGE.set(!mapExpanded);
+                    FrontierConfig.MAP_EXPANDED_STORAGE.save();
+                    refresh();
+                }
+        ).bounds(centerX - 100, startY + 96, 200, 20).build());
+
+        this.addRenderableWidget(Button.builder(
                 Component.literal("Video / Sound / Controls"),
                 button -> {
                     if (this.minecraft != null) {
                         this.minecraft.setScreen(new OptionsScreen(this, this.minecraft.options));
                     }
                 }
-        ).bounds(centerX - 100, startY + 104, 200, 20).build());
+        ).bounds(centerX - 100, startY + 120, 200, 20).build());
 
         this.addRenderableWidget(Button.builder(
                 Component.literal("Back"),
@@ -108,7 +118,7 @@ public class FrontierSettingsScreen extends Screen {
                         this.minecraft.setScreen(parent);
                     }
                 }
-        ).bounds(centerX - 100, startY + 128, 200, 20).build());
+        ).bounds(centerX - 100, startY + 144, 200, 20).build());
     }
 
     private void refresh() {
