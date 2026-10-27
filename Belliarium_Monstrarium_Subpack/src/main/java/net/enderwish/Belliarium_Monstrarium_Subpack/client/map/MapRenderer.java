@@ -69,7 +69,7 @@ public class MapRenderer {
 
     /** Current screen-pixels-per-block scale (used for panning input conversion). */
     public float currentScale(int screenW, int screenH) {
-        return Math.min(screenW, screenH) / (float) visibleRange();
+        return Math.max(screenW, screenH) / (float) visibleRange();
     }
 
     public int getZoomLevel() {
@@ -101,15 +101,16 @@ public class MapRenderer {
         setCenter(worldX, worldZ);
     }
 
-    /** Render the map into the given screen area. */
+    /** Render the map into the given screen area. Fills the entire screen. */
     public void render(GuiGraphics graphics, int screenW, int screenH, Level level) {
         int range = visibleRange();
         int halfRange = range / 2;
         int left = centerX - halfRange;
         int top = centerZ - halfRange;
 
-        // Screen pixels per world block at this zoom.
-        float scale = Math.min(screenW, screenH) / (float) range;
+        // Screen pixels per world block — use Math.max so the map fills the
+        // entire screen on widescreen displays, no parchment showing through.
+        float scale = Math.max(screenW, screenH) / (float) range;
 
         int startX = (int) (left * scale);
         int startZ = (int) (top * scale);
@@ -227,7 +228,7 @@ public class MapRenderer {
         int range = visibleRange();
         int left = centerX - range / 2;
         int screenW = Minecraft.getInstance().getWindow().getWidth();
-        float scale = Math.min(screenW, Minecraft.getInstance().getWindow().getHeight()) / (float) range;
+        float scale = Math.max(screenW, Minecraft.getInstance().getWindow().getHeight()) / (float) range;
         return (int) ((worldX - left) * scale);
     }
 
@@ -236,7 +237,7 @@ public class MapRenderer {
         int range = visibleRange();
         int top = centerZ - range / 2;
         int screenH = Minecraft.getInstance().getWindow().getHeight();
-        float scale = Math.min(Minecraft.getInstance().getWindow().getWidth(), screenH) / (float) range;
+        float scale = Math.max(Minecraft.getInstance().getWindow().getWidth(), screenH) / (float) range;
         return (int) ((worldZ - top) * scale);
     }
 
@@ -245,7 +246,7 @@ public class MapRenderer {
         int range = visibleRange();
         int left = centerX - range / 2;
         int screenW = Minecraft.getInstance().getWindow().getWidth();
-        float scale = Math.min(screenW, Minecraft.getInstance().getWindow().getHeight()) / (float) range;
+        float scale = Math.max(screenW, Minecraft.getInstance().getWindow().getHeight()) / (float) range;
         return left + (int) (screenX / scale);
     }
 
@@ -254,7 +255,7 @@ public class MapRenderer {
         int range = visibleRange();
         int top = centerZ - range / 2;
         int screenH = Minecraft.getInstance().getWindow().getHeight();
-        float scale = Math.min(Minecraft.getInstance().getWindow().getWidth(), screenH) / (float) range;
+        float scale = Math.max(Minecraft.getInstance().getWindow().getWidth(), screenH) / (float) range;
         return top + (int) (screenZ / scale);
     }
 }
