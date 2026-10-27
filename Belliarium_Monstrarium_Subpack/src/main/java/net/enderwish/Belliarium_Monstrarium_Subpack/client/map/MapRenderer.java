@@ -152,4 +152,22 @@ public class MapRenderer {
         float scale = Math.min(Minecraft.getInstance().getWindow().getWidth(), screenH) / (float) range;
         return (int) ((worldZ - top) * scale);
     }
+
+    /** Convert a screen x coordinate back to world x. */
+    public int screenToWorldX(int screenX) {
+        int range = visibleRange();
+        int left = centerX - range / 2;
+        int screenW = Minecraft.getInstance().getWindow().getWidth();
+        float scale = Math.min(screenW, Minecraft.getInstance().getWindow().getHeight()) / (float) range;
+        return left + (int) (screenX / scale);
+    }
+
+    /** Convert a screen z coordinate back to world z. */
+    public int screenToWorldZ(int screenZ) {
+        int range = visibleRange();
+        int top = centerZ - range / 2;
+        int screenH = Minecraft.getInstance().getWindow().getHeight();
+        float scale = Math.min(Minecraft.getInstance().getWindow().getWidth(), screenH) / (float) range;
+        return top + (int) (screenZ / scale);
+    }
 }

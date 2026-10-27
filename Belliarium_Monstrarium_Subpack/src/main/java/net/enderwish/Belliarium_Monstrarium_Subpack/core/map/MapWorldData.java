@@ -3,22 +3,26 @@ package net.enderwish.Belliarium_Monstrarium_Subpack.core.map;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.Level;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * MapWorldData
  *
- * Per-world in-memory data tracking which chunks have been explored by the
- * player. One map per adventure means the explored set is shared across
- * all map items in the world.
+ * Per-world in-memory data tracking explored chunks and player-made map
+ * drawings. One map per adventure means everything is shared across all
+ * map items in the world.
  *
  * Stored as a set of packed chunk positions (x << 32 | z) plus a sampled
- * terrain height per chunk for map rendering.
+ * terrain height per chunk, and a list of MapDraw annotations.
  *
- * Persistence to disk is handled in Phase 3; this phase keeps it in memory.
+ * Disk persistence is deferred to a later phase; this phase keeps data
+ * in memory for the lifetime of the world.
  */
 public class MapWorldData {
 
@@ -28,7 +32,9 @@ public class MapWorldData {
     /** Packed chunk positions that have been explored. */
     private final Set<Long> exploredChunks = new HashSet<>();
     /** Sampled average surface height per explored chunk. */
-    private final Map<Long, Integer> chunkHeights = new java.util.HashMap<>();
+    private final java.util.Map<Long, Integer> chunkHeights = new java.util.HashMap<>();
+    /** Player-made drawings on the map. */
+    private final List<MapDraw> drawings = new ArrayList<>();
 
     private MapWorldData() {}
 
@@ -60,6 +66,24 @@ public class MapWorldData {
     /** Explored chunk count for diagnostics. */
     public int exploredCount() {
         return exploredChunks.size();
+    }
+
+    // ── Drawings ──────────────────────────────────────────────────────────
+
+    public List<MapDraw> drawings() {
+        return List.copyOf(drawings);
+    }
+
+    public void addDrawing(MapDraw draw) {
+        drawings.add(draw);
+    }
+
+    public void removeDrawing(UUID id) {
+        drawings.removeIf(d -> d.id().equals(id));
+    }
+
+    public void clearDrawings() {
+        drawings.clear();
     }
 
     private static long pack(int x, int z) {

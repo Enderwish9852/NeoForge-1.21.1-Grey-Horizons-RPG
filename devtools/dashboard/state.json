@@ -405,8 +405,8 @@
                   },
                   {
                       "title":  "Map drawing toolbar: arrow, circle, text box",
-                      "status":  "doing",
-                      "note":  "Right-side toolbar; drag-to-resize; click-to-apply; persistence to world data"
+                      "status":  "done",
+                      "note":  "Right-side toolbar with arrow/circle/text tool buttons; click to place at cursor, drag to resize, click to apply; drawings persist in memory per world"
                   },
                   {
                       "title":  "Map: Frontier expand-storage setting + structure names",
@@ -504,7 +504,15 @@
                       "action":  "new"
                   },
                   {
+                      "path":  "Belliarium_Monstrarium_Subpack/src/main/java/net/enderwish/Belliarium_Monstrarium_Subpack/client/map/MapDrawTool.java",
+                      "action":  "new"
+                  },
+                  {
                       "path":  "Belliarium_Monstrarium_Subpack/src/main/java/net/enderwish/Belliarium_Monstrarium_Subpack/client/map/MapRenderer.java",
+                      "action":  "new"
+                  },
+                  {
+                      "path":  "Belliarium_Monstrarium_Subpack/src/main/java/net/enderwish/Belliarium_Monstrarium_Subpack/core/map/MapDraw.java",
                       "action":  "new"
                   },
                   {
