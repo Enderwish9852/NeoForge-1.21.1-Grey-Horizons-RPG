@@ -401,7 +401,7 @@
                   {
                       "title":  "Map rendering: explored/unexplored, zoom, pencil sketch",
                       "status":  "done",
-                      "note":  "MapRenderer fills entire screen (Math.max scale, no parchment showing through), Xaero-style per-pixel biome-colored terrain (top-most solid block sampling), fluids as water/lava/swamp colors, middle-mouse drag panning fixed (correct direction, no jitter), zoom direction fixed (scroll forward = zoom in), zoom keeps center, black unexplored fill with edges; 10-level zoom (10%-100%)"
+                      "note":  "Map fills its GUI area (excludes right toolbar): renderer iterates map area only, Math.max scale fills map area completely with no parchment showing through, Xaero-style per-pixel biome-colored terrain (top-most solid block sampling), fluids as water/lava/swamp colors, middle-mouse drag panning fixed (correct direction, no jitter), zoom direction fixed (scroll forward = zoom in), zoom keeps center, black unexplored fill with edges; 10-level zoom (10%-100%)"
                   },
                   {
                       "title":  "Map drawing toolbar: arrow, circle, text box",
