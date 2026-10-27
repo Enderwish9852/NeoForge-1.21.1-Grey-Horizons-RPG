@@ -134,6 +134,7 @@ public class RecipeRemovalHandler {
             var method = RecipeManager.class.getDeclaredMethod("remove", ResourceLocation.class);
             method.setAccessible(true);
             method.invoke(recipeManager, id);
+            LOGGER.debug("RecipeRemovalHandler: removed {} via remove(ResourceLocation)", id);
             return true;
         } catch (Exception ignored) {
         }
@@ -143,6 +144,7 @@ public class RecipeRemovalHandler {
             var method = RecipeManager.class.getDeclaredMethod("removeRecipe", ResourceLocation.class);
             method.setAccessible(true);
             method.invoke(recipeManager, id);
+            LOGGER.debug("RecipeRemovalHandler: removed {} via removeRecipe(ResourceLocation)", id);
             return true;
         } catch (Exception ignored) {
         }
@@ -156,15 +158,19 @@ public class RecipeRemovalHandler {
                     if (fieldValue instanceof Map) {
                         Map<ResourceLocation, RecipeHolder<?>> recipes =
                                 (Map<ResourceLocation, RecipeHolder<?>>) fieldValue;
-                        if (recipes.remove(id) != null) {
+                        RecipeHolder<?> removed = recipes.remove(id);
+                        if (removed != null) {
+                            LOGGER.debug("RecipeRemovalHandler: removed {} via field map field={}", id, field.getName());
                             return true;
                         }
                     }
                 }
             }
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            LOGGER.warn("RecipeRemovalHandler: field access failed: {}", e.getMessage());
         }
 
+        LOGGER.warn("RecipeRemovalHandler: FAILED to remove recipe {}", id);
         return false;
     }
 }
