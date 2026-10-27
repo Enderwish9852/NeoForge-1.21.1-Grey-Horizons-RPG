@@ -411,7 +411,7 @@
                   {
                       "title":  "Map: Frontier expand-storage setting + structure names",
                       "status":  "done",
-                      "note":  "FrontierConfig.MAP_EXPANDED_STORAGE added; map range reads it (50k default / 100k expanded); structure names still open"
+                      "note":  "FrontierConfig.MAP_EXPANDED_STORAGE added; Map Storage toggle button in Frontier settings menu (50k/100k); structure names still open"
                   }
               ],
     "files":  [
@@ -545,6 +545,22 @@
                   },
                   {
                       "path":  "Frontier_Subpack/src/main/java/net/enderwish/Frontier_Subpack/FrontierConfig.java",
+                      "action":  "modified"
+                  },
+                  {
+                      "path":  "Frontier_Subpack/src/main/java/net/enderwish/Frontier_Subpack/client/FrontierSettingsScreen.java",
+                      "action":  "modified"
+                  },
+                  {
+                      "path":  "Belliarium_Monstrarium_Subpack/src/main/java/net/enderwish/Belliarium_Monstrarium_Subpack/item/MapItem.java",
+                      "action":  "modified"
+                  },
+                  {
+                      "path":  "Belliarium_Monstrarium_Subpack/src/main/java/net/enderwish/Belliarium_Monstrarium_Subpack/client/MapScreen.java",
+                      "action":  "modified"
+                  },
+                  {
+                      "path":  "Belliarium_Monstrarium_Subpack/src/main/resources/assets/gh_belliarium_monstrarium/lang/en_us.json",
                       "action":  "modified"
                   }
               ],
