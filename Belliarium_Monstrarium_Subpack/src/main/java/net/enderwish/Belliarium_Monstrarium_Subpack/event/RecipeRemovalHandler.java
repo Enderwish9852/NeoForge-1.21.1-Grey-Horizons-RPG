@@ -10,10 +10,10 @@ import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeManager;
+import net.minecraft.world.level.Level;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.AddReloadListenerEvent;
-import net.neoforged.neoforge.event.server.ServerStartingEvent;
+import net.neoforged.neoforge.event.level.LevelEvent.Load;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -24,7 +24,7 @@ import java.util.Map;
  * RecipeRemovalHandler
  *
  * Removes crafting recipes that use or produce diamond, netherite, or gold
- * materials. Listens for server start and recipe reload events.
+ * materials. Listens for level load events so recipes are removed after loading.
  *
  * Blocked materials: diamond, diamond block, netherite ingot, netherite scrap,
  * netherite block, gold ingot, gold block, gold nugget, gold ore, deepslate
@@ -32,6 +32,10 @@ import java.util.Map;
  *
  * A recipe is removed when its result OR any of its ingredients is a blocked
  * material.
+ *
+ * Since RecipeManager in NeoForge 1.21.1 has no public removal API, this
+ * handler accesses the internal recipe map via reflection to remove entries.
+ * Logs all RecipeManager fields for debugging.
  */
 @EventBusSubscriber(modid = BelliariumMonstrariumSubpack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public class RecipeRemovalHandler {
@@ -53,11 +57,12 @@ public class RecipeRemovalHandler {
     );
 
     @SubscribeEvent
-    public static void onServerStarting(ServerStartingEvent event) {
-        RecipeManager recipeManager = event.getServer().getRecipeManager();
-        HolderLookup.Provider registries = event.getServer().registryAccess();
+    public static void onLevelLoad(Load event) {
+        Level level = (Level) event.getLevel();
+        RecipeManager recipeManager = level.getServer().getRecipeManager();
+        HolderLookup.Provider registries = level.registryAccess();
 
-        LOGGER.info("RecipeRemovalHandler: ServerStartingEvent - RecipeManager class: {}",
+        LOGGER.info("RecipeRemovalHandler: LevelEvent.Load - RecipeManager class: {}",
                 recipeManager.getClass().getName());
 
         int total = 0;
@@ -86,17 +91,11 @@ public class RecipeRemovalHandler {
         LOGGER.info("RecipeRemovalHandler: {} recipes total, {} blocked ({}%), {} removed",
                 total, blocked, total > 0 ? (blocked * 100 / total) : 0, removed);
 
-        if (LOGGER.isDebugEnabled()) {
-            for (Field field : RecipeManager.class.getDeclaredFields()) {
-                LOGGER.debug("RecipeManager field: {} (type={})",
-                        field.getName(), field.getType().getSimpleName());
-            }
+        // Always log RecipeManager fields for debugging
+        LOGGER.info("RecipeRemovalHandler: RecipeManager fields:");
+        for (Field field : RecipeManager.class.getDeclaredFields()) {
+            LOGGER.info("  Field: {} (type={})", field.getName(), field.getType().getSimpleName());
         }
-    }
-
-    @SubscribeEvent
-    public static void onAddReloadListener(AddReloadListenerEvent event) {
-        LOGGER.debug("RecipeRemovalHandler: AddReloadListenerEvent - recipe reload may happen next");
     }
 
     private static boolean recipeBlocksMaterial(Recipe<?> recipe, HolderLookup.Provider registries) {
@@ -146,10 +145,13 @@ public class RecipeRemovalHandler {
             for (Field field : RecipeManager.class.getDeclaredFields()) {
                 if (Map.class.isAssignableFrom(field.getType())) {
                     field.setAccessible(true);
-                    Map<ResourceLocation, RecipeHolder<?>> recipes =
-                            (Map<ResourceLocation, RecipeHolder<?>>) field.get(recipeManager);
-                    if (recipes != null && recipes.remove(id) != null) {
-                        return true;
+                    Object fieldValue = field.get(recipeManager);
+                    if (fieldValue instanceof Map) {
+                        Map<ResourceLocation, RecipeHolder<?>> recipes =
+                                (Map<ResourceLocation, RecipeHolder<?>>) fieldValue;
+                        if (recipes.remove(id) != null) {
+                            return true;
+                        }
                     }
                 }
             }
