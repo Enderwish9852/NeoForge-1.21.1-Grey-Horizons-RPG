@@ -12,7 +12,6 @@ import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeManager;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.AddReloadListenerEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 
 import java.lang.reflect.Field;
@@ -24,8 +23,7 @@ import java.util.Map;
  * RecipeRemovalHandler
  *
  * Removes crafting recipes that use or produce diamond, netherite, or gold
- * materials. Listens for recipe reload events so recipes are removed as soon
- * as they are loaded.
+ * materials. Listens for server start so recipes are removed after loading.
  *
  * Blocked materials: diamond, diamond block, netherite ingot, netherite scrap,
  * netherite block, gold ingot, gold block, gold nugget, gold ore, deepslate
@@ -36,6 +34,7 @@ import java.util.Map;
  *
  * Since RecipeManager in NeoForge 1.21.1 has no public removal API, this
  * handler accesses the internal recipe map via reflection to remove entries.
+ * Logs how many recipes were found/removed for debugging.
  */
 @EventBusSubscriber(modid = BelliariumMonstrariumSubpack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public class RecipeRemovalHandler {
@@ -61,36 +60,38 @@ public class RecipeRemovalHandler {
         RecipeManager recipeManager = event.getServer().getRecipeManager();
         HolderLookup.Provider registries = event.getServer().registryAccess();
 
-        int removed = removeBlockedRecipes(recipeManager, registries);
-        LOGGER.info("RecipeRemovalHandler: removed {} recipes containing diamond/netherite/gold materials", removed);
-    }
+        int total = 0;
+        int blocked = 0;
+        int removed = 0;
 
-    @SubscribeEvent
-    public static void onAddReloadListener(AddReloadListenerEvent event) {
-        // Hook into recipe reloads to catch recipes loaded after server start
-        // This is a no-op hook; actual removal happens on ServerStartingEvent
-    }
-
-    private static int removeBlockedRecipes(RecipeManager recipeManager, HolderLookup.Provider registries) {
         List<ResourceLocation> toRemove = new ArrayList<>();
-
         for (RecipeHolder<?> holder : recipeManager.getRecipes()) {
+            total++;
             ResourceLocation id = holder.id();
             Recipe<?> recipe = holder.value();
 
             if (recipeBlocksMaterial(recipe, registries)) {
+                blocked++;
                 toRemove.add(id);
             }
         }
 
-        int removed = 0;
         for (ResourceLocation id : toRemove) {
             if (removeRecipe(recipeManager, id)) {
                 removed++;
             }
         }
 
-        return removed;
+        LOGGER.info("RecipeRemovalHandler: {} recipes total, {} blocked, {} removed",
+                total, blocked, removed);
+
+        // Debug: list field names on RecipeManager
+        if (LOGGER.isDebugEnabled()) {
+            for (Field field : RecipeManager.class.getDeclaredFields()) {
+                LOGGER.debug("RecipeManager field: {} (type={})",
+                        field.getName(), field.getType().getSimpleName());
+            }
+        }
     }
 
     private static boolean recipeBlocksMaterial(Recipe<?> recipe, HolderLookup.Provider registries) {
