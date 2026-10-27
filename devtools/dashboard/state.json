@@ -395,8 +395,13 @@
                   },
                   {
                       "title":  "Map system: legendary map item, M keybind, zoomable GUI",
+                      "status":  "done",
+                      "note":  "Belliarium subpack; creative-only item; MapScreen full-screen GUI; M keybind; right-click to open; hotbar check"
+                  },
+                  {
+                      "title":  "Map rendering: explored/unexplored, zoom, pencil sketch",
                       "status":  "doing",
-                      "note":  "Belliarium subpack; creative-only item; full-screen MapScreen with middle-mouse zoom; explored/unexplored pencil-sketch rendering"
+                      "note":  "50k*50k default / 100k*100k with Frontier setting; only explored areas shown; pencil-sketched art style; middle-mouse zoom"
                   },
                   {
                       "title":  "Map drawing toolbar: arrow, circle, text box",
