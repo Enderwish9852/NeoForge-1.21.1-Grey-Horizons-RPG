@@ -4,11 +4,7 @@ import net.enderwish.Belliarium_Monstrarium_Subpack.core.map.MapWorldData;
 import net.enderwish.Frontier_Subpack.FrontierConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.chunk.LevelChunk;
-import net.minecraft.world.level.levelgen.Heightmap;
-import net.minecraft.world.level.chunk.ChunkAccess;
 
 /**
  * MapRenderer
@@ -73,35 +69,46 @@ public class MapRenderer {
 
         // How many screen pixels per block.
         float scale = Math.min(screenW, screenH) / (float) range;
+        float chunkScreenW = 16.0f * scale;
+        float chunkScreenH = 16.0f * scale;
 
         int startX = (int) (left * scale);
         int startZ = (int) (top * scale);
 
-        // Render each visible chunk column.
-        int chunkRadius = (int) Math.ceil(range / CHUNK_SIZE / 2.0);
-        for (int cz = centerZ / CHUNK_SIZE - chunkRadius; cz <= centerZ / CHUNK_SIZE + chunkRadius; cz++) {
-            for (int cx = centerX / CHUNK_SIZE - chunkRadius; cx <= centerX / CHUNK_SIZE + chunkRadius; cx++) {
-                int blockX = cx * CHUNK_SIZE;
-                int blockZ = cz * CHUNK_SIZE;
+        // At full zoom out every chunk is sub-pixel; skip per-chunk rendering
+        // entirely and just draw the range border so we never loop millions of times.
+        if (chunkScreenW < 1.0f && chunkScreenH < 1.0f) {
+            graphics.fill(startX, startZ,
+                    startX + (int) (range * scale),
+                    startZ + (int) (range * scale),
+                    0xFF4A3F35);
+            return;
+        }
 
-                // Skip chunks outside the visible range.
-                if (blockX < left - CHUNK_SIZE || blockX > left + range + CHUNK_SIZE
-                        || blockZ < top - CHUNK_SIZE || blockZ > top + range + CHUNK_SIZE) continue;
+        // Only iterate over chunks that intersect the visible range.
+        // Math.floorDiv handles negative coordinates correctly.
+        int startCX = Math.floorDiv(left, CHUNK_SIZE);
+        int endCX = Math.floorDiv(left + range - 1, CHUNK_SIZE);
+        int startCZ = Math.floorDiv(top, CHUNK_SIZE);
+        int endCZ = Math.floorDiv(top + range - 1, CHUNK_SIZE);
 
-                renderChunk(graphics, level, cx, cz, scale, startX, startZ);
+        for (int cz = startCZ; cz <= endCZ; cz++) {
+            for (int cx = startCX; cx <= endCX; cx++) {
+                renderChunk(graphics, level, cx, cz, scale, left, top);
             }
         }
 
         // Draw the range border.
-        graphics.fill((int) (left * scale), (int) (top * scale),
-                (int) ((left + range) * scale), (int) ((top + range) * scale),
+        graphics.fill(startX, startZ,
+                startX + (int) (range * scale),
+                startZ + (int) (range * scale),
                 0xFF4A3F35);
     }
 
     private void renderChunk(GuiGraphics graphics, Level level, int chunkX, int chunkZ,
-                             float scale, int startX, int startZ) {
-        int screenX = startX + (int) ((chunkX * 16) * scale);
-        int screenZ = startZ + (int) ((chunkZ * 16) * scale);
+                             float scale, int left, int top) {
+        int screenX = (int) ((chunkX * 16L - left) * scale);
+        int screenZ = (int) ((chunkZ * 16L - top) * scale);
         int chunkScreenW = Math.max(1, (int) (16 * scale));
         int chunkScreenH = Math.max(1, (int) (16 * scale));
 
@@ -116,14 +123,16 @@ public class MapRenderer {
             graphics.fill(screenX, screenZ, screenX + chunkScreenW, screenZ + chunkScreenH, color);
 
             // Draw a contour line based on height.
-            if (zoomLevel >= 2) {
+            if (scale >= 0.5f) {
                 graphics.fill(screenX, screenZ, screenX + 1, screenZ + chunkScreenH, 0xFF2E2218);
                 graphics.fill(screenX, screenZ, screenX + chunkScreenW, screenZ + 1, 0xFF2E2218);
             }
         } else {
             // Unexplored: black-and-white pencil outline.
             graphics.fill(screenX, screenZ, screenX + chunkScreenW, screenZ + chunkScreenH, 0xFF2A2A2A);
-            graphics.fill(screenX + 1, screenZ + 1, screenX + chunkScreenW - 1, screenZ + chunkScreenH - 1, 0xFF1A1A1A);
+            if (chunkScreenW > 2 && chunkScreenH > 2) {
+                graphics.fill(screenX + 1, screenZ + 1, screenX + chunkScreenW - 1, screenZ + chunkScreenH - 1, 0xFF1A1A1A);
+            }
         }
     }
 
