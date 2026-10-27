@@ -46,6 +46,11 @@ public class MapRenderer {
     private int centerX = 0;
     private int centerZ = 0;
 
+    /** Current render area width (set each frame by render()). */
+    private int renderW = 0;
+    /** Current render area height (set each frame by render()). */
+    private int renderH = 0;
+
     /** Current visible range in blocks, based on zoom level. */
     public int visibleRange() {
         return MAX_VIEWPORT_BLOCKS - (zoomLevel - 1) * BLOCKS_PER_STEP;
@@ -101,33 +106,30 @@ public class MapRenderer {
         setCenter(worldX, worldZ);
     }
 
-    /** Render the map into the given screen area. Fills the entire screen. */
+    /** Render the map into the given screen area. Fills every pixel of the area. */
     public void render(GuiGraphics graphics, int screenW, int screenH, Level level) {
+        renderW = screenW;
+        renderH = screenH;
         int range = visibleRange();
         int halfRange = range / 2;
         int left = centerX - halfRange;
         int top = centerZ - halfRange;
 
-        // Screen pixels per world block — use Math.max so the map fills the
-        // entire screen on widescreen displays, no parchment showing through.
+        // Screen pixels per world block — use Math.max so the map fills its
+        // assigned area on widescreen displays, no parchment showing through.
         float scale = Math.max(screenW, screenH) / (float) range;
 
-        int startX = (int) (left * scale);
-        int startZ = (int) (top * scale);
-        int right = startX + (int) (range * scale);
-        int bottom = startZ + (int) (range * scale);
-
-        // Sample each screen pixel.
-        for (int sx = startX; sx < right; sx++) {
+        // Sample every screen pixel in the assigned area.
+        for (int sx = 0; sx < screenW; sx++) {
             int worldX = left + (int) (sx / scale);
-            for (int sz = startZ; sz < bottom; sz++) {
+            for (int sz = 0; sz < screenH; sz++) {
                 int worldZ = top + (int) (sz / scale);
 
                 int cx = worldX >> 4;
                 int cz = worldZ >> 4;
                 if (!MapWorldData.get(level).isExplored(cx, cz)) {
                     // Unexplored: black fill with terrain edges.
-                    int color = sampleUnexploredPixel(level, worldX, worldZ, sx, sz, startX, startZ, scale, screenW, screenH);
+                    int color = sampleUnexploredPixel(level, worldX, worldZ);
                     graphics.fill(sx, sz, sx + 1, sz + 1, color);
                     continue;
                 }
@@ -137,7 +139,7 @@ public class MapRenderer {
             }
         }
 
-        drawBorder(graphics, startX, startZ, right, bottom);
+        drawBorder(graphics, 0, 0, screenW, screenH);
     }
 
     /** Sample one explored pixel: top-most solid block's biome colour, or fluid if on top. */
@@ -161,8 +163,7 @@ public class MapRenderer {
     }
 
     /** Sample one unexplored pixel: black fill with terrain edges. */
-    private int sampleUnexploredPixel(Level level, int worldX, int worldZ, int sx, int sz,
-                                      int startX, int startZ, float scale, int screenW, int screenH) {
+    private int sampleUnexploredPixel(Level level, int worldX, int worldZ) {
         // Default: black fill.
         int color = 0xFF1A1A1A;
 
@@ -177,7 +178,7 @@ public class MapRenderer {
                 int ncx = nx >> 4;
                 int ncz = nz >> 4;
                 boolean neighbourExplored = MapWorldData.get(level).isExplored(ncx, ncz);
-                // Edge if neighbour is explored (different state) or different terrain type.
+                // Edge if neighbour is explored (different state).
                 if (neighbourExplored) {
                     isEdge = true;
                     break;
@@ -227,8 +228,7 @@ public class MapRenderer {
     public int worldToScreenX(int worldX) {
         int range = visibleRange();
         int left = centerX - range / 2;
-        int screenW = Minecraft.getInstance().getWindow().getWidth();
-        float scale = Math.max(screenW, Minecraft.getInstance().getWindow().getHeight()) / (float) range;
+        float scale = Math.max(renderW, renderH) / (float) range;
         return (int) ((worldX - left) * scale);
     }
 
@@ -236,8 +236,7 @@ public class MapRenderer {
     public int worldToScreenZ(int worldZ) {
         int range = visibleRange();
         int top = centerZ - range / 2;
-        int screenH = Minecraft.getInstance().getWindow().getHeight();
-        float scale = Math.max(Minecraft.getInstance().getWindow().getWidth(), screenH) / (float) range;
+        float scale = Math.max(renderW, renderH) / (float) range;
         return (int) ((worldZ - top) * scale);
     }
 
@@ -245,8 +244,7 @@ public class MapRenderer {
     public int screenToWorldX(int screenX) {
         int range = visibleRange();
         int left = centerX - range / 2;
-        int screenW = Minecraft.getInstance().getWindow().getWidth();
-        float scale = Math.max(screenW, Minecraft.getInstance().getWindow().getHeight()) / (float) range;
+        float scale = Math.max(renderW, renderH) / (float) range;
         return left + (int) (screenX / scale);
     }
 
@@ -254,8 +252,7 @@ public class MapRenderer {
     public int screenToWorldZ(int screenZ) {
         int range = visibleRange();
         int top = centerZ - range / 2;
-        int screenH = Minecraft.getInstance().getWindow().getHeight();
-        float scale = Math.max(Minecraft.getInstance().getWindow().getWidth(), screenH) / (float) range;
+        float scale = Math.max(renderW, renderH) / (float) range;
         return top + (int) (screenZ / scale);
     }
 }

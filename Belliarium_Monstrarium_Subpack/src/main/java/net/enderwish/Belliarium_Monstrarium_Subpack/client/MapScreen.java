@@ -151,7 +151,10 @@ public class MapScreen extends Screen {
         Minecraft mc = Minecraft.getInstance();
         Level level = mc.level;
         if (level != null) {
-            renderer.render(graphics, this.width, this.height, level);
+            // Map area is everything left of the toolbar; toolbar shows parchment.
+            int mapW = toolbarX;
+            int mapH = this.height;
+            renderer.render(graphics, mapW, mapH, level);
 
             // Render all placed drawings.
             List<MapDraw> draws = MapWorldData.get(level).drawings();
