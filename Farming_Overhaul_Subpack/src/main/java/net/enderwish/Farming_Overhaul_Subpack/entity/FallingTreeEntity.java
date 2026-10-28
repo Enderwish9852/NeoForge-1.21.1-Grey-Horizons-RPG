@@ -9,6 +9,8 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
@@ -31,6 +33,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Queue;
 import java.util.Set;
+import java.util.Random;
 
 /**
  * FallingTreeEntity
@@ -96,6 +99,9 @@ public class FallingTreeEntity extends Entity {
     /** Whether this tree has already dealt impact damage. */
     private boolean damageDealt = false;
 
+    /** Random for sound variation. */
+    private final Random random = new Random();
+
     /** All block positions and states that make up this falling tree. */
     private final List<BlockPosAndPos> blocks = new ArrayList<>();
 
@@ -125,7 +131,6 @@ public class FallingTreeEntity extends Entity {
         this.fallX = vx;
         this.fallY = vy;
         this.fallZ = vz;
-        // Yaw points in the direction of horizontal movement
         double h = Math.sqrt(vx * vx + vz * vz);
         if (h > 0.001) {
             this.fallYaw = Math.atan2(vz, vx);
@@ -170,7 +175,6 @@ public class FallingTreeEntity extends Entity {
         if (this.level().noCollision(this, box)) {
             setPos(nx, ny, nz);
         } else {
-            // Hit something - snap to surface and land
             double ny2 = Math.floor(ny) + 1.0;
             setPos(getX(), ny2, getZ());
             land();
@@ -182,11 +186,14 @@ public class FallingTreeEntity extends Entity {
         landingTicks = 0;
         fallX = 0; fallY = 0; fallZ = 0;
 
-        // Play landing sound
+        // Play crash sound (volume scales with fall speed)
+        double speed = Math.sqrt(fallX * fallX + fallY * fallY + fallZ * fallZ);
+        float volume = Math.min(1.0f, (float) (speed * 2.0));
+        float pitch = 0.7f + random.nextFloat() * 0.3f;
         this.level().playSound(null, getX(), getY(), getZ(),
-                net.minecraft.sounds.SoundEvents.WOOD_BREAK,
-                net.minecraft.sounds.SoundSource.BLOCKS,
-                1.0f, 1.0f);
+                SoundEvents.WOOD_BREAK,
+                SoundSource.BLOCKS,
+                volume, pitch);
 
         // Deal impact damage to nearby entities
         dealImpactDamage();
@@ -211,12 +218,10 @@ public class FallingTreeEntity extends Entity {
             Block block = state.getBlock();
             BlockPos pos = bsp.pos();
 
-            // Remove the leaf block (decay it)
             if (this.level().getBlockState(pos).getBlock() instanceof LeavesBlock) {
                 this.level().removeBlock(pos, false);
             }
 
-            // Drop a stick with some chance
             if (this.level().random.nextDouble() < STICK_DROP_CHANCE) {
                 ItemStack stick = new ItemStack(Items.STICK);
                 ItemEntity stickEntity = new ItemEntity(
@@ -225,7 +230,6 @@ public class FallingTreeEntity extends Entity {
                 this.level().addFreshEntity(stickEntity);
             }
 
-            // Drop a sapling with small chance
             if (this.level().random.nextDouble() < SAPLING_DROP_CHANCE) {
                 Item sapling = getSaplingForLeaves(block);
                 if (sapling != null) {
@@ -283,8 +287,7 @@ public class FallingTreeEntity extends Entity {
                     BlockState state = this.level().getBlockState(pos);
                     Block block = state.getBlock();
 
-                    boolean brittle = isBrittle(block);
-                    if (!brittle) continue;
+                    if (!isBrittle(block)) continue;
 
                     double speed = Math.sqrt(fallX * fallX + fallY * fallY + fallZ * fallZ);
                     if (this.level().random.nextDouble() < speed * 0.5) {
@@ -324,13 +327,9 @@ public class FallingTreeEntity extends Entity {
         }
     }
 
-    /**
-     * Chain reaction: scan for nearby trees and knock over small ones or damage large ones.
-     */
     private void triggerChainReaction() {
         BlockPos impact = BlockPos.containing(getX(), getY() - 0.5, getZ());
 
-        // Scan for nearby tree logs
         Set<BlockPos> nearbyLogs = new HashSet<>();
         for (int dx = -CHAIN_REACTION_RADIUS; dx <= CHAIN_REACTION_RADIUS; dx++) {
             for (int dy = -4; dy <= 4; dy++) {
@@ -346,7 +345,6 @@ public class FallingTreeEntity extends Entity {
 
         if (nearbyLogs.isEmpty()) return;
 
-        // Find connected trees among nearby logs
         Set<BlockPos> visited = new HashSet<>();
         for (BlockPos start : nearbyLogs) {
             if (visited.contains(start)) continue;
@@ -369,7 +367,6 @@ public class FallingTreeEntity extends Entity {
                 }
             }
 
-            // Decide: small tree = knock over, large tree = damage
             if (treeBlocks.size() <= SMALL_TREE_THRESHOLD) {
                 knockOverTree(treeBlocks);
             } else {
@@ -379,17 +376,14 @@ public class FallingTreeEntity extends Entity {
     }
 
     private void knockOverTree(List<BlockPos> treeBlocks) {
-        // Collect all blocks (logs + leaves) of this tree
         List<BlockPosAndPos> allBlocks = new ArrayList<>();
         Set<BlockPos> logPosSet = new HashSet<>(treeBlocks);
 
-        // Add all logs
         for (BlockPos pos : treeBlocks) {
             BlockState state = this.level().getBlockState(pos);
             allBlocks.add(new BlockPosAndPos(pos, state));
         }
 
-        // Find adjacent leaves
         for (BlockPos logPos : treeBlocks) {
             for (Direction dir : Direction.values()) {
                 BlockPos neighbor = logPos.relative(dir);
@@ -402,12 +396,10 @@ public class FallingTreeEntity extends Entity {
             }
         }
 
-        // Remove all blocks from world
         for (BlockPosAndPos bps : allBlocks) {
             this.level().removeBlock(bps.pos(), false);
         }
 
-        // Find center for entity position
         double cx = 0, cy = 0, cz = 0;
         for (BlockPosAndPos bps : allBlocks) {
             cx += bps.pos().getX();
@@ -417,15 +409,11 @@ public class FallingTreeEntity extends Entity {
         int n = allBlocks.size();
         cx /= n; cy /= n; cz /= n;
 
-        // Create falling entity
         FallingTreeEntity entity = new FallingTreeEntity(
                 net.enderwish.Farming_Overhaul_Subpack.FarmingOverhaulSubpack.FALLING_TREE.get(), this.level());
         entity.setPos(cx + 0.5, cy + 0.5, cz + 0.5);
-
-        // Fall in same direction as the triggering tree, slightly weaker
         entity.setFallDirection(this.fallX * 0.6, this.fallY * 0.6, this.fallZ * 0.6);
 
-        // Add blocks
         for (BlockPosAndPos bps : allBlocks) {
             entity.addBlock(bps.pos(), bps.state());
         }
@@ -434,11 +422,9 @@ public class FallingTreeEntity extends Entity {
     }
 
     private void damageLargeTree(List<BlockPos> treeBlocks) {
-        // Break the top 20% of logs as "damage"
         int breakCount = Math.max(1, treeBlocks.size() / 5);
         int broken = 0;
 
-        // Sort by Y descending to break top logs first
         treeBlocks.sort((a, b) -> Integer.compare(b.getY(), a.getY()));
 
         for (BlockPos pos : treeBlocks) {
