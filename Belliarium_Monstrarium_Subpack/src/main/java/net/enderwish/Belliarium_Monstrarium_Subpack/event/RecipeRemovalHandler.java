@@ -34,7 +34,8 @@ import java.util.Map;
  * material.
  *
  * Since RecipeManager in NeoForge 1.21.1 has no public removal API, this
- * handler accesses the internal recipe map via reflection to remove entries.
+ * handler calls RecipeRemovalMixin.removeRecipe() via reflection, which
+ * accesses RecipeManager's internal recipe map directly.
  * Logs all RecipeManager fields for debugging.
  */
 @EventBusSubscriber(modid = BelliariumMonstrariumSubpack.MODID, bus = EventBusSubscriber.Bus.GAME)
@@ -59,10 +60,6 @@ public class RecipeRemovalHandler {
     @SubscribeEvent
     public static void onLevelLoad(Load event) {
         if (!(event.getLevel() instanceof Level level)) {
-            return;
-        }
-        // Only run on server side - client level has no server
-        if (level.isClientSide()) {
             return;
         }
 
@@ -123,54 +120,18 @@ public class RecipeRemovalHandler {
     }
 
     /**
-     * Remove a recipe from the manager via reflection.
-     * Tries: remove(ResourceLocation), removeRecipe(ResourceLocation),
-     * and direct field access to the internal recipes map.
+     * Remove a recipe from the manager via the RecipeRemovalMixin.
      */
     @SuppressWarnings("unchecked")
     private static boolean removeRecipe(RecipeManager recipeManager, ResourceLocation id) {
-        // Try remove(ResourceLocation)
         try {
-            var method = RecipeManager.class.getDeclaredMethod("remove", ResourceLocation.class);
+            var method = RecipeManager.class.getDeclaredMethod("ghBelliarium$removeRecipe", ResourceLocation.class);
             method.setAccessible(true);
             method.invoke(recipeManager, id);
-            LOGGER.debug("RecipeRemovalHandler: removed {} via remove(ResourceLocation)", id);
             return true;
         } catch (Exception ignored) {
         }
 
-        // Try removeRecipe(ResourceLocation)
-        try {
-            var method = RecipeManager.class.getDeclaredMethod("removeRecipe", ResourceLocation.class);
-            method.setAccessible(true);
-            method.invoke(recipeManager, id);
-            LOGGER.debug("RecipeRemovalHandler: removed {} via removeRecipe(ResourceLocation)", id);
-            return true;
-        } catch (Exception ignored) {
-        }
-
-        // Try direct field access to internal recipes map
-        try {
-            for (Field field : RecipeManager.class.getDeclaredFields()) {
-                if (Map.class.isAssignableFrom(field.getType())) {
-                    field.setAccessible(true);
-                    Object fieldValue = field.get(recipeManager);
-                    if (fieldValue instanceof Map) {
-                        Map<ResourceLocation, RecipeHolder<?>> recipes =
-                                (Map<ResourceLocation, RecipeHolder<?>>) fieldValue;
-                        RecipeHolder<?> removed = recipes.remove(id);
-                        if (removed != null) {
-                            LOGGER.debug("RecipeRemovalHandler: removed {} via field map field={}", id, field.getName());
-                            return true;
-                        }
-                    }
-                }
-            }
-        } catch (Exception e) {
-            LOGGER.warn("RecipeRemovalHandler: field access failed: {}", e.getMessage());
-        }
-
-        LOGGER.warn("RecipeRemovalHandler: FAILED to remove recipe {}", id);
         return false;
     }
 }
