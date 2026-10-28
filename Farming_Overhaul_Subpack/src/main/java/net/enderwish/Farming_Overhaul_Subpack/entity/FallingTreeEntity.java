@@ -2,13 +2,21 @@ package net.enderwish.Farming_Overhaul_Subpack.entity;
 
 import net.enderwish.Farming_Overhaul_Subpack.FarmingOverhaulSubpack;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
@@ -61,6 +69,11 @@ public class FallingTreeEntity extends Entity {
     public int blockCount() { return blocks.size(); }
 
     @Override
+    protected void defineSynchedData(SynchedEntityData.Builder builder) {
+        // No synced data needed - entities are spawned fresh
+    }
+
+    @Override
     public void tick() {
         super.tick();
 
@@ -109,6 +122,36 @@ public class FallingTreeEntity extends Entity {
                 net.minecraft.sounds.SoundEvents.WOOD_BREAK,
                 net.minecraft.sounds.SoundSource.BLOCKS,
                 1.0f, 1.0f);
+
+        // Drop all items immediately for now
+        dropAllItems();
+    }
+
+    private void dropAllItems() {
+        // Drop items using vanilla mechanics
+        for (BlockStateAndPos bsp : blocks) {
+            BlockState state = bsp.state();
+            Block block = state.getBlock();
+            Item item = block.asItem();
+            ItemStack itemStack = item.getDefaultInstance();
+            if (!itemStack.isEmpty()) {
+                ItemStack drop = itemStack.copyWithCount(1);
+                ItemEntity itemEntity = new ItemEntity(
+                        this.level(), getX(), getY() + 1.0, getZ(), drop);
+                itemEntity.setPickUpDelay(10);
+                this.level().addFreshEntity(itemEntity);
+            }
+        }
+    }
+
+    @Override
+    protected void readAdditionalSaveData(CompoundTag tag) {
+        // No saved data needed - entities are spawned fresh
+    }
+
+    @Override
+    public void addAdditionalSaveData(CompoundTag tag) {
+        // No saved data needed
     }
 
     @Override
