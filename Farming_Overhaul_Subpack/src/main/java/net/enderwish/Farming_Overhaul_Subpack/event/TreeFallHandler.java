@@ -6,6 +6,7 @@ import net.enderwish.Farming_Overhaul_Subpack.block.tree.FruitTreeLogBlock;
 import net.enderwish.Farming_Overhaul_Subpack.entity.FallingTreeEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.Block;
@@ -14,6 +15,8 @@ import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.level.BlockEvent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -37,8 +40,10 @@ import java.util.Set;
  *   - Fall direction = downhill slope + weight distribution (defaults away from +X)
  *   - Branches (side logs) split off as their own falling entities
  */
-@EventBusSubscriber(modid = FarmingOverhaulSubpack.MODID, bus = EventBusSubscriber.Bus.GAME)
+@EventBusSubscriber(modid = FarmingOverhaulSubpack.MODID, bus = EventBusSubscriber.Bus.MOD)
 public class TreeFallHandler {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger("GH_TreeFall");
 
     private TreeFallHandler() {}
 
@@ -58,16 +63,19 @@ public class TreeFallHandler {
         BlockPos pos = event.getPos();
         BlockState state = level.getBlockState(pos);
 
-        // Only process tree log blocks
-        if (!(state.getBlock() instanceof FruitTreeLogBlock)) {
+        // Only process tree log blocks (custom FruitTreeLogBlock OR vanilla LogBlock)
+        boolean isTreeLog = state.getBlock() instanceof FruitTreeLogBlock
+            || state.is(BlockTags.LOGS);
+        if (!isTreeLog) {
+            LOGGER.debug("TreeFallHandler: block at {} is not a tree log ({})", pos, state.getBlock());
             return;
         }
 
-        // Don't process if it's already been removed
-        if (state.isAir()) return;
+        LOGGER.info("TreeFallHandler: tree log cut at {} — starting tree fall", pos);
 
         // Find all connected tree blocks (logs + leaves) starting from this block
         List<BlockPosAndState> treeBlocks = findConnectedTree(level, pos, state);
+        LOGGER.debug("TreeFallHandler: found {} connected tree blocks", treeBlocks.size());
         if (treeBlocks.isEmpty()) return;
 
         // ── Stump: leave blocks at/below the cut Y level ─────────────────────
@@ -104,7 +112,7 @@ public class TreeFallHandler {
                 BlockPos neighbor = current.relative(dir);
                 if (trunkLogPos.contains(neighbor)) continue;
                 BlockState ns = level.getBlockState(neighbor);
-                if (ns.getBlock() instanceof FruitTreeLogBlock) {
+                if (ns.getBlock() instanceof FruitTreeLogBlock || ns.is(BlockTags.LOGS)) {
                     trunkLogPos.add(neighbor);
                     trunkQueue.add(neighbor);
                 }
@@ -114,7 +122,8 @@ public class TreeFallHandler {
         for (BlockPosAndState bps : fallingBlocks) {
             if (trunkLogPos.contains(bps.pos())) {
                 trunkBlocks.add(bps);
-            } else if (bps.state().getBlock() instanceof FruitTreeLogBlock) {
+            } else if (bps.state().getBlock() instanceof FruitTreeLogBlock
+                    || bps.state().is(BlockTags.LOGS)) {
                 branchBlocks.add(bps);
             } else {
                 leafBlocks.add(bps);
@@ -123,6 +132,7 @@ public class TreeFallHandler {
 
         // ── Calculate fall direction ────────────────────────────────────────
         Vec3 fallDir = calculateFallDirection(level, pos, trunkBlocks, branchBlocks);
+        LOGGER.debug("TreeFallHandler: fall direction = ({}, {}, {})", fallDir.x, fallDir.y, fallDir.z);
 
         // ── Create main falling entity (trunk + leaves) ─────────────────────
         if (!trunkBlocks.isEmpty()) {
@@ -140,6 +150,7 @@ public class TreeFallHandler {
             }
 
             level.addFreshEntity(entity);
+            LOGGER.info("TreeFallHandler: spawned main falling entity with {} blocks", entity.blockCount());
         }
 
         // ── Create separate falling entities for branches ───────────────────
@@ -176,6 +187,7 @@ public class TreeFallHandler {
                 }
 
                 level.addFreshEntity(entity);
+                LOGGER.info("TreeFallHandler: spawned branch falling entity with {} blocks", entity.blockCount());
             }
         }
     }
@@ -304,8 +316,11 @@ public class TreeFallHandler {
             BlockState currentState = level.getBlockState(current);
 
             // Only process if it's a tree log or leaf
-            if (!(currentState.getBlock() instanceof FruitTreeLogBlock)
-                    && !(currentState.getBlock() instanceof FruitTreeLeavesBlock)) {
+            boolean isLog = currentState.getBlock() instanceof FruitTreeLogBlock
+                || currentState.is(BlockTags.LOGS);
+            boolean isLeaf = currentState.getBlock() instanceof FruitTreeLeavesBlock
+                || currentState.is(BlockTags.LEAVES);
+            if (!isLog && !isLeaf) {
                 continue;
             }
 
@@ -319,13 +334,14 @@ public class TreeFallHandler {
                 BlockState neighborState = level.getBlockState(neighbor);
                 Block neighborBlock = neighborState.getBlock();
 
-                // Include connected logs (same block type)
-                if (neighborBlock instanceof FruitTreeLogBlock) {
-                    queue.add(neighbor);
-                    visited.add(neighbor);
-                }
+                // Include connected logs
+                boolean neighborIsLog = neighborBlock instanceof FruitTreeLogBlock
+                    || neighborState.is(BlockTags.LOGS);
                 // Include leaves adjacent to any tree block
-                else if (neighborBlock instanceof FruitTreeLeavesBlock) {
+                boolean neighborIsLeaf = neighborBlock instanceof FruitTreeLeavesBlock
+                    || neighborState.is(BlockTags.LEAVES);
+
+                if (neighborIsLog || neighborIsLeaf) {
                     queue.add(neighbor);
                     visited.add(neighbor);
                 }
