@@ -1,8 +1,11 @@
 package net.enderwish.Farming_Overhaul_Subpack.entity;
 
 import net.enderwish.Farming_Overhaul_Subpack.FarmingOverhaulSubpack;
+import net.enderwish.Farming_Overhaul_Subpack.block.tree.FruitTreeLeavesBlock;
+import net.enderwish.Farming_Overhaul_Subpack.block.tree.FruitTreeLogBlock;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -22,8 +25,12 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Queue;
+import java.util.Set;
 
 /**
  * FallingTreeEntity
@@ -63,6 +70,15 @@ public class FallingTreeEntity extends Entity {
     /** Chance (0-1) for a decaying leaf to drop a stick. */
     private static final double STICK_DROP_CHANCE = 0.5;
 
+    /** Chain reaction radius (blocks). Trees within this distance may fall. */
+    private static final int CHAIN_REACTION_RADIUS = 8;
+
+    /** Trees with fewer blocks than this are knocked over entirely. */
+    private static final int SMALL_TREE_THRESHOLD = 12;
+
+    /** Record of a single block in the falling tree. */
+    public record BlockPosAndPos(BlockPos pos, BlockState state) {}
+
     private double fallX, fallY, fallZ;      // velocity
     private int ticksFalling = 0;
     private boolean hasLanded = false;
@@ -81,7 +97,7 @@ public class FallingTreeEntity extends Entity {
     private boolean damageDealt = false;
 
     /** All block positions and states that make up this falling tree. */
-    private final List<BlockStateAndPos> blocks = new ArrayList<>();
+    private final List<BlockPosAndPos> blocks = new ArrayList<>();
 
     /** Indices of blocks that are leaves (for decay on land). */
     private final List<Integer> leafIndices = new ArrayList<>();
@@ -95,7 +111,7 @@ public class FallingTreeEntity extends Entity {
     public void addBlock(BlockPos pos, BlockState state) {
         if (blocks.size() >= MAX_BLOCKS) return;
         int idx = blocks.size();
-        blocks.add(new BlockStateAndPos(pos, state));
+        blocks.add(new BlockPosAndPos(pos, state));
         if (state.getBlock() instanceof LeavesBlock) {
             leafIndices.add(idx);
         }
@@ -183,11 +199,14 @@ public class FallingTreeEntity extends Entity {
 
         // Drop all non-leaf blocks as items at their original positions
         dropLogItems();
+
+        // Chain reaction: nearby trees may fall
+        triggerChainReaction();
     }
 
     private void decayLeaves() {
         for (int idx : leafIndices) {
-            BlockStateAndPos bsp = blocks.get(idx);
+            BlockPosAndPos bsp = blocks.get(idx);
             BlockState state = bsp.state();
             Block block = state.getBlock();
             BlockPos pos = bsp.pos();
@@ -289,7 +308,7 @@ public class FallingTreeEntity extends Entity {
         for (int i = 0; i < blocks.size(); i++) {
             if (leafIndices.contains(i)) continue;
 
-            BlockStateAndPos bsp = blocks.get(i);
+            BlockPosAndPos bsp = blocks.get(i);
             BlockState state = bsp.state();
             BlockPos pos = bsp.pos();
             Block block = state.getBlock();
@@ -302,6 +321,134 @@ public class FallingTreeEntity extends Entity {
                 itemEntity.setPickUpDelay(10);
                 this.level().addFreshEntity(itemEntity);
             }
+        }
+    }
+
+    /**
+     * Chain reaction: scan for nearby trees and knock over small ones or damage large ones.
+     */
+    private void triggerChainReaction() {
+        BlockPos impact = BlockPos.containing(getX(), getY() - 0.5, getZ());
+
+        // Scan for nearby tree logs
+        Set<BlockPos> nearbyLogs = new HashSet<>();
+        for (int dx = -CHAIN_REACTION_RADIUS; dx <= CHAIN_REACTION_RADIUS; dx++) {
+            for (int dy = -4; dy <= 4; dy++) {
+                for (int dz = -CHAIN_REACTION_RADIUS; dz <= CHAIN_REACTION_RADIUS; dz++) {
+                    BlockPos pos = impact.offset(dx, dy, dz);
+                    BlockState state = this.level().getBlockState(pos);
+                    if (state.getBlock() instanceof FruitTreeLogBlock) {
+                        nearbyLogs.add(pos);
+                    }
+                }
+            }
+        }
+
+        if (nearbyLogs.isEmpty()) return;
+
+        // Find connected trees among nearby logs
+        Set<BlockPos> visited = new HashSet<>();
+        for (BlockPos start : nearbyLogs) {
+            if (visited.contains(start)) continue;
+
+            List<BlockPos> treeBlocks = new ArrayList<>();
+            Queue<BlockPos> queue = new ArrayDeque<>();
+            queue.add(start);
+            visited.add(start);
+
+            while (!queue.isEmpty()) {
+                BlockPos current = queue.poll();
+                treeBlocks.add(current);
+
+                for (Direction dir : Direction.values()) {
+                    BlockPos neighbor = current.relative(dir);
+                    if (visited.contains(neighbor)) continue;
+                    if (!nearbyLogs.contains(neighbor)) continue;
+                    visited.add(neighbor);
+                    queue.add(neighbor);
+                }
+            }
+
+            // Decide: small tree = knock over, large tree = damage
+            if (treeBlocks.size() <= SMALL_TREE_THRESHOLD) {
+                knockOverTree(treeBlocks);
+            } else {
+                damageLargeTree(treeBlocks);
+            }
+        }
+    }
+
+    private void knockOverTree(List<BlockPos> treeBlocks) {
+        // Collect all blocks (logs + leaves) of this tree
+        List<BlockPosAndPos> allBlocks = new ArrayList<>();
+        Set<BlockPos> logPosSet = new HashSet<>(treeBlocks);
+
+        // Add all logs
+        for (BlockPos pos : treeBlocks) {
+            BlockState state = this.level().getBlockState(pos);
+            allBlocks.add(new BlockPosAndPos(pos, state));
+        }
+
+        // Find adjacent leaves
+        for (BlockPos logPos : treeBlocks) {
+            for (Direction dir : Direction.values()) {
+                BlockPos neighbor = logPos.relative(dir);
+                if (logPosSet.contains(neighbor)) continue;
+                BlockState state = this.level().getBlockState(neighbor);
+                if (state.getBlock() instanceof FruitTreeLeavesBlock) {
+                    allBlocks.add(new BlockPosAndPos(neighbor, state));
+                    logPosSet.add(neighbor);
+                }
+            }
+        }
+
+        // Remove all blocks from world
+        for (BlockPosAndPos bps : allBlocks) {
+            this.level().removeBlock(bps.pos(), false);
+        }
+
+        // Find center for entity position
+        double cx = 0, cy = 0, cz = 0;
+        for (BlockPosAndPos bps : allBlocks) {
+            cx += bps.pos().getX();
+            cy += bps.pos().getY();
+            cz += bps.pos().getZ();
+        }
+        int n = allBlocks.size();
+        cx /= n; cy /= n; cz /= n;
+
+        // Create falling entity
+        FallingTreeEntity entity = new FallingTreeEntity(
+                net.enderwish.Farming_Overhaul_Subpack.FarmingOverhaulSubpack.FALLING_TREE.get(), this.level());
+        entity.setPos(cx + 0.5, cy + 0.5, cz + 0.5);
+
+        // Fall in same direction as the triggering tree, slightly weaker
+        entity.setFallDirection(this.fallX * 0.6, this.fallY * 0.6, this.fallZ * 0.6);
+
+        // Add blocks
+        for (BlockPosAndPos bps : allBlocks) {
+            entity.addBlock(bps.pos(), bps.state());
+        }
+
+        this.level().addFreshEntity(entity);
+    }
+
+    private void damageLargeTree(List<BlockPos> treeBlocks) {
+        // Break the top 20% of logs as "damage"
+        int breakCount = Math.max(1, treeBlocks.size() / 5);
+        int broken = 0;
+
+        // Sort by Y descending to break top logs first
+        treeBlocks.sort((a, b) -> Integer.compare(b.getY(), a.getY()));
+
+        for (BlockPos pos : treeBlocks) {
+            if (broken >= breakCount) break;
+            BlockState state = this.level().getBlockState(pos);
+            if (!(state.getBlock() instanceof FruitTreeLogBlock)) continue;
+
+            this.level().removeBlock(pos, false);
+            state.getBlock().popResource(this.level(), pos, new ItemStack(state.getBlock()));
+            broken++;
         }
     }
 
@@ -334,7 +481,4 @@ public class FallingTreeEntity extends Entity {
     public boolean isPickable() {
         return false;
     }
-
-    /** Record of a single block in the falling tree. */
-    public record BlockStateAndPos(BlockPos pos, BlockState state) {}
 }
