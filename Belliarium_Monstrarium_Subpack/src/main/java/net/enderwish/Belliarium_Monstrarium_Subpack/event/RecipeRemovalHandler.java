@@ -30,8 +30,9 @@ import java.util.List;
  * Only the result item is checked -- ingredients are ignored. The item
  * itself still exists and can be obtained via /give, loot, trading, etc.
  *
- * RecipeRemovalMixin adds ghBelliarium$removeRecipe(ResourceLocation) to
- * RecipeManager via mixin, since NeoForge 1.21.1 has no public removal API.
+ * Uses RecipeManager.replaceRecipes() to rebuild the recipe registry
+ * without blocked items, since NeoForge 1.21.1 has no public removal API
+ * and RecipeManager's internal maps are immutable.
  */
 @EventBusSubscriber(modid = BelliariumMonstrariumSubpack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public class RecipeRemovalHandler {
@@ -73,6 +74,7 @@ public class RecipeRemovalHandler {
         int total = 0;
         int removed = 0;
 
+        java.util.List<RecipeHolder<?>> kept = new java.util.ArrayList<>();
         for (RecipeHolder<?> holder : recipeManager.getRecipes()) {
             total++;
             Recipe<?> recipe = holder.value();
@@ -80,32 +82,21 @@ public class RecipeRemovalHandler {
 
             ItemStack result = recipe.getResultItem(registries);
             if (result != null && BLOCKED_MATERIALS.contains(result.getItem())) {
-                if (removeRecipe(recipeManager, id)) {
-                    removed++;
-                    LOGGER.debug("RecipeRemovalHandler: removed recipe {}: {}",
-                            id, recipe.getClass().getSimpleName());
-                }
+                LOGGER.debug("RecipeRemovalHandler: removing recipe {}: {}",
+                        id, recipe.getClass().getSimpleName());
+                removed++;
+            } else {
+                kept.add(holder);
             }
         }
 
-        LOGGER.info("RecipeRemovalHandler: {} recipes total, {} removed", total, removed);
-    }
-
-    /**
-     * Remove a recipe from the manager via the Mixin-added method.
-     * RecipeRemovalMixin adds ghBelliarium$removeRecipe(ResourceLocation)
-     * to RecipeManager.
-     */
-    @SuppressWarnings("unchecked")
-    private static boolean removeRecipe(RecipeManager recipeManager, ResourceLocation id) {
-        try {
-            var method = RecipeManager.class.getDeclaredMethod("ghBelliarium$removeRecipe", ResourceLocation.class);
-            method.setAccessible(true);
-            method.invoke(recipeManager, id);
-            return true;
-        } catch (Exception e) {
-            LOGGER.warn("RecipeRemovalHandler: failed to remove recipe {}: {}", id, e.getMessage());
+        if (removed > 0) {
+            recipeManager.replaceRecipes(kept);
+            LOGGER.info("RecipeRemovalHandler: {} recipes total, {} removed",
+                    total, removed);
+        } else {
+            LOGGER.info("RecipeRemovalHandler: {} recipes total, 0 removed",
+                    total);
         }
-        return false;
     }
 }

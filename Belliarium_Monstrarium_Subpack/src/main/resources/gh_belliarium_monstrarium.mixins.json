@@ -5,8 +5,7 @@
   "compatibilityLevel": "JAVA_21",
   "mixins": [
     "LevelSetBlockMixin",
-    "PlayerMixin",
-    "RecipeRemovalMixin"
+    "PlayerMixin"
   ],
   "client": [
     "ItemEntityRendererMixin",
