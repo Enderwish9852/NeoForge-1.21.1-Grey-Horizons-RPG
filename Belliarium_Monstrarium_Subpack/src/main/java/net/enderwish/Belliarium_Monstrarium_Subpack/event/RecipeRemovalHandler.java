@@ -6,36 +6,32 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelAccessor;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.level.LevelEvent.Load;
 
-import java.lang.reflect.Field;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * RecipeRemovalHandler
  *
- * Removes crafting recipes that use or produce diamond, netherite, or gold
- * materials. Listens for level load events so recipes are removed after loading.
+ * Chald Recipe Blocker style: removes crafting recipes whose RESULT item
+ * matches a blocked item ID. Server-side only, runs on level load.
  *
  * Blocked materials: diamond, diamond block, netherite ingot, netherite scrap,
  * netherite block, gold ingot, gold block, gold nugget, gold ore, deepslate
  * gold ore.
  *
- * A recipe is removed when its result OR any of its ingredients is a blocked
- * material.
+ * Only the result item is checked -- ingredients are ignored. The item
+ * itself still exists and can be obtained via /give, loot, trading, etc.
  *
- * Since RecipeManager in NeoForge 1.21.1 has no public removal API, this
- * handler calls GHNoiseRouter.setSeed() via mixin to modify the internal
- * recipe map directly.
+ * RecipeRemovalMixin adds ghBelliarium$removeRecipe(ResourceLocation) to
+ * RecipeManager via mixin, since NeoForge 1.21.1 has no public removal API.
  */
 @EventBusSubscriber(modid = BelliariumMonstrariumSubpack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public class RecipeRemovalHandler {
@@ -58,10 +54,8 @@ public class RecipeRemovalHandler {
 
     @SubscribeEvent
     public static void onLevelLoad(Load event) {
-        Level level = event.getLevel();
-
-        // Only run on server side - client level has no server
-        if (level.isClientSide()) {
+        LevelAccessor levelAccessor = event.getLevel();
+        if (!(levelAccessor instanceof Level level)) {
             return;
         }
 
@@ -72,57 +66,30 @@ public class RecipeRemovalHandler {
                 recipeManager.getClass().getName());
 
         int total = 0;
-        int blocked = 0;
         int removed = 0;
 
-        List<ResourceLocation> toRemove = new ArrayList<>();
         for (RecipeHolder<?> holder : recipeManager.getRecipes()) {
             total++;
-            ResourceLocation id = holder.id();
             Recipe<?> recipe = holder.value();
+            ResourceLocation id = holder.id();
 
-            if (recipeBlocksMaterial(recipe, registries)) {
-                blocked++;
-                toRemove.add(id);
-                LOGGER.debug("RecipeRemovalHandler: blocking recipe {}: {}", id, recipe.getClass().getSimpleName());
-            }
-        }
-
-        for (ResourceLocation id : toRemove) {
-            if (removeRecipe(recipeManager, id)) {
-                removed++;
-            }
-        }
-
-        LOGGER.info("RecipeRemovalHandler: {} recipes total, {} blocked ({}%), {} removed",
-                total, blocked, total > 0 ? (blocked * 100 / total) : 0, removed);
-
-        // Always log RecipeManager fields for debugging
-        LOGGER.info("RecipeRemovalHandler: RecipeManager fields:");
-        for (Field field : RecipeManager.class.getDeclaredFields()) {
-            LOGGER.info("  Field: {} (type={})", field.getName(), field.getType().getSimpleName());
-        }
-    }
-
-    private static boolean recipeBlocksMaterial(Recipe<?> recipe, HolderLookup.Provider registries) {
-        ItemStack result = recipe.getResultItem(registries);
-        if (result != null && BLOCKED_MATERIALS.contains(result.getItem())) {
-            return true;
-        }
-
-        for (Ingredient ingredient : recipe.getIngredients()) {
-            for (ItemStack stack : ingredient.getItems()) {
-                if (BLOCKED_MATERIALS.contains(stack.getItem())) {
-                    return true;
+            ItemStack result = recipe.getResultItem(registries);
+            if (result != null && BLOCKED_MATERIALS.contains(result.getItem())) {
+                if (removeRecipe(recipeManager, id)) {
+                    removed++;
+                    LOGGER.debug("RecipeRemovalHandler: removed recipe {}: {}",
+                            id, recipe.getClass().getSimpleName());
                 }
             }
         }
 
-        return false;
+        LOGGER.info("RecipeRemovalHandler: {} recipes total, {} removed", total, removed);
     }
 
     /**
      * Remove a recipe from the manager via the Mixin-added method.
+     * RecipeRemovalMixin adds ghBelliarium$removeRecipe(ResourceLocation)
+     * to RecipeManager.
      */
     @SuppressWarnings("unchecked")
     private static boolean removeRecipe(RecipeManager recipeManager, ResourceLocation id) {
