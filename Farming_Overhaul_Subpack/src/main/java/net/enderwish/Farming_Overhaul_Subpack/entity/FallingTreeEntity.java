@@ -3,6 +3,7 @@ package net.enderwish.Farming_Overhaul_Subpack.entity;
 import net.enderwish.Farming_Overhaul_Subpack.FarmingOverhaulSubpack;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.world.Difficulty;
@@ -14,9 +15,9 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.IceBlock;
+import net.minecraft.world.level.block.LeavesBlock;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.sounds.SoundEvent;
-import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
@@ -46,10 +47,31 @@ public class FallingTreeEntity extends Entity {
     /** How many ticks the tree can fall before giving up (safety limit). */
     private static final int MAX_TICKS = 600;
 
+    /** How many ticks after landing before the entity is discarded. */
+    private static final int LANDING_TICKS = 5;
+
+    /** Rotation speed while falling (radians per tick). */
+    private static final double ROTATION_SPEED = 0.05;
+
+    /** Minimum fall speed (blocks per tick) to cause damage on impact. */
+    private static final double DAMAGE_THRESHOLD = 0.3;
+
     private double fallX, fallY, fallZ;      // velocity
     private int ticksFalling = 0;
     private boolean hasLanded = false;
     private int landingTicks = 0;
+
+    /** Yaw angle of the fall direction (radians). */
+    private double fallYaw = 0.0;
+
+    /** Roll angle while falling (radians). */
+    private double fallRoll = 0.0;
+
+    /** Height fallen since creation (blocks). */
+    private double fallDistance = 0.0;
+
+    /** Whether this tree has already dealt impact damage. */
+    private boolean damageDealt = false;
 
     /** All block positions and states that make up this falling tree. */
     private final List<BlockStateAndPos> blocks = new ArrayList<>();
@@ -68,9 +90,16 @@ public class FallingTreeEntity extends Entity {
     /** Number of blocks in the tree. */
     public int blockCount() { return blocks.size(); }
 
-    @Override
-    protected void defineSynchedData(SynchedEntityData.Builder builder) {
-        // No synced data needed - entities are spawned fresh
+    /** Set the initial fall velocity and direction. */
+    public void setFallDirection(double vx, double vy, double vz) {
+        this.fallX = vx;
+        this.fallY = vy;
+        this.fallZ = vz;
+        // Yaw points in the direction of horizontal movement
+        double h = Math.sqrt(vx * vx + vz * vz);
+        if (h > 0.001) {
+            this.fallYaw = Math.atan2(vz, vx);
+        }
     }
 
     @Override
@@ -79,7 +108,7 @@ public class FallingTreeEntity extends Entity {
 
         if (hasLanded) {
             landingTicks++;
-            if (landingTicks > 5) {
+            if (landingTicks > LANDING_TICKS) {
                 discard();
             }
             return;
@@ -94,6 +123,12 @@ public class FallingTreeEntity extends Entity {
         // Apply gravity
         fallY -= GRAVITY;
         if (fallY < -TERMINAL_VELOCITY) fallY = -TERMINAL_VELOCITY;
+
+        // Track fall distance for damage calculation
+        fallDistance += Math.sqrt(fallX * fallX + fallY * fallY + fallZ * fallZ);
+
+        // Slowly rotate while falling (tumbling)
+        fallRoll += ROTATION_SPEED;
 
         // Move the entity
         double nx = getX() + fallX;
@@ -123,8 +158,69 @@ public class FallingTreeEntity extends Entity {
                 net.minecraft.sounds.SoundSource.BLOCKS,
                 1.0f, 1.0f);
 
+        // Deal impact damage to nearby entities
+        dealImpactDamage();
+
+        // Shatter brittle blocks at impact
+        shatterBrittleBlocks();
+
         // Drop all items immediately for now
         dropAllItems();
+    }
+
+    private void dealImpactDamage() {
+        if (damageDealt) return;
+        double speed = Math.sqrt(fallX * fallX + fallY * fallY + fallZ * fallZ);
+        if (speed < DAMAGE_THRESHOLD) return;
+
+        damageDealt = true;
+
+        int damage = (int) Math.round(speed * 10.0);
+        damage = Math.max(1, Math.min(damage, 20));
+
+        AABB box = getBoundingBox().inflate(2.0, 1.0, 2.0);
+        List<Entity> entities = this.level().getEntitiesOfClass(Entity.class, box);
+        for (Entity target : entities) {
+            if (target == this) continue;
+            if (target.isAlive()) {
+                target.hurt(this.level().damageSources().fall(), damage);
+            }
+        }
+    }
+
+    private void shatterBrittleBlocks() {
+        // Shatter breakable blocks at the impact position
+        BlockPos impact = BlockPos.containing(getX(), getY() - 0.5, getZ());
+        int radius = 2;
+
+        for (int dx = -radius; dx <= radius; dx++) {
+            for (int dy = -1; dy <= 1; dy++) {
+                for (int dz = -radius; dz <= radius; dz++) {
+                    BlockPos pos = impact.offset(dx, dy, dz);
+                    BlockState state = this.level().getBlockState(pos);
+                    Block block = state.getBlock();
+
+                    // Brittle blocks: glass (by registry name), ice, leaves
+                    boolean brittle = isBrittle(block);
+                    if (!brittle) continue;
+
+                    // Chance to shatter based on fall speed
+                    double speed = Math.sqrt(fallX * fallX + fallY * fallY + fallZ * fallZ);
+                    if (this.level().random.nextDouble() < speed * 0.5) {
+                        this.level().removeBlock(pos, false);
+                        block.popResource(this.level(), pos, new ItemStack(block));
+                    }
+                }
+            }
+        }
+    }
+
+    private boolean isBrittle(Block block) {
+        String id = BuiltInRegistries.BLOCK.getKey(block).toString();
+        return id.contains("glass")
+            || id.contains("ice")
+            || block instanceof IceBlock
+            || block instanceof LeavesBlock;
     }
 
     private void dropAllItems() {
@@ -142,6 +238,11 @@ public class FallingTreeEntity extends Entity {
                 this.level().addFreshEntity(itemEntity);
             }
         }
+    }
+
+    @Override
+    protected void defineSynchedData(SynchedEntityData.Builder builder) {
+        // No synced data needed - entities are spawned fresh
     }
 
     @Override
