@@ -18,6 +18,7 @@ import net.enderwish.Farming_Overhaul_Subpack.core.tree.TreeGenerator;
 import net.enderwish.Farming_Overhaul_Subpack.core.tree.TreeGrowthManager;
 import net.enderwish.Farming_Overhaul_Subpack.core.tree.TreeRegistry;
 import net.enderwish.Farming_Overhaul_Subpack.core.tree.TreeStage;
+import net.enderwish.Farming_Overhaul_Subpack.entity.FallingTreeEntity;
 import net.enderwish.Farming_Overhaul_Subpack.event.*;
 import net.enderwish.Farming_Overhaul_Subpack.init.ModBlockEntities;
 import net.enderwish.Farming_Overhaul_Subpack.init.ModFeatures;
@@ -33,6 +34,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.IEventBus;
@@ -56,6 +59,16 @@ public class FarmingOverhaulSubpack {
 
     public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS =
             DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MODID);
+
+    public static final DeferredRegister<EntityType<?>> ENTITY_TYPES =
+            DeferredRegister.create(Registries.ENTITY_TYPE, MODID);
+
+    public static final DeferredHolder<EntityType<?>, EntityType<FallingTreeEntity>> FALLING_TREE =
+            ENTITY_TYPES.register("falling_tree",
+                    () -> EntityType.Builder.of(FallingTreeEntity::new,
+                            MobCategory.MISC)
+                            .sized(0.6f, 1.0f)
+                            .build("falling_tree"));
 
     // ── Tab 1 — Crops & Seeds ─────────────────────────────────────────────────
     public static final DeferredHolder<CreativeModeTab, CreativeModeTab> TAB_CROPS =
@@ -256,6 +269,7 @@ public class FarmingOverhaulSubpack {
         ModItems.register(modEventBus);
         ModDataComponents.register(modEventBus);
         CREATIVE_MODE_TABS.register(modEventBus);
+        ENTITY_TYPES.register(modEventBus);
         ModBlockEntities.register(modEventBus);
         ModMenuTypes.register(modEventBus);
         ModFeatures.register(modEventBus);
@@ -272,6 +286,7 @@ public class FarmingOverhaulSubpack {
         NeoForge.EVENT_BUS.register(CookingSpoilageHandler.class);
         NeoForge.EVENT_BUS.register(FruitTreeSeasonHandler.class);
         NeoForge.EVENT_BUS.register(WildTreeTrackHandler.class);
+        NeoForge.EVENT_BUS.register(TreeFallHandler.class);
         NeoForge.EVENT_BUS.addListener(FarmingOverhaulSubpack::onRegisterCommands);
     }
 

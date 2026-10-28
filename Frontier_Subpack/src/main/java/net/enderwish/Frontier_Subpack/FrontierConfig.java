@@ -73,9 +73,17 @@ public class FrontierConfig {
                         "Only read by Belliarium's map system.")
                 .define("mapExpandedStorage", false);
 
+        TREES_FALL = COMMON_BUILDER
+                .comment("Whether cutting down a tree makes the whole tree fall down like real physics.",
+                        "When OFF, cutting logs removes them one by one (vanilla behavior).",
+                        "When ON, cutting any log in the trunk causes the whole tree to fall as an entity.",
+                        "WARNING: enabling this may cause performance spikes with large trees.")
+                .define("treesFall", true);
+
         COMMON_BUILDER.pop();
         COMMON_SPEC = COMMON_BUILDER.build();
     }
 
     public static final ModConfigSpec.BooleanValue MAP_EXPANDED_STORAGE;
+    public static final ModConfigSpec.BooleanValue TREES_FALL;
 }

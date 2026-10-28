@@ -55,6 +55,7 @@ configurations {
 
 dependencies {
     implementation project(":Atmospheric_Overhaul_Subpack")
+    implementation project(":Frontier_Subpack")
     // Curios API
     compileOnly "top.theillusivec4.curios:curios-neoforge:${curios_version}:api"
     runtimeOnly "top.theillusivec4.curios:curios-neoforge:${curios_version}"
