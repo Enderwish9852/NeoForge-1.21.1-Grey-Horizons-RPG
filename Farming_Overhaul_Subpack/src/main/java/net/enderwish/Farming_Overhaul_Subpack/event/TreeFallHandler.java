@@ -33,175 +33,199 @@ import java.util.Set;
  *
  * Only active when FrontierConfig.TREES_FALL is true. When false, vanilla
  * behavior (log drops as item) is preserved.
- *
- * Behavior:
- *   - Blocks at/below the cut Y level become a stump (stay in world)
- *   - Logs above the cut + connected leaves become one or more falling entities
- *   - Fall direction = downhill slope + weight distribution (defaults away from +X)
- *   - Branches (side logs) split off as their own falling entities
  */
 @EventBusSubscriber(modid = FarmingOverhaulSubpack.MODID, bus = EventBusSubscriber.Bus.MOD)
 public class TreeFallHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger("GH_TreeFall");
 
+    /** Guard against re-entrancy: removing blocks inside this handler must not re-trigger it. */
+    private static boolean processing = false;
+
     private TreeFallHandler() {}
 
     @SubscribeEvent
     public static void onBlockBreak(BlockEvent.BreakEvent event) {
+        if (processing) {
+            LOGGER.info("TreeFallHandler: already processing, skipping");
+            return;
+        }
+
         if (!net.enderwish.Frontier_Subpack.FrontierConfig.TREES_FALL.get()) {
+            LOGGER.info("TreeFallHandler: TREES_FALL config is false");
             return;
         }
 
         LevelAccessor levelAccessor = event.getLevel();
         if (!(levelAccessor instanceof Level level)) {
+            LOGGER.info("TreeFallHandler: level is not a Level instance");
             return;
         }
 
-        if (level.isClientSide()) return;
+        if (level.isClientSide()) {
+            LOGGER.info("TreeFallHandler: client side, skipping");
+            return;
+        }
 
         BlockPos pos = event.getPos();
         BlockState state = level.getBlockState(pos);
 
-        // Only process tree log blocks (custom FruitTreeLogBlock OR vanilla LogBlock)
+        // Only process tree log blocks
         boolean isTreeLog = state.getBlock() instanceof FruitTreeLogBlock
             || state.is(BlockTags.LOGS);
         if (!isTreeLog) {
-            LOGGER.debug("TreeFallHandler: block at {} is not a tree log ({})", pos, state.getBlock());
+            LOGGER.info("TreeFallHandler: block at {} is not a tree log ({})", pos, state.getBlock().getDescriptionId());
             return;
         }
 
         LOGGER.info("TreeFallHandler: tree log cut at {} — starting tree fall", pos);
 
-        // Find all connected tree blocks (logs + leaves) starting from this block
-        List<BlockPosAndState> treeBlocks = findConnectedTree(level, pos, state);
-        LOGGER.debug("TreeFallHandler: found {} connected tree blocks", treeBlocks.size());
-        if (treeBlocks.isEmpty()) return;
+        processing = true;
+        try {
+            // Find all connected tree blocks (logs + leaves) starting from this block
+            List<BlockPosAndState> treeBlocks = findConnectedTree(level, pos, state);
+            LOGGER.info("TreeFallHandler: found {} connected tree blocks", treeBlocks.size());
+            if (treeBlocks.isEmpty()) return;
 
-        // ── Stump: leave blocks at/below the cut Y level ─────────────────────
-        int cutY = pos.getY();
-        List<BlockPosAndState> fallingBlocks = new ArrayList<>();
-        for (BlockPosAndState bps : treeBlocks) {
-            if (bps.pos().getY() > cutY) {
-                fallingBlocks.add(bps);
-            }
-        }
-
-        // Remove only the blocks that will become the falling entity
-        for (BlockPosAndState bps : fallingBlocks) {
-            level.removeBlock(bps.pos(), false);
-        }
-
-        // ── Split branches into separate falling entities ────────────────────
-        // Main trunk = logs connected vertically from the cut block upward
-        // Branches = logs connected sideways from the trunk
-        List<BlockPosAndState> trunkBlocks = new ArrayList<>();
-        List<BlockPosAndState> branchBlocks = new ArrayList<>();
-        List<BlockPosAndState> leafBlocks = new ArrayList<>();
-
-        Set<BlockPos> trunkLogPos = new HashSet<>();
-        trunkLogPos.add(pos); // the cut block is the trunk base
-
-        // BFS upward from cut block to find trunk logs (vertical connection only)
-        Queue<BlockPos> trunkQueue = new ArrayDeque<>();
-        trunkQueue.add(pos);
-        while (!trunkQueue.isEmpty()) {
-            BlockPos current = trunkQueue.poll();
-            for (Direction dir : Direction.values()) {
-                if (dir.getAxis() != Direction.Axis.Y) continue; // only vertical for trunk
-                BlockPos neighbor = current.relative(dir);
-                if (trunkLogPos.contains(neighbor)) continue;
-                BlockState ns = level.getBlockState(neighbor);
-                if (ns.getBlock() instanceof FruitTreeLogBlock || ns.is(BlockTags.LOGS)) {
-                    trunkLogPos.add(neighbor);
-                    trunkQueue.add(neighbor);
+            // ── Stump: leave blocks at/below the cut Y level ─────────────────────
+            int cutY = pos.getY();
+            List<BlockPosAndState> fallingBlocks = new ArrayList<>();
+            for (BlockPosAndState bps : treeBlocks) {
+                if (bps.pos().getY() > cutY) {
+                    fallingBlocks.add(bps);
                 }
             }
-        }
 
-        for (BlockPosAndState bps : fallingBlocks) {
-            if (trunkLogPos.contains(bps.pos())) {
-                trunkBlocks.add(bps);
-            } else if (bps.state().getBlock() instanceof FruitTreeLogBlock
-                    || bps.state().is(BlockTags.LOGS)) {
-                branchBlocks.add(bps);
-            } else {
-                leafBlocks.add(bps);
-            }
-        }
+            LOGGER.info("TreeFallHandler: {} falling blocks above cut height {}, {} stump blocks at/below", 
+                fallingBlocks.size(), cutY, treeBlocks.size() - fallingBlocks.size());
 
-        // ── Calculate fall direction ────────────────────────────────────────
-        Vec3 fallDir = calculateFallDirection(level, pos, trunkBlocks, branchBlocks);
-        LOGGER.debug("TreeFallHandler: fall direction = ({}, {}, {})", fallDir.x, fallDir.y, fallDir.z);
-
-        // ── Create main falling entity (trunk + leaves) ─────────────────────
-        if (!trunkBlocks.isEmpty()) {
-            FallingTreeEntity entity = new FallingTreeEntity(
-                    net.enderwish.Farming_Overhaul_Subpack.FarmingOverhaulSubpack.FALLING_TREE.get(), level);
-            entity.setPos(pos.getX() + 0.5, pos.getY() + 0.5 + 1.0, pos.getZ() + 0.5);
-            entity.setFallDirection(fallDir.x, fallDir.y, fallDir.z);
-
-            // Add trunk blocks + leaves to main entity
-            for (BlockPosAndState bps : trunkBlocks) {
-                entity.addBlock(bps.pos(), bps.state());
-            }
-            for (BlockPosAndState bps : leafBlocks) {
-                entity.addBlock(bps.pos(), bps.state());
+            if (fallingBlocks.isEmpty()) {
+                LOGGER.info("TreeFallHandler: no blocks above cut height — nothing to fall, leaving stump");
+                return;
             }
 
-            level.addFreshEntity(entity);
-            LOGGER.info("TreeFallHandler: spawned main falling entity with {} blocks", entity.blockCount());
-        }
+            // Remove only the blocks that will become the falling entity
+            for (BlockPosAndState bps : fallingBlocks) {
+                level.removeBlock(bps.pos(), false);
+            }
 
-        // ── Create separate falling entities for branches ───────────────────
-        if (!branchBlocks.isEmpty()) {
-            // Group branch logs by connectivity
-            List<List<BlockPosAndState>> branchGroups = groupConnectedBranches(branchBlocks);
-            for (List<BlockPosAndState> group : branchGroups) {
-                // Find center of this branch group
-                double cx = 0, cy = 0, cz = 0;
-                for (BlockPosAndState bps : group) {
-                    cx += bps.pos().getX();
-                    cy += bps.pos().getY();
-                    cz += bps.pos().getZ();
+            // ── Split branches into separate falling entities ────────────────────
+            List<BlockPosAndState> trunkBlocks = new ArrayList<>();
+            List<BlockPosAndState> branchBlocks = new ArrayList<>();
+            List<BlockPosAndState> leafBlocks = new ArrayList<>();
+
+            Set<BlockPos> trunkLogPos = new HashSet<>();
+            trunkLogPos.add(pos); // the cut block is the trunk base
+
+            // BFS upward from cut block to find trunk logs (vertical connection only)
+            Queue<BlockPos> trunkQueue = new ArrayDeque<>();
+            trunkQueue.add(pos);
+            while (!trunkQueue.isEmpty()) {
+                BlockPos current = trunkQueue.poll();
+                for (Direction dir : Direction.values()) {
+                    if (dir.getAxis() != Direction.Axis.Y) continue;
+                    BlockPos neighbor = current.relative(dir);
+                    if (trunkLogPos.contains(neighbor)) continue;
+                    BlockState ns = level.getBlockState(neighbor);
+                    if (ns.getBlock() instanceof FruitTreeLogBlock || ns.is(BlockTags.LOGS)) {
+                        trunkLogPos.add(neighbor);
+                        trunkQueue.add(neighbor);
+                    }
                 }
-                int n = group.size();
-                cx /= n; cy /= n; cz /= n;
+            }
 
+            for (BlockPosAndState bps : fallingBlocks) {
+                if (trunkLogPos.contains(bps.pos())) {
+                    trunkBlocks.add(bps);
+                } else if (bps.state().getBlock() instanceof FruitTreeLogBlock
+                        || bps.state().is(BlockTags.LOGS)) {
+                    branchBlocks.add(bps);
+                } else {
+                    leafBlocks.add(bps);
+                }
+            }
+
+            LOGGER.info("TreeFallHandler: split into {} trunk blocks, {} branch blocks, {} leaf blocks", 
+                trunkBlocks.size(), branchBlocks.size(), leafBlocks.size());
+
+            // ── Calculate fall direction ────────────────────────────────────────
+            Vec3 fallDir = calculateFallDirection(level, pos, trunkBlocks, branchBlocks);
+            LOGGER.info("TreeFallHandler: fall direction = ({}, {}, {})", fallDir.x, fallDir.y, fallDir.z);
+
+            // ── Create main falling entity (trunk + leaves) ─────────────────────
+            if (!trunkBlocks.isEmpty()) {
                 FallingTreeEntity entity = new FallingTreeEntity(
                         net.enderwish.Farming_Overhaul_Subpack.FarmingOverhaulSubpack.FALLING_TREE.get(), level);
-                entity.setPos(cx + 0.5, cy + 0.5, cz + 0.5);
-                entity.setFallDirection(fallDir.x, fallDir.y * 0.7, fallDir.z); // branches fall slightly slower
+                entity.setPos(pos.getX() + 0.5, pos.getY() + 0.5 + 1.0, pos.getZ() + 0.5);
+                entity.setFallDirection(fallDir.x, fallDir.y, fallDir.z);
 
-                // Add branch blocks + nearby leaves to this entity
-                Set<BlockPos> branchPosSet = new HashSet<>();
-                for (BlockPosAndState bps : group) {
-                    branchPosSet.add(bps.pos());
+                for (BlockPosAndState bps : trunkBlocks) {
                     entity.addBlock(bps.pos(), bps.state());
                 }
-                // Add leaves that are adjacent to this branch group
                 for (BlockPosAndState bps : leafBlocks) {
-                    if (isAdjacentTo(bps.pos(), branchPosSet)) {
-                        entity.addBlock(bps.pos(), bps.state());
-                    }
+                    entity.addBlock(bps.pos(), bps.state());
                 }
 
                 level.addFreshEntity(entity);
-                LOGGER.info("TreeFallHandler: spawned branch falling entity with {} blocks", entity.blockCount());
+                LOGGER.info("TreeFallHandler: spawned main falling entity with {} blocks", entity.blockCount());
+            } else if (!leafBlocks.isEmpty()) {
+                // Leaves without trunk — create entity for leaves only
+                FallingTreeEntity entity = new FallingTreeEntity(
+                        net.enderwish.Farming_Overhaul_Subpack.FarmingOverhaulSubpack.FALLING_TREE.get(), level);
+                entity.setPos(pos.getX() + 0.5, pos.getY() + 0.5 + 1.0, pos.getZ() + 0.5);
+                entity.setFallDirection(fallDir.x, fallDir.y, fallDir.z);
+
+                for (BlockPosAndState bps : leafBlocks) {
+                    entity.addBlock(bps.pos(), bps.state());
+                }
+
+                level.addFreshEntity(entity);
+                LOGGER.info("TreeFallHandler: spawned leaves-only falling entity with {} blocks", entity.blockCount());
             }
+
+            // ── Create separate falling entities for branches ───────────────────
+            if (!branchBlocks.isEmpty()) {
+                List<List<BlockPosAndState>> branchGroups = groupConnectedBranches(branchBlocks);
+                for (List<BlockPosAndState> group : branchGroups) {
+                    double cx = 0, cy = 0, cz = 0;
+                    for (BlockPosAndState bps : group) {
+                        cx += bps.pos().getX();
+                        cy += bps.pos().getY();
+                        cz += bps.pos().getZ();
+                    }
+                    int n = group.size();
+                    cx /= n; cy /= n; cz /= n;
+
+                    FallingTreeEntity entity = new FallingTreeEntity(
+                            net.enderwish.Farming_Overhaul_Subpack.FarmingOverhaulSubpack.FALLING_TREE.get(), level);
+                    entity.setPos(cx + 0.5, cy + 0.5, cz + 0.5);
+                    entity.setFallDirection(fallDir.x, fallDir.y * 0.7, fallDir.z);
+
+                    Set<BlockPos> branchPosSet = new HashSet<>();
+                    for (BlockPosAndState bps : group) {
+                        branchPosSet.add(bps.pos());
+                        entity.addBlock(bps.pos(), bps.state());
+                    }
+                    for (BlockPosAndState bps : leafBlocks) {
+                        if (isAdjacentTo(bps.pos(), branchPosSet)) {
+                            entity.addBlock(bps.pos(), bps.state());
+                        }
+                    }
+
+                    level.addFreshEntity(entity);
+                    LOGGER.info("TreeFallHandler: spawned branch falling entity with {} blocks", entity.blockCount());
+                }
+            }
+        } finally {
+            processing = false;
         }
     }
 
-    /**
-     * Calculate fall direction from: downhill slope + weight distribution.
-     * Returns a normalized (x, y, z) direction vector.
-     */
     private static Vec3 calculateFallDirection(
             Level level, BlockPos cutPos,
             List<BlockPosAndState> trunkBlocks,
             List<BlockPosAndState> branchBlocks) {
 
-        // 1. Downhill slope: check blocks below the tree for slope direction
         double sx = 0.0, sz = 0.0;
         int samples = 0;
         for (int ox = -2; ox <= 2; ox++) {
@@ -219,7 +243,7 @@ public class TreeFallHandler {
                 }
             }
         }
-        double dx = 1.0, dz = 0.0; // default: fall in +X direction
+        double dx = 1.0, dz = 0.0;
         if (samples > 0) {
             double sh = Math.sqrt(sx * sx + sz * sz);
             if (sh > 0.001) {
@@ -228,7 +252,6 @@ public class TreeFallHandler {
             }
         }
 
-        // 2. Weight distribution: more branch weight on one side pulls that way
         double wx = 0.0, wz = 0.0;
         for (BlockPosAndState bps : branchBlocks) {
             wx += bps.pos().getX() - (cutPos.getX() + 0.5);
@@ -238,7 +261,6 @@ public class TreeFallHandler {
         if (wh > 0.001) {
             wx /= wh;
             wz /= wh;
-            // Blend slope (70%) with weight (30%)
             dx = dx * 0.7 + wx * 0.3;
             dz = dz * 0.7 + wz * 0.3;
             double h = Math.sqrt(dx * dx + dz * dz);
@@ -248,17 +270,11 @@ public class TreeFallHandler {
             }
         }
 
-        // Vertical component: mostly downward
         double dy = -0.8;
-
-        // Normalize the full vector
         double vh = Math.sqrt(dx * dx + dy * dy + dz * dz);
         return new Vec3(dx / vh, dy / vh, dz / vh);
     }
 
-    /**
-     * Group branch logs into connected groups (each group = one falling entity).
-     */
     private static List<List<BlockPosAndState>> groupConnectedBranches(
             List<BlockPosAndState> branchBlocks) {
 
@@ -279,7 +295,7 @@ public class TreeFallHandler {
 
                 for (BlockPosAndState other : branchBlocks) {
                     if (visited.contains(other.pos())) continue;
-                    if (current.pos().distSqr(other.pos()) <= 2.0) { // face-adjacent
+                    if (current.pos().distSqr(other.pos()) <= 2.0) {
                         visited.add(other.pos());
                         queue.add(other);
                     }
@@ -299,10 +315,6 @@ public class TreeFallHandler {
         return false;
     }
 
-    /**
-     * Flood-fill from the broken block to find all connected tree blocks.
-     * Only same-log-type blocks and adjacent leaves are included.
-     */
     private static List<BlockPosAndState> findConnectedTree(Level level, BlockPos start, BlockState startState) {
         List<BlockPosAndState> result = new ArrayList<>();
         Set<BlockPos> visited = new HashSet<>();
@@ -315,7 +327,6 @@ public class TreeFallHandler {
             BlockPos current = queue.poll();
             BlockState currentState = level.getBlockState(current);
 
-            // Only process if it's a tree log or leaf
             boolean isLog = currentState.getBlock() instanceof FruitTreeLogBlock
                 || currentState.is(BlockTags.LOGS);
             boolean isLeaf = currentState.getBlock() instanceof FruitTreeLeavesBlock
@@ -326,7 +337,6 @@ public class TreeFallHandler {
 
             result.add(new BlockPosAndState(current, currentState));
 
-            // Check all 6 neighbors
             for (Direction dir : Direction.values()) {
                 BlockPos neighbor = current.relative(dir);
                 if (visited.contains(neighbor)) continue;
@@ -334,10 +344,8 @@ public class TreeFallHandler {
                 BlockState neighborState = level.getBlockState(neighbor);
                 Block neighborBlock = neighborState.getBlock();
 
-                // Include connected logs
                 boolean neighborIsLog = neighborBlock instanceof FruitTreeLogBlock
                     || neighborState.is(BlockTags.LOGS);
-                // Include leaves adjacent to any tree block
                 boolean neighborIsLeaf = neighborBlock instanceof FruitTreeLeavesBlock
                     || neighborState.is(BlockTags.LEAVES);
 
