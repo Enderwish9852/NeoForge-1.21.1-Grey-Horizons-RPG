@@ -33,6 +33,10 @@ import java.util.Set;
  *
  * Only active when FrontierConfig.TREES_FALL is true. When false, vanilla
  * behavior (log drops as item) is preserved.
+ *
+ * IMPORTANT: BlockEvent.BreakEvent fires AFTER vanilla removes the block from
+ * the world. We use event.getState() to get the block state that was broken,
+ * because level.getBlockState(pos) now returns air.
  */
 @EventBusSubscriber(modid = FarmingOverhaulSubpack.MODID, bus = EventBusSubscriber.Bus.MOD)
 public class TreeFallHandler {
@@ -47,34 +51,31 @@ public class TreeFallHandler {
     @SubscribeEvent
     public static void onBlockBreak(BlockEvent.BreakEvent event) {
         if (processing) {
-            LOGGER.info("TreeFallHandler: already processing, skipping");
+            LOGGER.debug("TreeFallHandler: already processing, skipping");
             return;
         }
 
         if (!net.enderwish.Frontier_Subpack.FrontierConfig.TREES_FALL.get()) {
-            LOGGER.info("TreeFallHandler: TREES_FALL config is false");
             return;
         }
 
         LevelAccessor levelAccessor = event.getLevel();
         if (!(levelAccessor instanceof Level level)) {
-            LOGGER.info("TreeFallHandler: level is not a Level instance");
             return;
         }
 
         if (level.isClientSide()) {
-            LOGGER.info("TreeFallHandler: client side, skipping");
             return;
         }
 
         BlockPos pos = event.getPos();
-        BlockState state = level.getBlockState(pos);
+        BlockState state = event.getState(); // state BEFORE vanilla removed it
 
         // Only process tree log blocks
         boolean isTreeLog = state.getBlock() instanceof FruitTreeLogBlock
             || state.is(BlockTags.LOGS);
         if (!isTreeLog) {
-            LOGGER.info("TreeFallHandler: block at {} is not a tree log ({})", pos, state.getBlock().getDescriptionId());
+            LOGGER.debug("TreeFallHandler: block at {} is not a tree log ({})", pos, state.getBlock().getDescriptionId());
             return;
         }
 
@@ -82,7 +83,8 @@ public class TreeFallHandler {
 
         processing = true;
         try {
-            // Find all connected tree blocks (logs + leaves) starting from this block
+            // Find all connected tree blocks (logs + leaves) starting from this block.
+            // Pass startState because the block at pos is now air (vanilla removed it).
             List<BlockPosAndState> treeBlocks = findConnectedTree(level, pos, state);
             LOGGER.info("TreeFallHandler: found {} connected tree blocks", treeBlocks.size());
             if (treeBlocks.isEmpty()) return;
@@ -96,7 +98,7 @@ public class TreeFallHandler {
                 }
             }
 
-            LOGGER.info("TreeFallHandler: {} falling blocks above cut height {}, {} stump blocks at/below", 
+            LOGGER.info("TreeFallHandler: {} falling blocks above cut height {}, {} stump blocks at/below",
                 fallingBlocks.size(), cutY, treeBlocks.size() - fallingBlocks.size());
 
             if (fallingBlocks.isEmpty()) {
@@ -145,7 +147,7 @@ public class TreeFallHandler {
                 }
             }
 
-            LOGGER.info("TreeFallHandler: split into {} trunk blocks, {} branch blocks, {} leaf blocks", 
+            LOGGER.info("TreeFallHandler: split into {} trunk blocks, {} branch blocks, {} leaf blocks",
                 trunkBlocks.size(), branchBlocks.size(), leafBlocks.size());
 
             // ── Calculate fall direction ────────────────────────────────────────
@@ -169,7 +171,6 @@ public class TreeFallHandler {
                 level.addFreshEntity(entity);
                 LOGGER.info("TreeFallHandler: spawned main falling entity with {} blocks", entity.blockCount());
             } else if (!leafBlocks.isEmpty()) {
-                // Leaves without trunk — create entity for leaves only
                 FallingTreeEntity entity = new FallingTreeEntity(
                         net.enderwish.Farming_Overhaul_Subpack.FarmingOverhaulSubpack.FALLING_TREE.get(), level);
                 entity.setPos(pos.getX() + 0.5, pos.getY() + 0.5 + 1.0, pos.getZ() + 0.5);
@@ -315,6 +316,13 @@ public class TreeFallHandler {
         return false;
     }
 
+    /**
+     * Flood-fill from the broken block to find all connected tree blocks.
+     *
+     * NOTE: The block at `start` has already been removed from the world by
+     * vanilla, so we use `startState` (from event.getState()) to identify it,
+     * then only check neighbors against the current level state.
+     */
     private static List<BlockPosAndState> findConnectedTree(Level level, BlockPos start, BlockState startState) {
         List<BlockPosAndState> result = new ArrayList<>();
         Set<BlockPos> visited = new HashSet<>();
@@ -323,20 +331,13 @@ public class TreeFallHandler {
         queue.add(start);
         visited.add(start);
 
+        // Add the start block using its pre-removal state
+        result.add(new BlockPosAndState(start, startState));
+
         while (!queue.isEmpty()) {
             BlockPos current = queue.poll();
-            BlockState currentState = level.getBlockState(current);
 
-            boolean isLog = currentState.getBlock() instanceof FruitTreeLogBlock
-                || currentState.is(BlockTags.LOGS);
-            boolean isLeaf = currentState.getBlock() instanceof FruitTreeLeavesBlock
-                || currentState.is(BlockTags.LEAVES);
-            if (!isLog && !isLeaf) {
-                continue;
-            }
-
-            result.add(new BlockPosAndState(current, currentState));
-
+            // Check all 6 neighbors against CURRENT level state
             for (Direction dir : Direction.values()) {
                 BlockPos neighbor = current.relative(dir);
                 if (visited.contains(neighbor)) continue;
@@ -350,8 +351,9 @@ public class TreeFallHandler {
                     || neighborState.is(BlockTags.LEAVES);
 
                 if (neighborIsLog || neighborIsLeaf) {
-                    queue.add(neighbor);
                     visited.add(neighbor);
+                    queue.add(neighbor);
+                    result.add(new BlockPosAndState(neighbor, neighborState));
                 }
             }
         }
