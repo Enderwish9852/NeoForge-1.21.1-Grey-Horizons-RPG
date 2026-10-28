@@ -29,6 +29,10 @@ public class MapExplorationHandler {
     @SubscribeEvent
     public static void onLevelLoad(LevelEvent.Load event) {
         if (event.getLevel() instanceof Level level) {
+            // Only run on server side - client level has no server for file I/O
+            if (level.isClientSide()) {
+                return;
+            }
             MapWorldData.loadFor(level);
         }
     }
@@ -36,6 +40,10 @@ public class MapExplorationHandler {
     @SubscribeEvent
     public static void onLevelSave(LevelEvent.Save event) {
         if (event.getLevel() instanceof Level level) {
+            // Only run on server side - client level has no server for file I/O
+            if (level.isClientSide()) {
+                return;
+            }
             MapWorldData.saveAll(level);
         }
     }

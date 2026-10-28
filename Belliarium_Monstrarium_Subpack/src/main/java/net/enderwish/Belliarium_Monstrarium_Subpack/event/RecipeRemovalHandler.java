@@ -59,6 +59,11 @@ public class RecipeRemovalHandler {
             return;
         }
 
+        // Only run on server side - client level has no server
+        if (level.isClientSide()) {
+            return;
+        }
+
         RecipeManager recipeManager = level.getServer().getRecipeManager();
         HolderLookup.Provider registries = level.registryAccess();
 
