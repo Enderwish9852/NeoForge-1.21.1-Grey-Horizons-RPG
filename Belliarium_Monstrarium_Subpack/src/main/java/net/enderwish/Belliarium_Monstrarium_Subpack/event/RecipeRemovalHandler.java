@@ -13,6 +13,7 @@ import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.level.Level;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.level.LevelEvent;
 import net.neoforged.neoforge.event.level.LevelEvent.Load;
 
 import java.lang.reflect.Field;
@@ -58,8 +59,12 @@ public class RecipeRemovalHandler {
     );
 
     @SubscribeEvent
-    public static void onLevelLoad(Load event) {
+    public static void onLevelLoad(LevelEvent.Load event) {
         if (!(event.getLevel() instanceof Level level)) {
+            return;
+        }
+        // Only run on server side - client level has no server
+        if (level.isClientSide()) {
             return;
         }
 
