@@ -46,6 +46,9 @@ public class TreeFallHandler {
     /** Guard against re-entrancy: removing blocks inside this handler must not re-trigger it. */
     private static boolean processing = false;
 
+    /** Max blocks per falling tree — prevents forest-wide flood fill from lagging the server. */
+    private static final int MAX_TREE_BLOCKS = 1000;
+
     private TreeFallHandler() {}
 
     @SubscribeEvent
@@ -83,11 +86,20 @@ public class TreeFallHandler {
 
         processing = true;
         try {
-            // Find all connected tree blocks (logs + leaves) starting from this block.
-            // Pass startState because the block at pos is now air (vanilla removed it).
+            // ── Find all connected tree blocks (logs + leaves) ─────────────────
+            // NOTE: start block already removed by vanilla; use startState for it.
+            // Leaves only connect to logs (not leaf-to-leaf) to prevent one
+            // tree's leaves from chaining into another tree across the forest.
             List<BlockPosAndState> treeBlocks = findConnectedTree(level, pos, state);
             LOGGER.info("TreeFallHandler: found {} connected tree blocks", treeBlocks.size());
             if (treeBlocks.isEmpty()) return;
+
+            // Safety cap: if tree is absurdly large, fall back to vanilla
+            if (treeBlocks.size() > MAX_TREE_BLOCKS) {
+                LOGGER.info("TreeFallHandler: tree too large ({} > {} blocks), falling back to vanilla",
+                        treeBlocks.size(), MAX_TREE_BLOCKS);
+                return;
+            }
 
             // ── Stump: leave blocks at/below the cut Y level ─────────────────────
             int cutY = pos.getY();
@@ -106,12 +118,8 @@ public class TreeFallHandler {
                 return;
             }
 
-            // Remove only the blocks that will become the falling entity
-            for (BlockPosAndState bps : fallingBlocks) {
-                level.removeBlock(bps.pos(), false);
-            }
-
-            // ── Split branches into separate falling entities ────────────────────
+            // ── Classify trunk vs branches vs leaves BEFORE removing blocks ──────
+            // Trunk = logs connected vertically from the cut block upward
             List<BlockPosAndState> trunkBlocks = new ArrayList<>();
             List<BlockPosAndState> branchBlocks = new ArrayList<>();
             List<BlockPosAndState> leafBlocks = new ArrayList<>();
@@ -149,6 +157,11 @@ public class TreeFallHandler {
 
             LOGGER.info("TreeFallHandler: split into {} trunk blocks, {} branch blocks, {} leaf blocks",
                 trunkBlocks.size(), branchBlocks.size(), leafBlocks.size());
+
+            // ── Remove only the blocks that will become the falling entity ───────
+            for (BlockPosAndState bps : fallingBlocks) {
+                level.removeBlock(bps.pos(), false);
+            }
 
             // ── Calculate fall direction ────────────────────────────────────────
             Vec3 fallDir = calculateFallDirection(level, pos, trunkBlocks, branchBlocks);
@@ -322,6 +335,9 @@ public class TreeFallHandler {
      * NOTE: The block at `start` has already been removed from the world by
      * vanilla, so we use `startState` (from event.getState()) to identify it,
      * then only check neighbors against the current level state.
+     *
+     * Leaves only connect to LOGS (not leaf-to-leaf) to prevent one tree's
+     * leaves from chaining into a neighboring tree across the forest.
      */
     private static List<BlockPosAndState> findConnectedTree(Level level, BlockPos start, BlockState startState) {
         List<BlockPosAndState> result = new ArrayList<>();
@@ -335,6 +351,10 @@ public class TreeFallHandler {
         result.add(new BlockPosAndState(start, startState));
 
         while (!queue.isEmpty()) {
+            if (result.size() >= MAX_TREE_BLOCKS) {
+                break;
+            }
+
             BlockPos current = queue.poll();
 
             // Check all 6 neighbors against CURRENT level state
@@ -350,10 +370,24 @@ public class TreeFallHandler {
                 boolean neighborIsLeaf = neighborBlock instanceof FruitTreeLeavesBlock
                     || neighborState.is(BlockTags.LEAVES);
 
-                if (neighborIsLog || neighborIsLeaf) {
+                // Logs connect to logs and leaves; leaves ONLY connect to logs
+                // (not leaf-to-leaf) to prevent forest-wide chaining.
+                if (neighborIsLog) {
                     visited.add(neighbor);
                     queue.add(neighbor);
                     result.add(new BlockPosAndState(neighbor, neighborState));
+                } else if (neighborIsLeaf) {
+                    // Only include this leaf if it's adjacent to a LOG (the current block
+                    // or any other log). Check if current is a log, or check neighbors.
+                    boolean currentIsLog = current.equals(start) && startState.getBlock() instanceof FruitTreeLogBlock
+                        || startState.is(BlockTags.LOGS)
+                        || (level.getBlockState(current).getBlock() instanceof FruitTreeLogBlock
+                        || level.getBlockState(current).is(BlockTags.LOGS));
+                    if (currentIsLog) {
+                        visited.add(neighbor);
+                        queue.add(neighbor);
+                        result.add(new BlockPosAndState(neighbor, neighborState));
+                    }
                 }
             }
         }
