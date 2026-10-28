@@ -13,6 +13,7 @@ import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.IceBlock;
@@ -56,6 +57,12 @@ public class FallingTreeEntity extends Entity {
     /** Minimum fall speed (blocks per tick) to cause damage on impact. */
     private static final double DAMAGE_THRESHOLD = 0.3;
 
+    /** Chance (0-1) for a decaying leaf to drop a sapling. */
+    private static final double SAPLING_DROP_CHANCE = 0.05;
+
+    /** Chance (0-1) for a decaying leaf to drop a stick. */
+    private static final double STICK_DROP_CHANCE = 0.5;
+
     private double fallX, fallY, fallZ;      // velocity
     private int ticksFalling = 0;
     private boolean hasLanded = false;
@@ -76,6 +83,9 @@ public class FallingTreeEntity extends Entity {
     /** All block positions and states that make up this falling tree. */
     private final List<BlockStateAndPos> blocks = new ArrayList<>();
 
+    /** Indices of blocks that are leaves (for decay on land). */
+    private final List<Integer> leafIndices = new ArrayList<>();
+
     public FallingTreeEntity(EntityType<?> type, Level level) {
         super(type, level);
         this.noPhysics = false;
@@ -84,7 +94,11 @@ public class FallingTreeEntity extends Entity {
     /** Add a block to the falling tree. */
     public void addBlock(BlockPos pos, BlockState state) {
         if (blocks.size() >= MAX_BLOCKS) return;
+        int idx = blocks.size();
         blocks.add(new BlockStateAndPos(pos, state));
+        if (state.getBlock() instanceof LeavesBlock) {
+            leafIndices.add(idx);
+        }
     }
 
     /** Number of blocks in the tree. */
@@ -164,8 +178,59 @@ public class FallingTreeEntity extends Entity {
         // Shatter brittle blocks at impact
         shatterBrittleBlocks();
 
-        // Drop all items immediately for now
-        dropAllItems();
+        // Decay leaves: remove them and drop saplings/sticks
+        decayLeaves();
+
+        // Drop all non-leaf blocks as items at their original positions
+        dropLogItems();
+    }
+
+    private void decayLeaves() {
+        for (int idx : leafIndices) {
+            BlockStateAndPos bsp = blocks.get(idx);
+            BlockState state = bsp.state();
+            Block block = state.getBlock();
+            BlockPos pos = bsp.pos();
+
+            // Remove the leaf block (decay it)
+            if (this.level().getBlockState(pos).getBlock() instanceof LeavesBlock) {
+                this.level().removeBlock(pos, false);
+            }
+
+            // Drop a stick with some chance
+            if (this.level().random.nextDouble() < STICK_DROP_CHANCE) {
+                ItemStack stick = new ItemStack(Items.STICK);
+                ItemEntity stickEntity = new ItemEntity(
+                        this.level(), pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, stick);
+                stickEntity.setPickUpDelay(10);
+                this.level().addFreshEntity(stickEntity);
+            }
+
+            // Drop a sapling with small chance
+            if (this.level().random.nextDouble() < SAPLING_DROP_CHANCE) {
+                Item sapling = getSaplingForLeaves(block);
+                if (sapling != null) {
+                    ItemStack saplingStack = new ItemStack(sapling);
+                    ItemEntity saplingEntity = new ItemEntity(
+                            this.level(), pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, saplingStack);
+                    saplingEntity.setPickUpDelay(10);
+                    this.level().addFreshEntity(saplingEntity);
+                }
+            }
+        }
+    }
+
+    private Item getSaplingForLeaves(Block leavesBlock) {
+        String id = BuiltInRegistries.BLOCK.getKey(leavesBlock).toString();
+        if (id.contains("oak")) return Items.OAK_SAPLING;
+        if (id.contains("spruce")) return Items.SPRUCE_SAPLING;
+        if (id.contains("birch")) return Items.BIRCH_SAPLING;
+        if (id.contains("jungle")) return Items.JUNGLE_SAPLING;
+        if (id.contains("acacia")) return Items.ACACIA_SAPLING;
+        if (id.contains("dark_oak")) return Items.DARK_OAK_SAPLING;
+        if (id.contains("mangrove")) return Items.MANGROVE_PROPAGULE;
+        if (id.contains("cherry")) return Items.CHERRY_SAPLING;
+        return null;
     }
 
     private void dealImpactDamage() {
@@ -189,7 +254,6 @@ public class FallingTreeEntity extends Entity {
     }
 
     private void shatterBrittleBlocks() {
-        // Shatter breakable blocks at the impact position
         BlockPos impact = BlockPos.containing(getX(), getY() - 0.5, getZ());
         int radius = 2;
 
@@ -200,11 +264,9 @@ public class FallingTreeEntity extends Entity {
                     BlockState state = this.level().getBlockState(pos);
                     Block block = state.getBlock();
 
-                    // Brittle blocks: glass (by registry name), ice, leaves
                     boolean brittle = isBrittle(block);
                     if (!brittle) continue;
 
-                    // Chance to shatter based on fall speed
                     double speed = Math.sqrt(fallX * fallX + fallY * fallY + fallZ * fallZ);
                     if (this.level().random.nextDouble() < speed * 0.5) {
                         this.level().removeBlock(pos, false);
@@ -223,17 +285,20 @@ public class FallingTreeEntity extends Entity {
             || block instanceof LeavesBlock;
     }
 
-    private void dropAllItems() {
-        // Drop items using vanilla mechanics
-        for (BlockStateAndPos bsp : blocks) {
+    private void dropLogItems() {
+        for (int i = 0; i < blocks.size(); i++) {
+            if (leafIndices.contains(i)) continue;
+
+            BlockStateAndPos bsp = blocks.get(i);
             BlockState state = bsp.state();
+            BlockPos pos = bsp.pos();
             Block block = state.getBlock();
             Item item = block.asItem();
             ItemStack itemStack = item.getDefaultInstance();
             if (!itemStack.isEmpty()) {
                 ItemStack drop = itemStack.copyWithCount(1);
                 ItemEntity itemEntity = new ItemEntity(
-                        this.level(), getX(), getY() + 1.0, getZ(), drop);
+                        this.level(), pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, drop);
                 itemEntity.setPickUpDelay(10);
                 this.level().addFreshEntity(itemEntity);
             }
