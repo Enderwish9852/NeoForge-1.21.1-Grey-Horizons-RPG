@@ -13,7 +13,6 @@ import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.level.Level;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.level.LevelEvent;
 import net.neoforged.neoforge.event.level.LevelEvent.Load;
 
 import java.lang.reflect.Field;
@@ -35,9 +34,8 @@ import java.util.Map;
  * material.
  *
  * Since RecipeManager in NeoForge 1.21.1 has no public removal API, this
- * handler calls RecipeRemovalMixin.removeRecipe() via reflection, which
- * accesses RecipeManager's internal recipe map directly.
- * Logs all RecipeManager fields for debugging.
+ * handler calls GHNoiseRouter.setSeed() via mixin to modify the internal
+ * recipe map directly.
  */
 @EventBusSubscriber(modid = BelliariumMonstrariumSubpack.MODID, bus = EventBusSubscriber.Bus.GAME)
 public class RecipeRemovalHandler {
@@ -59,10 +57,9 @@ public class RecipeRemovalHandler {
     );
 
     @SubscribeEvent
-    public static void onLevelLoad(LevelEvent.Load event) {
-        if (!(event.getLevel() instanceof Level level)) {
-            return;
-        }
+    public static void onLevelLoad(Load event) {
+        Level level = event.getLevel();
+
         // Only run on server side - client level has no server
         if (level.isClientSide()) {
             return;
@@ -125,7 +122,7 @@ public class RecipeRemovalHandler {
     }
 
     /**
-     * Remove a recipe from the manager via the RecipeRemovalMixin.
+     * Remove a recipe from the manager via the Mixin-added method.
      */
     @SuppressWarnings("unchecked")
     private static boolean removeRecipe(RecipeManager recipeManager, ResourceLocation id) {
@@ -134,9 +131,9 @@ public class RecipeRemovalHandler {
             method.setAccessible(true);
             method.invoke(recipeManager, id);
             return true;
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            LOGGER.warn("RecipeRemovalHandler: failed to remove recipe {}: {}", id, e.getMessage());
         }
-
         return false;
     }
 }
