@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * TreeGenerator — procedural growth engine (v4, "realistic growth" rework).
+ * TreeGenerator 閳?procedural growth engine (v4, "realistic growth" rework).
  *
  * Replaces the old endpoint/Manhattan-walk builder with a continuous
  * growth simulation built on real tree biology, aiming at the visual
@@ -35,7 +35,7 @@ import java.util.Map;
  *    its tip, and are spaced with golden-angle phyllotaxis so limbs
  *    never clump into a flat X.
  *  - Apical dominance: one primary continues the trunk line (leader),
- *    the rest leave as laterals — like a real deliquescent crown.
+ *    the rest leave as laterals 閳?like a real deliquescent crown.
  *  - Noisy-edged leaf clusters: crowns read as organic clumps rather
  *    than math spheres, and never bury branches.
  *  - Optional root flare at the base (Dynamic-Trees buttressing look).
@@ -44,7 +44,7 @@ public class TreeGenerator {
 
     private static final double GOLDEN_ANGLE = 2.399963229728653;
 
-    // ── Generate (public API unchanged) ──────────────────────────────────────
+    // 閳光偓閳光偓 Generate (public API unchanged) 閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓
 
     public static boolean generate(LevelAccessor level, BlockPos pos,
                                    String species, RandomSource random,
@@ -88,7 +88,7 @@ public class TreeGenerator {
         };
     }
 
-    // ── Placement buffer ──────────────────────────────────────────────────────
+    // 閳光偓閳光偓 Placement buffer 閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓
     // Logs win over leaves, leaves win over fruit. Nothing is written to the
     // world until the whole tree is laid out, so branches never fight leaves.
 
@@ -103,7 +103,7 @@ public class TreeGenerator {
             if (prev != null
                     && prev.getValue(FruitTreeLogBlock.THICKNESS)
                             > state.getValue(FruitTreeLogBlock.THICKNESS)) {
-                return; // never overwrite a thicker log — no pinched forks
+                return; // never overwrite a thicker log 閳?no pinched forks
             }
             logs.put(p, state);
             leaves.remove(p);
@@ -126,7 +126,7 @@ public class TreeGenerator {
         final BlockPos origin;
         final List<BlockPos> voxels = new ArrayList<>();
         final List<Integer> thickness = new ArrayList<>();
-        /** State written per voxel; index 0 (the origin) is null — the parent owns it. */
+        /** State written per voxel; index 0 (the origin) is null 閳?the parent owns it. */
         final List<BlockState> states = new ArrayList<>();
         /** Face crossed to ENTER each voxel; index 0 is null (origin). */
         final List<Direction> entryFaces = new ArrayList<>();
@@ -138,7 +138,7 @@ public class TreeGenerator {
         Branch(BlockPos origin) { this.origin = origin; }
     }
 
-    // ── Growth core ───────────────────────────────────────────────────────────
+    // 閳光偓閳光偓 Growth core 閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓
 
     /**
      * Grows one branch as a smooth curve. The origin voxel is NOT re-placed
@@ -175,7 +175,7 @@ public class TreeGenerator {
             if (len < 1.0E-6) { dirX = 0; dirY = 1; dirZ = 0; len = 1; }
             dirX /= len; dirY /= len; dirZ /= len;
 
-            // Cross into the next voxel through its nearest boundary face —
+            // Cross into the next voxel through its nearest boundary face 閳?
             // consecutive logs are always face-adjacent, never corner-to-corner
             double tMaxX = boundaryDistance(px, dirX);
             double tMaxY = boundaryDistance(py, dirY);
@@ -221,7 +221,7 @@ public class TreeGenerator {
         }
 
         // End caps: a voxel renders its ring cap on its own tip side only
-        // when that side actually faces air — real tips, bends (the next
+        // when that side actually faces air 閳?real tips, bends (the next
         // voxel is NOT straight ahead, so the open end would show the hollow
         // interior), and shoulders (next voxel thinner). Straight
         // equal-thickness runs stay open: the two bodies are flush, an
@@ -252,7 +252,7 @@ public class TreeGenerator {
         return branch;
     }
 
-    // ── DELIQUESCENT generation ───────────────────────────────────────────────
+    // 閳光偓閳光偓 DELIQUESCENT generation 閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓
 
     private static boolean generateDeliquescent(LevelAccessor level, BlockPos pos,
                                                 TreeDefinition def, RandomSource random,
@@ -267,7 +267,7 @@ public class TreeGenerator {
         Buffer buf = new Buffer();
 
         // Stage scaling: young trees are proportionally smaller and their
-        // wood is thinner — the same biology, just earlier in its life.
+        // wood is thinner 閳?the same biology, just earlier in its life.
         int trunkLevel = Math.min(def.getTrunkThicknessLevel(), stage.maxTrunk);
         int trunkHeight = Math.max(2,
                 Math.round(def.randomTrunkHeight(random) * stage.sizeScale));
@@ -290,7 +290,7 @@ public class TreeGenerator {
         BlockPos forkPos = trunk.voxels.get(forkIdx);
         int forkThickness = trunk.thickness.get(forkIdx);
 
-        // ── Primary limbs: golden-angle phyllotaxis + one leader ──
+        // 閳光偓閳光偓 Primary limbs: golden-angle phyllotaxis + one leader 閳光偓閳光偓
         int count = Math.max(1,
                 Math.round(def.randomPrimaryCount(random) * stage.sizeScale));
         int primaryLevel = clampThickness(def.getPrimaryThicknessLevel(),
@@ -330,7 +330,7 @@ public class TreeGenerator {
                     len, startThick, primaryEnd, 0.03, 0.08, random));
         }
 
-        // ── Secondary branches along each primary ──
+        // 閳光偓閳光偓 Secondary branches along each primary 閳光偓閳光偓
         int secLevel = clampThickness(def.getSecondaryThicknessLevel(),
                 1, Math.max(1, stage.maxTrunk - 1));
         int secEnd = clampThickness(
@@ -358,7 +358,7 @@ public class TreeGenerator {
             }
         }
 
-        // ── Twigs along each secondary (outer two-thirds) ──
+        // 閳光偓閳光偓 Twigs along each secondary (outer two-thirds) 閳光偓閳光偓
         int twigLevel = clampThickness(def.getTwigThicknessLevel(),
                 1, Math.max(1, stage.maxTrunk - 2));
         boolean droop = def.twigsDroop();
@@ -390,7 +390,7 @@ public class TreeGenerator {
             }
         }
 
-        // ── Canopy ──
+        // 閳光偓閳光偓 Canopy 閳光偓閳光偓
         if (withLeaves) {
             Block leafBlock = getLeafBlock(def.getLeafBlock());
             if (leafBlock != null && !twigTips.isEmpty()) {
@@ -418,7 +418,7 @@ public class TreeGenerator {
                                 1, density * 0.3f, topBias, random);
                 }
             }
-            // fruit only on fully mature trees — young wood doesn't bear
+            // fruit only on fully mature trees 閳?young wood doesn't bear
             if (stage == TreeStage.MATURE)
                 placeFruit(buf, twigTips, def, random);
         }
@@ -450,12 +450,12 @@ public class TreeGenerator {
         }
     }
 
-    // ── EXCURRENT generation ──────────────────────────────────────────────────
+    // 閳光偓閳光偓 EXCURRENT generation 閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓
 
     /**
      * Excurrent architecture (spruce / conifer): full-height central leader
      * with whorls of branches that arc outward, then sag under their own
-     * weight (gravity tropism) — the classic conifer curve. Whorls shorten
+     * weight (gravity tropism) 閳?the classic conifer curve. Whorls shorten
      * with height for the conical silhouette.
      */
     private static boolean generateExcurrent(LevelAccessor level, BlockPos pos,
@@ -470,7 +470,7 @@ public class TreeGenerator {
 
         Buffer buf = new Buffer();
 
-        // Stage scaling — same biology, earlier in its life
+        // Stage scaling 閳?same biology, earlier in its life
         int trunkLevel = Math.min(def.getTrunkThicknessLevel(), stage.maxTrunk);
         int trunkHeight = Math.max(3,
                 Math.round(def.randomTrunkHeight(random) * stage.sizeScale));
@@ -482,7 +482,7 @@ public class TreeGenerator {
         Branch trunk = growBranch(buf, logBlock, pos,
                 0, 1, 0, trunkHeight, trunkLevel, trunkEnd, 0.0, 0.04, random);
 
-        // ── Whorls stepping up the trunk ──
+        // 閳光偓閳光偓 Whorls stepping up the trunk 閳光偓閳光偓
         int whorlLevel = clampThickness(def.getWhorlThicknessLevel(),
                 1, Math.max(1, stage.maxTrunk - 1));
         int whorlEnd = clampThickness(
@@ -538,7 +538,7 @@ public class TreeGenerator {
             whorlIndex++;
         }
 
-        // ── Canopy ──
+        // 閳光偓閳光偓 Canopy 閳光偓閳光偓
         if (withLeaves) {
             Block leafBlock = getLeafBlock(def.getLeafBlock());
             if (leafBlock != null) {
@@ -576,7 +576,7 @@ public class TreeGenerator {
         return true;
     }
 
-    // ── Canopy ────────────────────────────────────────────────────────────────
+    // 閳光偓閳光偓 Canopy 閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓
 
     /**
      * Irregular leaf blob around a branch point: ellipse reach scaled by
@@ -622,7 +622,7 @@ public class TreeGenerator {
                         FruitTreeLeavesBlock.SeasonStage.FULL);
     }
 
-    // ── Fruit ─────────────────────────────────────────────────────────────────
+    // 閳光偓閳光偓 Fruit 閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓
 
     private static void placeFruit(Buffer buf, List<BlockPos> twigTips,
                                    TreeDefinition def, RandomSource random) {
@@ -640,7 +640,7 @@ public class TreeGenerator {
         }
     }
 
-    // ── Placement ─────────────────────────────────────────────────────────────
+    // 閳光偓閳光偓 Placement 閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓
 
     private static void placeAll(LevelAccessor level, Buffer buf,
                                  List<BlockPos> placedOut) {
@@ -656,12 +656,14 @@ public class TreeGenerator {
                                      BlockState state, List<BlockPos> placedOut) {
         BlockState existing = level.getBlockState(pos);
         if (existing.isAir() || existing.canBeReplaced()) {
-            level.setBlock(pos, state, 3);
+            if (level instanceof net.minecraft.world.level.Level lvl && lvl.isLoaded(pos)) {
+                level.setBlock(pos, state, 3);
+            }
             if (placedOut != null) placedOut.add(pos.immutable());
         }
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
+    // 閳光偓閳光偓 Helpers 閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓
 
     private static BlockPos voxelAt(Branch branch, float fraction) {
         int idx = Math.round((branch.voxels.size() - 1)
