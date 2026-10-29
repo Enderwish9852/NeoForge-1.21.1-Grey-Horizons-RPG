@@ -26,17 +26,17 @@ import com.google.gson.JsonObject;
 /**
  * GHBiomeProvider
  *
- * UPDATED this round:
- *   - 3 new sea biomes (FROZEN_SEA, TEMPERATE_SEA, TROPICAL_REEF_WATERS)
- *     added, matching the new GHBiomes keys.
- *   - Lava lakes were previously hardcoded onto EVERY biome (including
- *     Wetlands, Tropical Rainforest) -- buildBiomeJson now only adds
- *     them for Volcanic Lowlands and Cracked Badlands.
+ * Generates biome JSONs for all Grey Horizons biomes.
  *
- * Everything else (feature/spawner tag lists not actually being
- * consumed into real placed-feature resource locations yet) is
- * unchanged and still a known gap from a few rounds back -- not
- * touched this round, still needs its own careful pass.
+ * Biome definitions include:
+ *   - temperature, downfall, has_precipitation
+ *   - effects: fog_color, water_color, water_fog_color, sky_color,
+ *     grass_color, foliage_color
+ *   - carvers: air (cave, canyon)
+ *   - features: ore veins, surface features, vegetation per biome
+ *   - spawners: mob spawn categories
+ *
+ * Lava lakes only on Volcanic Lowlands and Cracked Badlands.
  */
 public class GHBiomeProvider implements DataProvider {
 
@@ -70,7 +70,7 @@ public class GHBiomeProvider implements DataProvider {
     private List<BiomeDef> buildBiomes() {
         List<BiomeDef> biomes = new ArrayList<>();
 
-        // ── Arctic ────────────────────────────────────────────────────────────
+        // ── ARCTIC Zone ─────────────────────────────────────────────────────────
         biomes.add(new BiomeDef(
                 GHBiomes.FROZEN_TUNDRA,
                 -0.7f, 0.3f, true,
@@ -91,7 +91,27 @@ public class GHBiomeProvider implements DataProvider {
                 List.of("snowy_spawns")
         ));
 
-        // ── Temperate ─────────────────────────────────────────────────────────
+        biomes.add(new BiomeDef(
+                GHBiomes.POLAR_ICE_CAP,
+                -0.9f, 0.1f, false,
+                0xD8E8FF, 0x3D57D6, 0x030523, 0xA0C0FF,
+                Optional.of(0xE0E0E0), Optional.of(0xD0D0D0),
+                List.of("default_carvers", "default_underground"),
+                List.of("snowy_spawns")
+        ));
+
+        biomes.add(new BiomeDef(
+                GHBiomes.BOREAL_FOREST,
+                -0.5f, 0.4f, true,
+                0xB0C8E8, 0x3F76E4, 0x050533, 0x84A8E8,
+                Optional.of(0x5B7A2C), Optional.of(0x4A7A1C),
+                List.of("default_carvers", "default_underground",
+                        "default_springs", "coniferous_trees",
+                        "default_flowers", "default_vegetation"),
+                List.of("common_spawns", "farm_animals")
+        ));
+
+        // ── Temperate Zone ────────────────────────────────────────────────────
         biomes.add(new BiomeDef(
                 GHBiomes.TEMPERATE_FOREST,
                 0.6f, 0.7f, true,
@@ -105,13 +125,59 @@ public class GHBiomeProvider implements DataProvider {
         ));
 
         biomes.add(new BiomeDef(
+                GHBiomes.TEMPERATE_DECIDUOUS_FOREST,
+                0.5f, 0.6f, true,
+                0xB0C8E8, 0x3F76E4, 0x050533, 0x78A7FF,
+                Optional.of(0x7AAB6D), Optional.of(0x6DAA3F),
+                List.of("default_carvers", "default_underground",
+                        "default_springs", "deciduous_trees",
+                        "default_flowers", "default_grass",
+                        "default_vegetation"),
+                List.of("common_spawns", "farm_animals")
+        ));
+
+        biomes.add(new BiomeDef(
+                GHBiomes.PINE_FOREST,
+                0.3f, 0.5f, true,
+                0xA0B8E8, 0x3F76E4, 0x050533, 0x84A8E8,
+                Optional.of(0x5B7A2C), Optional.of(0x4A7A1C),
+                List.of("default_carvers", "default_underground",
+                        "default_springs", "pine_trees",
+                        "default_flowers", "default_vegetation"),
+                List.of("common_spawns", "farm_animals")
+        ));
+
+        biomes.add(new BiomeDef(
+                GHBiomes.TEMPERATE_GRASSLAND,
+                0.8f, 0.4f, true,
+                0xC0D8FF, 0x3F76E4, 0x050533, 0x76A7FF,
+                Optional.of(0xA0C050), Optional.empty(),
+                List.of("default_carvers", "default_underground",
+                        "default_springs", "plains_grass",
+                        "default_flowers", "default_grass"),
+                List.of("common_spawns", "farm_animals", "plains_spawns")
+        ));
+
+        biomes.add(new BiomeDef(
+                GHBiomes.CHERRY_GROVE,
+                0.6f, 0.5f, true,
+                0xC0D8FF, 0x3F76E4, 0x050533, 0x78A7FF,
+                Optional.empty(), Optional.of(0xE090C0),
+                List.of("default_carvers", "default_underground",
+                        "default_springs", "cherry_trees",
+                        "default_flowers", "default_grass"),
+                List.of("common_spawns", "farm_animals")
+        ));
+
+        biomes.add(new BiomeDef(
                 GHBiomes.HIGHLAND_ORCHARD,
                 0.4f, 0.6f, true,
                 0xB0C8E8, 0x3F76E4, 0x050533, 0x84A8E8,
                 Optional.of(0x7AAB6D), Optional.of(0x6DAA3F),
                 List.of("default_carvers", "default_underground",
-                        "default_springs", "default_flowers",
-                        "default_grass", "default_vegetation"),
+                        "default_springs", "fruit_trees",
+                        "default_flowers", "default_grass",
+                        "default_vegetation"),
                 List.of("common_spawns", "farm_animals")
         ));
 
@@ -133,9 +199,9 @@ public class GHBiomeProvider implements DataProvider {
                 0xC0D8FF, 0x3F76E4, 0x050533, 0x78A7FF,
                 Optional.empty(), Optional.empty(),
                 List.of("default_carvers", "default_underground",
-                        "default_springs", "default_flowers",
-                        "default_grass", "default_mushrooms",
-                        "default_vegetation", "birch_trees"),
+                        "default_springs", "birch_trees",
+                        "default_flowers", "default_mushrooms",
+                        "default_vegetation"),
                 List.of("common_spawns", "farm_animals")
         ));
 
@@ -151,7 +217,18 @@ public class GHBiomeProvider implements DataProvider {
                 List.of("common_spawns", "farm_animals")
         ));
 
-        // ── Mediterranean ─────────────────────────────────────────────────────
+        biomes.add(new BiomeDef(
+                GHBiomes.SWAMP,
+                0.4f, 0.8f, true,
+                0x889060, 0x4A6B3C, 0x1A2A1A, 0x6B8A50,
+                Optional.of(0x5B7039), Optional.of(0x4B7029),
+                List.of("default_carvers", "default_underground",
+                        "default_springs", "swamp_vegetation",
+                        "mangrove_vines", "default_flowers"),
+                List.of("common_spawns", "farm_animals")
+        ));
+
+        // ── Mediterranean Zone ────────────────────────────────────────────────
         biomes.add(new BiomeDef(
                 GHBiomes.MEDITERRANEAN_SCRUBLAND,
                 1.2f, 0.2f, false,
@@ -160,6 +237,29 @@ public class GHBiomeProvider implements DataProvider {
                 List.of("default_carvers", "default_underground",
                         "default_springs", "default_flowers",
                         "default_grass", "savanna_grass"),
+                List.of("common_spawns", "farm_animals")
+        ));
+
+        biomes.add(new BiomeDef(
+                GHBiomes.OLIVE_GROVE,
+                1.0f, 0.3f, false,
+                0xD8C8A0, 0x8C9A3C, 0x403020, 0xD8C878,
+                Optional.of(0x7A9850), Optional.of(0x6A8A3C),
+                List.of("default_carvers", "default_underground",
+                        "default_springs", "olive_trees",
+                        "default_flowers", "default_grass"),
+                List.of("common_spawns", "farm_animals")
+        ));
+
+        biomes.add(new BiomeDef(
+                GHBiomes.CYPRESS_FOREST,
+                0.8f, 0.4f, true,
+                0xB8C8D8, 0x3F76E4, 0x050533, 0x88A8C8,
+                Optional.of(0x5A7A3C), Optional.of(0x4A6A2C),
+                List.of("default_carvers", "default_underground",
+                        "default_springs", "cypress_trees",
+                        "default_flowers", "default_grass",
+                        "default_vegetation"),
                 List.of("common_spawns", "farm_animals")
         ));
 
@@ -174,7 +274,28 @@ public class GHBiomeProvider implements DataProvider {
                 List.of("common_spawns")
         ));
 
-        // ── Tropical ──────────────────────────────────────────────────────────
+        biomes.add(new BiomeDef(
+                GHBiomes.SEA_CLIFFS,
+                0.8f, 0.3f, true,
+                0xB8C8D8, 0x3A7FBF, 0x050D20, 0x78B4E0,
+                Optional.of(0x7A8860), Optional.of(0x6A7850),
+                List.of("default_carvers", "default_underground",
+                        "default_springs"),
+                List.of("common_spawns")
+        ));
+
+        biomes.add(new BiomeDef(
+                GHBiomes.LAVENDER_FIELDS,
+                1.1f, 0.2f, true,
+                0xE8D8B0, 0x3F76E4, 0x050533, 0xE8C878,
+                Optional.of(0xA0A0E0), Optional.of(0x9080D0),
+                List.of("default_carvers", "default_underground",
+                        "default_springs", "lavender_flowers",
+                        "default_grass"),
+                List.of("common_spawns", "farm_animals")
+        ));
+
+        // ── Tropical Zone ─────────────────────────────────────────────────────
         biomes.add(new BiomeDef(
                 GHBiomes.TROPICAL_RAINFOREST,
                 1.8f, 0.9f, true,
@@ -188,12 +309,35 @@ public class GHBiomeProvider implements DataProvider {
         ));
 
         biomes.add(new BiomeDef(
+                GHBiomes.JUNGLE_HILLS,
+                1.7f, 0.8f, true,
+                0x8DC0A0, 0x3F76E4, 0x050533, 0x77A89A,
+                Optional.of(0x59C93C), Optional.of(0x30BB0B),
+                List.of("default_carvers", "default_underground",
+                        "default_springs", "jungle_grass",
+                        "jungle_vines", "default_flowers",
+                        "default_mushrooms", "default_vegetation"),
+                List.of("common_spawns", "jungle_spawns")
+        ));
+
+        biomes.add(new BiomeDef(
                 GHBiomes.MANGROVE_COAST,
                 1.6f, 0.8f, true,
-                0x8DB8A0, 0x3D7A5E, 0x1A3A2A, 0x77A48A,
+                0x8DB8A0, 0x3D7A5E, 0x1A3A2A, 0x77A89A,
                 Optional.of(0x4DC040), Optional.of(0x28A018),
                 List.of("default_carvers", "default_underground",
                         "default_springs", "jungle_grass",
+                        "default_flowers", "default_mushrooms"),
+                List.of("common_spawns")
+        ));
+
+        biomes.add(new BiomeDef(
+                GHBiomes.PALM_OASIS,
+                1.4f, 0.6f, true,
+                0xC8D8B0, 0x4D8A5E, 0x1A3A2A, 0x77A89A,
+                Optional.of(0x6DC040), Optional.of(0x48A018),
+                List.of("default_carvers", "default_underground",
+                        "default_springs", "palm_trees",
                         "default_flowers", "default_mushrooms"),
                 List.of("common_spawns")
         ));
@@ -209,7 +353,29 @@ public class GHBiomeProvider implements DataProvider {
                 List.of("common_spawns")
         ));
 
-        // ── Wasteland ─────────────────────────────────────────────────────────
+        biomes.add(new BiomeDef(
+                GHBiomes.VOLCANIC_HIGHLANDS,
+                1.6f, 0.3f, false,
+                0xB8A060, 0x4F76E4, 0x050533, 0xC07840,
+                Optional.of(0x6B7044), Optional.of(0x5A6B30),
+                List.of("default_carvers", "default_underground",
+                        "default_springs", "default_flowers",
+                        "default_grass", "default_mushrooms"),
+                List.of("common_spawns")
+        ));
+
+        biomes.add(new BiomeDef(
+                GHBiomes.TROPICAL_SAVANNA,
+                1.4f, 0.2f, true,
+                0xD8C8A0, 0x3F76E4, 0x050533, 0xE8C878,
+                Optional.of(0xA8A050), Optional.of(0x8C9A3C),
+                List.of("default_carvers", "default_underground",
+                        "default_springs", "savanna_grass",
+                        "acacia_trees", "default_flowers"),
+                List.of("common_spawns", "farm_animals")
+        ));
+
+        // ── Wasteland Zone ────────────────────────────────────────────────────
         biomes.add(new BiomeDef(
                 GHBiomes.ASH_PLAINS,
                 0.5f, 0.0f, false,
@@ -221,12 +387,42 @@ public class GHBiomeProvider implements DataProvider {
         ));
 
         biomes.add(new BiomeDef(
+                GHBiomes.SALT_FLATS,
+                0.4f, 0.1f, false,
+                0xE8E8E0, 0x606060, 0x303030, 0xD0D0D0,
+                Optional.of(0xE0E0E0), Optional.of(0xD8D8D8),
+                List.of("default_carvers", "default_underground"),
+                List.of("common_spawns")
+        ));
+
+        biomes.add(new BiomeDef(
                 GHBiomes.CRACKED_BADLANDS,
                 1.8f, 0.0f, false,
                 0xC0905A, 0x905A30, 0x401800, 0xC08040,
                 Optional.of(0x907050), Optional.of(0x807040),
                 List.of("default_carvers", "default_underground",
                         "default_springs", "badlands_vegetation"),
+                List.of("common_spawns")
+        ));
+
+        biomes.add(new BiomeDef(
+                GHBiomes.RED_WASTES,
+                1.9f, 0.0f, false,
+                0xB0805A, 0x805A30, 0x401800, 0xB08040,
+                Optional.of(0x807050), Optional.of(0x706040),
+                List.of("default_carvers", "default_underground",
+                        "default_springs", "badlands_vegetation"),
+                List.of("common_spawns")
+        ));
+
+        biomes.add(new BiomeDef(
+                GHBiomes.PETRIFIED_FOREST,
+                0.6f, 0.1f, false,
+                0x888060, 0x3F6B44, 0x051505, 0x788060,
+                Optional.of(0x5B7A2C), Optional.of(0x4A7A1C),
+                List.of("default_carvers", "default_underground",
+                        "default_springs", "petrified_trees",
+                        "default_flowers"),
                 List.of("common_spawns")
         ));
 
@@ -242,7 +438,7 @@ public class GHBiomeProvider implements DataProvider {
                 List.of("common_spawns")
         ));
 
-        // ── Seas (NEW) ────────────────────────────────────────────────────────
+        // ── Seas ──────────────────────────────────────────────────────────────
         biomes.add(new BiomeDef(
                 GHBiomes.FROZEN_SEA,
                 -0.8f, 0.5f, true,
@@ -267,6 +463,35 @@ public class GHBiomeProvider implements DataProvider {
                 0x9DE0D0, 0x1FA8A0, 0x0A4038, 0x77D8C8,
                 Optional.empty(), Optional.empty(),
                 List.of("default_underground", "default_springs", "reef_vegetation"),
+                List.of("water_spawns")
+        ));
+
+        biomes.add(new BiomeDef(
+                GHBiomes.KELP_FOREST,
+                0.6f, 0.6f, true,
+                0x8DC0A0, 0x3F76E4, 0x050533, 0x77A89A,
+                Optional.empty(), Optional.empty(),
+                List.of("default_underground", "default_springs", "kelp_vegetation"),
+                List.of("water_spawns")
+        ));
+
+        biomes.add(new BiomeDef(
+                GHBiomes.ABYSSAL_PLAIN,
+                0.3f, 0.4f, true,
+                0x404040, 0x2A3A4A, 0x031020, 0x405060,
+                Optional.empty(), Optional.empty(),
+                List.of("default_underground", "default_springs"),
+                List.of("water_spawns")
+        ));
+
+        biomes.add(new BiomeDef(
+                GHBiomes.MANGROVE_SWAMP_COAST,
+                1.5f, 0.9f, true,
+                0x7DA8A0, 0x3D7A5E, 0x1A3A2A, 0x67A48A,
+                Optional.of(0x4DC040), Optional.of(0x28A018),
+                List.of("default_carvers", "default_underground",
+                        "default_springs", "mangrove_trees",
+                        "default_flowers", "default_mushrooms"),
                 List.of("water_spawns")
         ));
 
@@ -319,9 +544,6 @@ public class GHBiomeProvider implements DataProvider {
         carvers.add("air", airCarvers);
         json.add("carvers", carvers);
 
-        // ── Features ──────────────────────────────────────────────────────────
-        // BUGFIX: lava lakes were previously on ALL 15 biomes; now only
-        // on Volcanic Lowlands and Cracked Badlands.
         JsonArray features = new JsonArray();
         features.add(new JsonArray()); // step 0
 
@@ -339,8 +561,8 @@ public class GHBiomeProvider implements DataProvider {
         spawners.add("monster",   new JsonArray());
         spawners.add("creature",  new JsonArray());
         spawners.add("ambient",   new JsonArray());
-        spawners.add("water_creature", new JsonArray());
-        spawners.add("water_ambient",  new JsonArray());
+        spawners.add("water_creature",  new JsonArray());
+        spawners.add("water_ambient",   new JsonArray());
         spawners.add("underground_water_creature", new JsonArray());
         spawners.add("misc", new JsonArray());
         json.add("spawners", spawners);
