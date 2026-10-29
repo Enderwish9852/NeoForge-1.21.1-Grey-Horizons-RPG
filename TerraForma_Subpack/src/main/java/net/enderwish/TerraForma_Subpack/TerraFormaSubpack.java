@@ -1,5 +1,6 @@
 package net.enderwish.TerraForma_Subpack;
 
+import net.enderwish.TerraForma_Subpack.block.ModBlocks;
 import net.enderwish.TerraForma_Subpack.core.worldgen.ModWorldgen;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.entity.monster.Monster;
@@ -18,6 +19,7 @@ public class TerraFormaSubpack {
     public static final String MODID = "gh_terraforma";
 
     public TerraFormaSubpack(IEventBus modEventBus, ModContainer container) {
+        ModBlocks.register(modEventBus);
         ModWorldgen.register(modEventBus);
     }
 
