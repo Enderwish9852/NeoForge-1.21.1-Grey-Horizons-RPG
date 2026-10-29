@@ -32,8 +32,8 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Queue;
-import java.util.Set;
 import java.util.Random;
+import java.util.Set;
 
 /**
  * FallingTreeEntity
@@ -42,7 +42,12 @@ import java.util.Random;
  * cuts a log in the trunk column - the whole tree (logs + leaves above the
  * cut) becomes this entity and falls under gravity.
  *
- * On impact with the ground or any solid block, the entity stops.
+ * Two entity types:
+ *   - Trunk entity (isTrunk = true): falls with rotation/tilt toward fall
+ *     direction (fall-over animation). On landing, places log blocks back
+     *   into the world as a fallen trunk — player mines them one by one.
+ *   - Branch entity (isTrunk = false): falls straighter. On landing, branches
+     *   snap into stick items scattered around.
  */
 public class FallingTreeEntity extends Entity {
 
@@ -62,7 +67,10 @@ public class FallingTreeEntity extends Entity {
     private static final int LANDING_TICKS = 5;
 
     /** Rotation speed while falling (radians per tick). */
-    private static final double ROTATION_SPEED = 0.05;
+    private static final double ROTATION_SPEED = 0.06;
+
+    /** Maximum tilt angle while falling (radians) — trunk tilts toward fall direction. */
+    private static final double MAX_TILT = 1.4; // ~80 degrees
 
     /** Minimum fall speed (blocks per tick) to cause damage on impact. */
     private static final double DAMAGE_THRESHOLD = 0.3;
@@ -90,8 +98,8 @@ public class FallingTreeEntity extends Entity {
     /** Yaw angle of the fall direction (radians). */
     private double fallYaw = 0.0;
 
-    /** Roll angle while falling (radians). */
-    private double fallRoll = 0.0;
+    /** Current tilt angle while falling (0 = upright, MAX_TILT = horizontal). */
+    private double tilt = 0.0;
 
     /** Height fallen since creation (blocks). */
     private double fallDistance = 0.0;
@@ -99,7 +107,10 @@ public class FallingTreeEntity extends Entity {
     /** Whether this tree has already dealt impact damage. */
     private boolean damageDealt = false;
 
-    /** Random for sound variation. */
+    /** Whether this is the main trunk entity (true) or a branch entity (false). */
+    private boolean isTrunk = false;
+
+    /** Random for sound variation and item scatter. */
     private final Random random = new Random();
 
     /** All block positions and states that make up this falling tree. */
@@ -125,6 +136,9 @@ public class FallingTreeEntity extends Entity {
 
     /** Number of blocks in the tree. */
     public int blockCount() { return blocks.size(); }
+
+    /** Set whether this is the main trunk entity (true) or a branch entity (false). */
+    public void setTrunk(boolean trunk) { this.isTrunk = trunk; }
 
     /** Set the initial fall velocity and direction. */
     public void setFallDirection(double vx, double vy, double vz) {
@@ -162,8 +176,11 @@ public class FallingTreeEntity extends Entity {
         // Track fall distance for damage calculation
         fallDistance += Math.sqrt(fallX * fallX + fallY * fallY + fallZ * fallZ);
 
-        // Slowly rotate while falling (tumbling)
-        fallRoll += ROTATION_SPEED;
+        // Trunk entity tilts toward fall direction as it falls (fall-over animation)
+        if (isTrunk) {
+            double progress = Math.min(1.0, ticksFalling / 20.0); // reach full tilt over 20 ticks
+            tilt = MAX_TILT * progress;
+        }
 
         // Move the entity
         double nx = getX() + fallX;
@@ -174,7 +191,13 @@ public class FallingTreeEntity extends Entity {
         AABB box = getBoundingBox().move(fallX, fallY, fallZ);
         if (this.level().noCollision(this, box)) {
             setPos(nx, ny, nz);
+            // Rotate entity to match fall direction while in the air
+            setYRot((float) (fallYaw + Math.PI));
+            if (isTrunk) {
+                setXRot((float) (-tilt));
+            }
         } else {
+            // Hit something - snap to surface and land
             double ny2 = Math.floor(ny) + 1.0;
             setPos(getX(), ny2, getZ());
             land();
@@ -204,8 +227,13 @@ public class FallingTreeEntity extends Entity {
         // Decay leaves: remove them and drop saplings/sticks
         decayLeaves();
 
-        // Drop all non-leaf blocks as items at their original positions
-        dropLogItems();
+        // Trunk: place blocks back in world as fallen trunk.
+        // Branches: snap into stick items scattered around.
+        if (isTrunk) {
+            placeBlocksOnGround();
+        } else {
+            dropItemsScattered();
+        }
 
         // Chain reaction: nearby trees may fall
         triggerChainReaction();
@@ -307,26 +335,141 @@ public class FallingTreeEntity extends Entity {
             || block instanceof LeavesBlock;
     }
 
-    private void dropLogItems() {
+    /**
+     * Trunk lands: place log blocks back into the world at rotated positions.
+     * The trunk lies horizontal, pointing in the fall direction.
+     * Player mines these blocks one by one to get wood.
+     */
+    private void placeBlocksOnGround() {
+        double cx = getX();
+        double cy = getY();
+        double cz = getZ();
+
+        // Sort blocks by original Y so we place lower blocks first (stable stack)
+        List<Integer> logIndices = new ArrayList<>();
+        for (int i = 0; i < blocks.size(); i++) {
+            if (!leafIndices.contains(i)) {
+                logIndices.add(i);
+            }
+        }
+        logIndices.sort((a, b) -> Integer.compare(
+                blocks.get(a).pos().getY(), blocks.get(b).pos().getY()));
+
+        for (int idx : logIndices) {
+            BlockPosAndPos bsp = blocks.get(idx);
+            BlockState state = bsp.state();
+            BlockPos origPos = bsp.pos();
+            Block block = state.getBlock();
+
+            // Compute offset from trunk base (cut position)
+            // We don't have the cut position here, so use relative offsets
+            // from the first block (which was the cut block)
+            double relX = origPos.getX() - blocks.get(0).pos().getX();
+            double relY = origPos.getY() - blocks.get(0).pos().getY();
+            double relZ = origPos.getZ() - blocks.get(0).pos().getZ();
+
+            // Rotate offset so trunk lies horizontal pointing in fall direction
+            // fallYaw points in fall direction (XZ plane)
+            double cosYaw = Math.cos(fallYaw);
+            double sinYaw = Math.sin(fallYaw);
+
+            // Rotate the relative position: trunk falls in fall direction
+            // The trunk's length axis rotates to point along fallYaw
+            double rotX = relX * cosYaw - relZ * sinYaw;
+            double rotZ = relX * sinYaw + relZ * cosYaw;
+
+            // Vertical offset becomes horizontal along fall direction
+            double finalX = cx + rotX;
+            double finalY = cy + 0.5; // sit on ground
+            double finalZ = cz + rotZ;
+
+            // Place block
+            BlockState placeState = state;
+            // Rotate block axis to match fall direction
+            if (block instanceof FruitTreeLogBlock) {
+                Direction.Axis axis = state.getValue(FruitTreeLogBlock.AXIS);
+                Direction.Axis newAxis = axis == Direction.Axis.Y
+                        ? (Math.abs(fallX) > Math.abs(fallZ) ? Direction.Axis.X : Direction.Axis.Z)
+                        : axis;
+                placeState = state.setValue(FruitTreeLogBlock.AXIS, newAxis);
+            }
+
+            BlockPos placePos = new BlockPos(
+                    (int) Math.floor(finalX),
+                    (int) Math.floor(finalY),
+                    (int) Math.floor(finalZ)
+            );
+
+            BlockState existing = this.level().getBlockState(placePos);
+            if (existing.isAir() || existing.canBeReplaced()) {
+                this.level().setBlock(placePos, placeState, 3);
+            } else {
+                // Can't place — drop as item instead
+                Item item = block.asItem();
+                ItemStack itemStack = item.getDefaultInstance();
+                if (!itemStack.isEmpty()) {
+                    ItemStack drop = itemStack.copyWithCount(1);
+                    ItemEntity itemEntity = new ItemEntity(
+                            this.level(), finalX, finalY + 0.5, finalZ, drop);
+                    itemEntity.setPickUpDelay(10);
+                    this.level().addFreshEntity(itemEntity);
+                }
+            }
+        }
+    }
+
+    /**
+     * Branch lands: snap into stick items scattered around the landing point.
+     * Thinner branches break apart on impact.
+     */
+    private void dropItemsScattered() {
+        double cx = getX();
+        double cy = getY() + 0.5;
+        double cz = getZ();
+
+        double speed = Math.sqrt(fallX * fallX + fallY * fallY + fallZ * fallZ);
+        double scatterStrength = Math.min(1.0, speed * 0.8);
+
         for (int i = 0; i < blocks.size(); i++) {
             if (leafIndices.contains(i)) continue;
 
             BlockPosAndPos bsp = blocks.get(i);
             BlockState state = bsp.state();
-            BlockPos pos = bsp.pos();
             Block block = state.getBlock();
             Item item = block.asItem();
             ItemStack itemStack = item.getDefaultInstance();
-            if (!itemStack.isEmpty()) {
-                ItemStack drop = itemStack.copyWithCount(1);
-                ItemEntity itemEntity = new ItemEntity(
-                        this.level(), pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, drop);
-                itemEntity.setPickUpDelay(10);
-                this.level().addFreshEntity(itemEntity);
-            }
+            if (itemStack.isEmpty()) continue;
+
+            ItemStack drop = itemStack.copyWithCount(1);
+
+            // Scatter position around landing point, biased toward fall direction
+            double scatterX = (random.nextDouble() - 0.5) * 1.5 * scatterStrength;
+            double scatterZ = (random.nextDouble() - 0.5) * 1.5 * scatterStrength;
+
+            // Add fall-direction bias
+            double dirBiasX = fallX * 1.5;
+            double dirBiasZ = fallZ * 1.5;
+
+            double px = cx + scatterX + dirBiasX;
+            double py = cy + (random.nextDouble() * 0.8);
+            double pz = cz + scatterZ + dirBiasZ;
+
+            // Velocity: pop outward with fall direction bias
+            double vx = (random.nextDouble() - 0.5) * 0.4 + fallX * 0.3;
+            double vy = random.nextDouble() * 0.4 + 0.2;
+            double vz = (random.nextDouble() - 0.5) * 0.4 + fallZ * 0.3;
+
+            ItemEntity itemEntity = new ItemEntity(this.level(), px, py, pz, drop);
+            itemEntity.setPickUpDelay(10);
+            itemEntity.setDeltaMovement(vx, vy, vz);
+            this.level().addFreshEntity(itemEntity);
         }
     }
 
+    /**
+     * Chain reaction: scan for nearby trees and knock over small ones or damage large ones.
+     * Uses TreeGrowthManager stored data when available for accurate detection.
+     */
     private void triggerChainReaction() {
         BlockPos impact = BlockPos.containing(getX(), getY() - 0.5, getZ());
 
@@ -413,6 +556,7 @@ public class FallingTreeEntity extends Entity {
                 net.enderwish.Farming_Overhaul_Subpack.FarmingOverhaulSubpack.FALLING_TREE.get(), this.level());
         entity.setPos(cx + 0.5, cy + 0.5, cz + 0.5);
         entity.setFallDirection(this.fallX * 0.6, this.fallY * 0.6, this.fallZ * 0.6);
+        entity.setTrunk(true);
 
         for (BlockPosAndPos bps : allBlocks) {
             entity.addBlock(bps.pos(), bps.state());

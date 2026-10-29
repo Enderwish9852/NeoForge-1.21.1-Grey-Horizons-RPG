@@ -3,14 +3,19 @@ package net.enderwish.Farming_Overhaul_Subpack.event;
 import net.enderwish.Farming_Overhaul_Subpack.FarmingOverhaulSubpack;
 import net.enderwish.Farming_Overhaul_Subpack.block.tree.FruitTreeLeavesBlock;
 import net.enderwish.Farming_Overhaul_Subpack.block.tree.FruitTreeLogBlock;
+import net.enderwish.Farming_Overhaul_Subpack.core.tree.TreeGrowthManager;
+import net.enderwish.Farming_Overhaul_Subpack.core.tree.TreeRegistry;
+import net.enderwish.Farming_Overhaul_Subpack.core.tree.TreeStage;
 import net.enderwish.Farming_Overhaul_Subpack.entity.FallingTreeEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.tags.BlockTags;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -34,9 +39,20 @@ import java.util.Set;
  * Only active when FrontierConfig.TREES_FALL is true. When false, vanilla
  * behavior (log drops as item) is preserved.
  *
- * IMPORTANT: BlockEvent.BreakEvent fires AFTER vanilla removes the block from
- * the world. We use event.getState() to get the block state that was broken,
- * because level.getBlockState(pos) now returns air.
+ * Detection strategy:
+ *   1. First check TreeGrowthManager for a tracked tree at the cut position.
+ *      Tracked trees store every voxel (TreeRecord.voxels), so we know exactly
+ *      which blocks belong to the tree — no forest-wide leaf chaining, no
+ *      missed blocks, works for dense trees.
+ *   2. Fall back to flood-fill for wild/untracked trees (worldgen trees that
+ *      were never tracked).
+ *
+ * Behavior:
+ *   - Blocks at/below the cut Y level become a stump (stay in world)
+ *   - Logs above the cut + connected leaves become falling entities
+ *   - Trunk = logs vertically connected above the cut → main falling entity
+ *   - Branches = side logs → separate falling entities
+ *   - Fall direction = downhill slope + weight distribution
  */
 @EventBusSubscriber(modid = FarmingOverhaulSubpack.MODID, bus = EventBusSubscriber.Bus.MOD)
 public class TreeFallHandler {
@@ -46,8 +62,8 @@ public class TreeFallHandler {
     /** Guard against re-entrancy: removing blocks inside this handler must not re-trigger it. */
     private static boolean processing = false;
 
-    /** Max blocks per falling tree — prevents forest-wide flood fill from lagging the server. */
-    private static final int MAX_TREE_BLOCKS = 1000;
+    /** Max blocks per falling tree — prevents absurdly large trees from lagging. */
+    private static final int MAX_TREE_BLOCKS = 2000;
 
     private TreeFallHandler() {}
 
@@ -86,18 +102,29 @@ public class TreeFallHandler {
 
         processing = true;
         try {
-            // ── Find all connected tree blocks (logs + leaves) ─────────────────
-            // NOTE: start block already removed by vanilla; use startState for it.
-            // Leaves only connect to logs (not leaf-to-leaf) to prevent one
-            // tree's leaves from chaining into another tree across the forest.
-            List<BlockPosAndState> treeBlocks = findConnectedTree(level, pos, state);
-            LOGGER.info("TreeFallHandler: found {} connected tree blocks", treeBlocks.size());
+            // ── Step 1: Try tracked tree data first ─────────────────────────────
+            List<BlockPosAndState> treeBlocks = null;
+            TreeGrowthManager mgr = TreeGrowthManager.get((net.minecraft.server.level.ServerLevel) level);
+            BlockPos nearestOrigin = mgr.findNearest(pos);
+            if (nearestOrigin != null) {
+                TreeGrowthManager.TreeRecord rec = mgr.get(nearestOrigin);
+                if (rec != null && isBlockInVoxels(rec, pos)) {
+                    treeBlocks = trackedTreeToBlockList(level, rec, pos);
+                    LOGGER.info("TreeFallHandler: used tracked tree data — {} blocks", treeBlocks.size());
+                }
+            }
+
+            // ── Step 2: Fall back to flood-fill for untracked trees ─────────────
+            if (treeBlocks == null) {
+                treeBlocks = findConnectedTree(level, pos, state);
+                LOGGER.info("TreeFallHandler: flood-fill found {} connected tree blocks", treeBlocks.size());
+            }
+
             if (treeBlocks.isEmpty()) return;
 
-            // Safety cap: if tree is absurdly large, fall back to vanilla
+            // Safety cap
             if (treeBlocks.size() > MAX_TREE_BLOCKS) {
-                LOGGER.info("TreeFallHandler: tree too large ({} > {} blocks), falling back to vanilla",
-                        treeBlocks.size(), MAX_TREE_BLOCKS);
+                LOGGER.info("TreeFallHandler: tree too large ({} > {} blocks), skipping", treeBlocks.size(), MAX_TREE_BLOCKS);
                 return;
             }
 
@@ -118,8 +145,12 @@ public class TreeFallHandler {
                 return;
             }
 
-            // ── Classify trunk vs branches vs leaves BEFORE removing blocks ──────
-            // Trunk = logs connected vertically from the cut block upward
+            // Remove only the blocks that will become the falling entity
+            for (BlockPosAndState bps : fallingBlocks) {
+                level.removeBlock(bps.pos(), false);
+            }
+
+            // ── Classify trunk vs branches vs leaves ────────────────────────────
             List<BlockPosAndState> trunkBlocks = new ArrayList<>();
             List<BlockPosAndState> branchBlocks = new ArrayList<>();
             List<BlockPosAndState> leafBlocks = new ArrayList<>();
@@ -137,7 +168,8 @@ public class TreeFallHandler {
                     BlockPos neighbor = current.relative(dir);
                     if (trunkLogPos.contains(neighbor)) continue;
                     BlockState ns = level.getBlockState(neighbor);
-                    if (ns.getBlock() instanceof FruitTreeLogBlock || ns.is(BlockTags.LOGS)) {
+                    // Neighbor was removed already, check against original tree data
+                    if (isLogInTreeBlocks(neighbor, treeBlocks)) {
                         trunkLogPos.add(neighbor);
                         trunkQueue.add(neighbor);
                     }
@@ -147,8 +179,7 @@ public class TreeFallHandler {
             for (BlockPosAndState bps : fallingBlocks) {
                 if (trunkLogPos.contains(bps.pos())) {
                     trunkBlocks.add(bps);
-                } else if (bps.state().getBlock() instanceof FruitTreeLogBlock
-                        || bps.state().is(BlockTags.LOGS)) {
+                } else if (isLog(bps.state())) {
                     branchBlocks.add(bps);
                 } else {
                     leafBlocks.add(bps);
@@ -157,11 +188,6 @@ public class TreeFallHandler {
 
             LOGGER.info("TreeFallHandler: split into {} trunk blocks, {} branch blocks, {} leaf blocks",
                 trunkBlocks.size(), branchBlocks.size(), leafBlocks.size());
-
-            // ── Remove only the blocks that will become the falling entity ───────
-            for (BlockPosAndState bps : fallingBlocks) {
-                level.removeBlock(bps.pos(), false);
-            }
 
             // ── Calculate fall direction ────────────────────────────────────────
             Vec3 fallDir = calculateFallDirection(level, pos, trunkBlocks, branchBlocks);
@@ -173,6 +199,7 @@ public class TreeFallHandler {
                         net.enderwish.Farming_Overhaul_Subpack.FarmingOverhaulSubpack.FALLING_TREE.get(), level);
                 entity.setPos(pos.getX() + 0.5, pos.getY() + 0.5 + 1.0, pos.getZ() + 0.5);
                 entity.setFallDirection(fallDir.x, fallDir.y, fallDir.z);
+                entity.setTrunk(true);
 
                 for (BlockPosAndState bps : trunkBlocks) {
                     entity.addBlock(bps.pos(), bps.state());
@@ -188,6 +215,7 @@ public class TreeFallHandler {
                         net.enderwish.Farming_Overhaul_Subpack.FarmingOverhaulSubpack.FALLING_TREE.get(), level);
                 entity.setPos(pos.getX() + 0.5, pos.getY() + 0.5 + 1.0, pos.getZ() + 0.5);
                 entity.setFallDirection(fallDir.x, fallDir.y, fallDir.z);
+                entity.setTrunk(false);
 
                 for (BlockPosAndState bps : leafBlocks) {
                     entity.addBlock(bps.pos(), bps.state());
@@ -214,6 +242,7 @@ public class TreeFallHandler {
                             net.enderwish.Farming_Overhaul_Subpack.FarmingOverhaulSubpack.FALLING_TREE.get(), level);
                     entity.setPos(cx + 0.5, cy + 0.5, cz + 0.5);
                     entity.setFallDirection(fallDir.x, fallDir.y * 0.7, fallDir.z);
+                    entity.setTrunk(false);
 
                     Set<BlockPos> branchPosSet = new HashSet<>();
                     for (BlockPosAndState bps : group) {
@@ -234,6 +263,104 @@ public class TreeFallHandler {
             processing = false;
         }
     }
+
+    // ── Tracked tree data helpers ─────────────────────────────────────────────
+
+    /** Check if a BlockPos is in a TreeRecord's voxel array. */
+    private static boolean isBlockInVoxels(TreeGrowthManager.TreeRecord rec, BlockPos pos) {
+        long target = pos.asLong();
+        for (long v : rec.voxels()) {
+            if (v == target) return true;
+        }
+        return false;
+    }
+
+    /** Convert a tracked TreeRecord's voxels to BlockPosAndState list, checking current world state. */
+    private static List<BlockPosAndState> trackedTreeToBlockList(Level level, TreeGrowthManager.TreeRecord rec, BlockPos cutPos) {
+        List<BlockPosAndState> result = new ArrayList<>();
+        for (long v : rec.voxels()) {
+            BlockPos p = BlockPos.of(v);
+            BlockState st = level.getBlockState(p);
+            // Only include blocks that still exist and are tree-related
+            if (st.getBlock() instanceof FruitTreeLogBlock
+                    || st.is(BlockTags.LOGS)
+                    || st.getBlock() instanceof FruitTreeLeavesBlock
+                    || st.is(BlockTags.LEAVES)) {
+                result.add(new BlockPosAndState(p, st));
+            }
+        }
+        return result;
+    }
+
+    /** Check if a BlockPos is a log in the treeBlocks list (block was removed but we know its type). */
+    private static boolean isLogInTreeBlocks(BlockPos pos, List<BlockPosAndState> treeBlocks) {
+        for (BlockPosAndState bps : treeBlocks) {
+            if (bps.pos().equals(pos)) {
+                return isLog(bps.state());
+            }
+        }
+        return false;
+    }
+
+    private static boolean isLog(BlockState state) {
+        return state.getBlock() instanceof FruitTreeLogBlock || state.is(BlockTags.LOGS);
+    }
+
+    // ── Flood-fill fallback ───────────────────────────────────────────────────
+
+    /**
+     * Flood-fill from the broken block to find all connected tree blocks.
+     * Only same-log-type blocks and adjacent leaves are included.
+     * Leaves only connect to logs (not leaf-to-leaf) to prevent forest-wide chaining.
+     */
+    private static List<BlockPosAndState> findConnectedTree(Level level, BlockPos start, BlockState startState) {
+        List<BlockPosAndState> result = new ArrayList<>();
+        Set<BlockPos> visited = new HashSet<>();
+        Queue<BlockPos> queue = new ArrayDeque<>();
+
+        queue.add(start);
+        visited.add(start);
+        result.add(new BlockPosAndState(start, startState));
+
+        while (!queue.isEmpty()) {
+            if (result.size() >= MAX_TREE_BLOCKS) break;
+
+            BlockPos current = queue.poll();
+
+            for (Direction dir : Direction.values()) {
+                BlockPos neighbor = current.relative(dir);
+                if (visited.contains(neighbor)) continue;
+
+                BlockState neighborState = level.getBlockState(neighbor);
+                Block neighborBlock = neighborState.getBlock();
+
+                boolean neighborIsLog = neighborBlock instanceof FruitTreeLogBlock
+                    || neighborState.is(BlockTags.LOGS);
+                boolean neighborIsLeaf = neighborBlock instanceof FruitTreeLeavesBlock
+                    || neighborState.is(BlockTags.LEAVES);
+
+                if (neighborIsLog) {
+                    visited.add(neighbor);
+                    queue.add(neighbor);
+                    result.add(new BlockPosAndState(neighbor, neighborState));
+                } else if (neighborIsLeaf) {
+                    // Leaves only connect to logs: current must be a log
+                    boolean currentIsLog = current.equals(start) && isLog(startState)
+                        || (level.getBlockState(current).getBlock() instanceof FruitTreeLogBlock
+                        || level.getBlockState(current).is(BlockTags.LOGS));
+                    if (currentIsLog) {
+                        visited.add(neighbor);
+                        queue.add(neighbor);
+                        result.add(new BlockPosAndState(neighbor, neighborState));
+                    }
+                }
+            }
+        }
+
+        return result;
+    }
+
+    // ── Fall direction ────────────────────────────────────────────────────────
 
     private static Vec3 calculateFallDirection(
             Level level, BlockPos cutPos,
@@ -289,6 +416,8 @@ public class TreeFallHandler {
         return new Vec3(dx / vh, dy / vh, dz / vh);
     }
 
+    // ── Branch grouping ───────────────────────────────────────────────────────
+
     private static List<List<BlockPosAndState>> groupConnectedBranches(
             List<BlockPosAndState> branchBlocks) {
 
@@ -327,72 +456,6 @@ public class TreeFallHandler {
             if (branchPosSet.contains(pos.relative(dir))) return true;
         }
         return false;
-    }
-
-    /**
-     * Flood-fill from the broken block to find all connected tree blocks.
-     *
-     * NOTE: The block at `start` has already been removed from the world by
-     * vanilla, so we use `startState` (from event.getState()) to identify it,
-     * then only check neighbors against the current level state.
-     *
-     * Leaves only connect to LOGS (not leaf-to-leaf) to prevent one tree's
-     * leaves from chaining into a neighboring tree across the forest.
-     */
-    private static List<BlockPosAndState> findConnectedTree(Level level, BlockPos start, BlockState startState) {
-        List<BlockPosAndState> result = new ArrayList<>();
-        Set<BlockPos> visited = new HashSet<>();
-        Queue<BlockPos> queue = new ArrayDeque<>();
-
-        queue.add(start);
-        visited.add(start);
-
-        // Add the start block using its pre-removal state
-        result.add(new BlockPosAndState(start, startState));
-
-        while (!queue.isEmpty()) {
-            if (result.size() >= MAX_TREE_BLOCKS) {
-                break;
-            }
-
-            BlockPos current = queue.poll();
-
-            // Check all 6 neighbors against CURRENT level state
-            for (Direction dir : Direction.values()) {
-                BlockPos neighbor = current.relative(dir);
-                if (visited.contains(neighbor)) continue;
-
-                BlockState neighborState = level.getBlockState(neighbor);
-                Block neighborBlock = neighborState.getBlock();
-
-                boolean neighborIsLog = neighborBlock instanceof FruitTreeLogBlock
-                    || neighborState.is(BlockTags.LOGS);
-                boolean neighborIsLeaf = neighborBlock instanceof FruitTreeLeavesBlock
-                    || neighborState.is(BlockTags.LEAVES);
-
-                // Logs connect to logs and leaves; leaves ONLY connect to logs
-                // (not leaf-to-leaf) to prevent forest-wide chaining.
-                if (neighborIsLog) {
-                    visited.add(neighbor);
-                    queue.add(neighbor);
-                    result.add(new BlockPosAndState(neighbor, neighborState));
-                } else if (neighborIsLeaf) {
-                    // Only include this leaf if it's adjacent to a LOG (the current block
-                    // or any other log). Check if current is a log, or check neighbors.
-                    boolean currentIsLog = current.equals(start) && startState.getBlock() instanceof FruitTreeLogBlock
-                        || startState.is(BlockTags.LOGS)
-                        || (level.getBlockState(current).getBlock() instanceof FruitTreeLogBlock
-                        || level.getBlockState(current).is(BlockTags.LOGS));
-                    if (currentIsLog) {
-                        visited.add(neighbor);
-                        queue.add(neighbor);
-                        result.add(new BlockPosAndState(neighbor, neighborState));
-                    }
-                }
-            }
-        }
-
-        return result;
     }
 
     /** Record of a block position and its state in the falling tree. */
