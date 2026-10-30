@@ -23,13 +23,13 @@ public final class ClimateSettings {
     private ClimateSettings() {}
 
     // ── Temperature axis ──────────────────────────────────────────────────────
-    public static final float TEMPERATURE_SCALE = 14_000f;
+    public static final float TEMPERATURE_SCALE = 6_000f;
     public static final float ALTITUDE_TEMP_DROP = 0.003f;
     public static final int SEA_LEVEL = 63;
     public static final int ALPINE_HEIGHT = 160;
 
     // ── Moisture axis ─────────────────────────────────────────────────────────
-    public static final float MOISTURE_SCALE = 11_000f;
+    public static final float MOISTURE_SCALE = 4_000f;
 
     // ── Wasteland placement ───────────────────────────────────────────────────
     public static final float WASTELAND_SCALE = 4_000f;
