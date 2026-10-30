@@ -654,13 +654,11 @@ public class TreeGenerator {
 
     private static void placeInWorld(LevelAccessor level, BlockPos pos,
                                      BlockState state, List<BlockPos> placedOut) {
-        BlockState existing = level.getBlockState(pos);
-        if (existing.isAir() || existing.canBeReplaced()) {
-            if (level instanceof net.minecraft.world.level.Level lvl && lvl.isLoaded(pos)) {
-                level.setBlock(pos, state, 3);
-            }
-            if (placedOut != null) placedOut.add(pos.immutable());
-        }
+        // TreeGenerator replaces blocks as needed (wood on grass, leaves on air,
+        // etc.). The feature placement system guarantees origin is a valid
+        // surface position during chunk gen, so we always write.
+        level.setBlock(pos, state, 3);
+        if (placedOut != null) placedOut.add(pos.immutable());
     }
 
     // 閳光偓閳光偓 Helpers 閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓閳光偓
