@@ -76,8 +76,10 @@ public class CustomTreeFeature extends Feature<CustomTreeFeature.Config> {
         }
         if (!ground.isFaceSturdy(level, groundPos, Direction.UP)) return false;
 
-        BlockState atOrigin = level.getBlockState(origin);
-        if (!atOrigin.isAir() && !atOrigin.canBeReplaced()) return false;
+        // TreeGenerator will place logs/leaves starting at origin, replacing
+        // whatever surface block is there (grass, dirt, etc.). The feature
+        // placement system already guarantees origin is a valid surface
+        // position — no need to reject solid ground here.
 
         // ── identity: one seed for life, mixed ages for variety ────────────
         long seed = context.random().nextLong();
