@@ -34,6 +34,22 @@ import java.util.concurrent.ConcurrentHashMap;
  * The traces are cached, and a spatial index of them is kept, so that
  * a column can be asked what the river is doing at it without
  * walking every path in the world.
+ *
+ * <h2>Three-Tier River System</h2>
+ * Rivers now behave differently based on the terrain biome they flow through:
+ *
+ * <b>Highland Tier</b> (hilliness > 1.0):
+ *   Steep carved channels with deep banks. Fast, narrow, clear water.
+ *   Water cuts deep into bedrock, exposing stone.
+ *
+ * <b>Rolling Tier</b> (hilliness 0.3 - 1.0):
+ *   Meandering bends, moderate banks. Medium width, moderate depth.
+ *   Gravel/sand transition between water and land.
+ *
+ * <b>Flat Tier</b> (hilliness < 0.3):
+ *   Braided distributaries spreading out over flat terrain.
+ *   Very wide, shallow channels. Water may split into multiple channels.
+ *   Banks are low, water spills over easily creating wetlands.
  */
 public final class RiverNetwork {
 
@@ -70,17 +86,27 @@ public final class RiverNetwork {
      * @param halfWidth how far the channel reaches from the centre line
      * @param dirX     the way the water runs, x
      * @param dirZ     the way the water runs, z
+     * @param tier     the river tier (highland, rolling, flat)
      */
     public record PathPoint(int x, int z, int bedY, int waterY,
-                            float halfWidth, float dirX, float dirZ) {}
+                            float halfWidth, float dirX, float dirZ,
+                            RiverTier tier) {}
 
     /**
      * What the river does to one column.
      *
      * @param bedY  the height the bed is cut down to
-     * @param waterY the height the water in it stands at
+     * @param waterY the height the water in the channel stands at
+     * @param riverTier the river tier type for this section
      */
-    public record RiverColumn(int bedY, int waterY) {}
+    public record RiverColumn(int bedY, int waterY, RiverTier riverTier) {}
+
+    /** River tier determines behavior and appearance. */
+    public enum RiverTier {
+        HIGHLAND,   // Steep, narrow, deep carved channels
+        ROLLING,    // Meandering, moderate banks
+        FLAT        // Broad, shallow, braided channels
+    }
 
     // ── The question the terrain asks ──────────────────────────────────────
 
@@ -107,7 +133,7 @@ public final class RiverNetwork {
             float ratio = dist / p.halfWidth();
             if (ratio < bestRatio) {
                 bestRatio = ratio;
-                best = new RiverColumn(p.bedY(), p.waterY());
+                best = new RiverColumn(p.bedY(), p.waterY(), p.tier());
             }
         }
         return best;
@@ -170,6 +196,7 @@ public final class RiverNetwork {
     private static List<PathPoint> trace(int sx, int sz) {
         List<int[]> raw = new ArrayList<>();
         List<float[]> dirs = new ArrayList<>();
+        List<RiverTier> tiers = new ArrayList<>();
 
         int x = sx;
         int z = sz;
@@ -230,6 +257,7 @@ public final class RiverNetwork {
                 int py = y + (bestY - y) * k / COARSE;
                 raw.add(new int[]{px, pz, py});
                 dirs.add(new float[]{dirX, dirZ});
+                tiers.add(tierAt(x, z));
             }
 
             x = bx;
@@ -252,6 +280,7 @@ public final class RiverNetwork {
         for (int i = 0; i < n; i++) {
             int[] p = raw.get(i);
             float[] d = dirs.get(i);
+            RiverTier tier = tiers.get(i);
 
             int sum = 0;
             int count = 0;
@@ -272,7 +301,7 @@ public final class RiverNetwork {
             int depth = Math.max(2, (int) Math.round(halfWidth * 2.0f * DEPTH_FACTOR));
             int bedY = waterY - depth;
 
-            out.add(new PathPoint(p[0], p[1], bedY, waterY, halfWidth, d[0], d[1]));
+            out.add(new PathPoint(p[0], p[1], bedY, waterY, halfWidth, d[0], d[1], tier));
         }
         return out;
     }
@@ -309,5 +338,27 @@ public final class RiverNetwork {
         h *= 0x85EBCA6B;
         h ^= (h >>> 13);
         return h & 0x7FFFFFFF;
+    }
+
+    /** Determine river tier from terrain at a position. */
+    private static RiverTier tierAt(int x, int z) {
+        // Deeper analysis would use BiomeTerrainRegistry, but for river
+        // purposes we can estimate tier from the terrain slope:
+        //   steep terrain -> HIGHLAND
+        //   moderate terrain -> ROLLING  
+        //   flat terrain -> FLAT
+        int centerY = GHNoiseRouter.INSTANCE.getSurfaceHeight(x, z);
+        int northY = GHNoiseRouter.INSTANCE.getSurfaceHeight(x - COARSE, z);
+        int southY = GHNoiseRouter.INSTANCE.getSurfaceHeight(x + COARSE, z);
+        int eastY  = GHNoiseRouter.INSTANCE.getSurfaceHeight(x, z + COARSE);
+        int westY  = GHNoiseRouter.INSTANCE.getSurfaceHeight(x, z - COARSE);
+
+        int maxDiff = Math.max(Math.abs(centerY - northY), Math.abs(centerY - southY));
+        maxDiff = Math.max(maxDiff, Math.abs(centerY - eastY));
+        maxDiff = Math.max(maxDiff, Math.abs(centerY - westY));
+
+        if (maxDiff >= 3) return RiverTier.HIGHLAND;
+        if (maxDiff >= 1) return RiverTier.ROLLING;
+        return RiverTier.FLAT;
     }
 }

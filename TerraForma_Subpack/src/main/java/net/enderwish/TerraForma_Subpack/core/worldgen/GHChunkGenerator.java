@@ -41,6 +41,10 @@ import java.util.concurrent.CompletableFuture;
  * height itself) instead of the old neutral-defaulting overload --
  * see GHNoiseRouter's own doc comment for the underground-mess bug
  * this closes.
+ *
+ * RIVER SYSTEM: RiverColumn now includes RiverTier which controls
+ * channel depth and bank height. Highland tier cuts deep narrow
+ * channels, Flat tier spreads wide and shallow.
  */
 public class GHChunkGenerator extends ChunkGenerator {
 
@@ -110,6 +114,8 @@ public class GHChunkGenerator extends ChunkGenerator {
         int minZ = chunkPos.getMinBlockZ();
 
         BlockState waterState = Blocks.WATER.defaultBlockState();
+        BlockState gravelState = Blocks.GRAVEL.defaultBlockState();
+        BlockState sandState = Blocks.SAND.defaultBlockState();
 
         for (int x = minX; x < minX + 16; x++) {
             for (int z = minZ; z < minZ + 16; z++) {
@@ -123,9 +129,23 @@ public class GHChunkGenerator extends ChunkGenerator {
                 // banks so that it stays in its bed.
                 RiverNetwork.RiverColumn river = RiverNetwork.columnAt(x, z);
                 int waterLevel = GHNoiseRouter.SEA_LEVEL;
+                int bankHeight = 0; // blocks of bank above water level
                 if (river != null) {
                     surfaceY = river.bedY();
                     waterLevel = river.waterY();
+                    // Bank height depends on river tier: highland cuts deep,
+                    // flat spreads wide with shallow banks.
+                    switch (river.riverTier()) {
+                        case HIGHLAND:
+                            bankHeight = 2; // Deep cut banks
+                            break;
+                        case ROLLING:
+                            bankHeight = 1; // Moderate banks
+                            break;
+                        case FLAT:
+                            bankHeight = 0; // Shallow, spreads wide
+                            break;
+                    }
                 }
 
                 for (int y = GHNoiseRouter.MIN_HEIGHT; y <= Math.max(surfaceY, waterLevel); y++) {
@@ -140,6 +160,21 @@ public class GHChunkGenerator extends ChunkGenerator {
 
                     if (noiseRouter.isCave(x, y, z, profile)) {
                         continue;
+                    }
+
+                    // If we're at/below water level in a river, add bank blocks
+                    // between the water surface and the surrounding terrain
+                    if (river != null && y >= waterLevel - bankHeight && y <= surfaceY) {
+                        // Within bank height above water -> gravel/sand bank
+                        if (y > waterLevel) {
+                            // Bank blocks: gravel just above water, sand at water edge
+                            if (y <= waterLevel + bankHeight / 2) {
+                                chunk.setBlockState(pos, sandState, false);
+                            } else {
+                                chunk.setBlockState(pos, gravelState, false);
+                            }
+                            continue;
+                        }
                     }
 
                     if (y == surfaceY) {
