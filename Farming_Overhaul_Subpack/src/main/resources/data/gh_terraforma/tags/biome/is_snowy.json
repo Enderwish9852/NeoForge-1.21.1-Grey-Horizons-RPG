@@ -1,0 +1,9 @@
+﻿{
+    "replace":  false,
+    "values":  [
+                   "gh_terraforma:frozen_tundra",
+                   "gh_terraforma:glacial_peaks",
+                   "gh_terraforma:polar_ice_cap",
+                   "gh_terraforma:boreal_forest"
+               ]
+}

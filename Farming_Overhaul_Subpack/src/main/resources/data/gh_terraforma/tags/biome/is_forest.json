@@ -1,0 +1,12 @@
+﻿{
+    "replace":  false,
+    "values":  [
+                   "gh_terraforma:temperate_forest",
+                   "gh_terraforma:temperate_deciduous_forest",
+                   "gh_terraforma:pine_forest",
+                   "gh_terraforma:birch_highlands",
+                   "gh_terraforma:cherry_grove",
+                   "gh_terraforma:highland_orchard",
+                   "gh_terraforma:overgrown_ruins"
+               ]
+}

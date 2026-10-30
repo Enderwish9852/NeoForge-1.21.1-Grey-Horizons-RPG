@@ -1,0 +1,10 @@
+﻿{
+    "replace":  false,
+    "values":  [
+                   "gh_terraforma:red_wastes",
+                   "gh_terraforma:cracked_badlands",
+                   "gh_terraforma:ash_plains",
+                   "gh_terraforma:salt_flats",
+                   "gh_terraforma:petrified_forest"
+               ]
+}

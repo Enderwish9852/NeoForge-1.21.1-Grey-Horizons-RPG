@@ -1,0 +1,8 @@
+﻿{
+    "replace":  false,
+    "values":  [
+                   "gh_terraforma:tropical_rainforest",
+                   "gh_terraforma:jungle_hills",
+                   "gh_terraforma:mangrove_coast"
+               ]
+}

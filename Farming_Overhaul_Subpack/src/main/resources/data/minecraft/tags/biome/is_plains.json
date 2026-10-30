@@ -1,0 +1,9 @@
+﻿{
+    "replace":  false,
+    "values":  [
+                   "gh_terraforma:temperate_grassland",
+                   "gh_terraforma:rolling_meadows",
+                   "gh_terraforma:mediterranean_scrubland",
+                   "gh_terraforma:tropical_savanna"
+               ]
+}

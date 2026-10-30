@@ -1,0 +1,11 @@
+﻿{
+    "replace":  false,
+    "values":  [
+                   "gh_terraforma:frozen_sea",
+                   "gh_terraforma:temperate_sea",
+                   "gh_terraforma:tropical_reef_waters",
+                   "gh_terraforma:kelp_forest",
+                   "gh_terraforma:abyssal_plain",
+                   "gh_terraforma:mangrove_swamp_coast"
+               ]
+}
