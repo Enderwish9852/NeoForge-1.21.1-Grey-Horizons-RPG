@@ -1,8 +1,258 @@
 ﻿{
     "project":  "Grey Horizons RPG",
     "subtitle":  "NeoForge 1.21.1 - 5 subpacks",
-    "currentTask":  "World Generation Upgrade: Biomes 2.0 with custom blocks and new trees",
+    "currentTask":  "World Generation Upgrade: River System Overhaul",
     "tasks":  [
+                  {
+                      "title":  "Diagnose the 90% screen flash bang",
+                      "status":  "done",
+                      "note":  "gh_ray_occlusion.fsh glare reached SunRadius*10 = 0.45 screen-heights; the composite held it at full strength"
+                  },
+                  {
+                      "title":  "Diagnose 'rays only at certain angles'",
+                      "status":  "done",
+                      "note":  "SunRadius was a fixed screen fraction; the sun behind the camera returned early"
+                  },
+                  {
+                      "title":  "Replace the vanilla square sun with a realistic one",
+                      "status":  "done",
+                      "note":  "SunRenderer + LevelRendererSunMixin: round disc, limb darkening, corona, FOV-correct size"
+                  },
+                  {
+                      "title":  "Rewrite the god ray pass",
+                      "status":  "done",
+                      "note":  "Seeds the sun's real disc, off-screen and anti-solar convergence, gentler composite"
+                  },
+                  {
+                      "title":  "Underwater light shafts",
+                      "status":  "done",
+                      "note":  "UnderwaterShaftsRenderer + gh_water_shafts.fsh: refracted sun ray, caustic bands, depth absorption"
+                  },
+                  {
+                      "title":  "Flat horizontal ripple rings",
+                      "status":  "done",
+                      "note":  "WaterRippleParticle overrides render() to build an XZ-plane quad, both windings"
+                  },
+                  {
+                      "title":  "Event-driven ripple spawning",
+                      "status":  "done",
+                      "note":  "WaterImpactHandler: entity/item crosses the surface -> a ring; the ambient spawner is gone"
+                  },
+                  {
+                      "title":  "Build the whole project",
+                      "status":  "done",
+                      "note":  "gradlew build - green"
+                  },
+                  {
+                      "title":  "Live test in game",
+                      "status":  "doing",
+                      "note":  "User to confirm: sun, shafts through branches, underwater shafts, impact ripples"
+                  },
+                  {
+                      "title":  "Fix 1: the god ray wash (massive light)",
+                      "status":  "done",
+                      "note":  "The off-screen fallback seeded a BROAD blob; a broad seed blurs to an even field, not to rays"
+                  },
+                  {
+                      "title":  "Fix 1: bound the composite",
+                      "status":  "done",
+                      "note":  "Tone curve is now 1 - exp(-lit), capped at 1.0, so the shafts can never blow out the sky"
+                  },
+                  {
+                      "title":  "Fix 2: no god rays at all",
+                      "status":  "done",
+                      "note":  "Same root cause - the seed is now the sun small disc, which is what produces distinct rays"
+                  },
+                  {
+                      "title":  "Fix 3: flashing light patches under water",
+                      "status":  "done",
+                      "note":  "The caustic clock was in TICKS: the pattern zipped across at 13 blocks/s. Now seconds."
+                  },
+                  {
+                      "title":  "Widen the god ray light source",
+                      "status":  "done",
+                      "note":  "SEED_ANGLE 4.3 deg so a canopy can cut it into pieces; the drawn sun stays small"
+                  },
+                  {
+                      "title":  "48 blur samples instead of 32",
+                      "status":  "done",
+                      "note":  "the long reach pass was hitting a 30px source six times - that moire read as parallel streaks"
+                  },
+                  {
+                      "title":  "Coarser underwater caustics, 12 samples",
+                      "status":  "done",
+                      "note":  "a fine pattern was averaged into the flat screen-wide glow"
+                  },
+                  {
+                      "title":  "Sun shadow map (orthographic, sun POV)",
+                      "status":  "done",
+                      "note":  "SunShadowMap: 1024 map over 128 blocks, reuses the compiled chunk buffers"
+                  },
+                  {
+                      "title":  "Volumetric raymarch against the map",
+                      "status":  "done",
+                      "note":  "VolumetricShaftsRenderer: Henyey-Greenstein phase, depth-clipped, half res"
+                  },
+                  {
+                      "title":  "Keep the screen-space glow alongside it",
+                      "status":  "done",
+                      "note":  "the cheap wide halo around the sun"
+                  },
+                  {
+                      "title":  "Build the whole project",
+                      "status":  "done",
+                      "note":  "gradlew build - green"
+                  },
+                  {
+                      "title":  "Live test in game",
+                      "status":  "doing",
+                      "note":  "shafts at any angle, underwater shafts, and the frame cost of the shadow pass"
+                  },
+                  {
+                      "title":  "God rays followed the head",
+                      "status":  "done",
+                      "note":  "MC applies the walk-cycle head bob to the PROJECTION matrix, so the sun screen position swung ~15px per step"
+                  },
+                  {
+                      "title":  "Rebuild the projection without the bob",
+                      "status":  "done",
+                      "note":  "SunRenderer.unbobbedProjection: a rotation leaves m11/m00 intact, so fov and aspect survive"
+                  },
+                  {
+                      "title":  "Live test in game",
+                      "status":  "doing",
+                      "note":  "check the shafts stay still while walking"
+                  },
+                  {
+                      "title":  "Clouds were flashing super fastly",
+                      "status":  "done",
+                      "note":  "MY BUG: the shadow map pass left the viewport at 1024x1024 and the cloud renderer sets no viewport of its own"
+                  },
+                  {
+                      "title":  "Underwater had patches, not rays",
+                      "status":  "done",
+                      "note":  "the pattern is now RIDGES across the light travel, so each one sweeps a beam down"
+                  },
+                  {
+                      "title":  "Less water fog",
+                      "status":  "done",
+                      "note":  "far plane 14-24 -> 22-38 blocks, tint a little lighter"
+                  },
+                  {
+                      "title":  "Clouds cast shadows on the ground",
+                      "status":  "done",
+                      "note":  "the cloud tiles are drawn into the sun shadow map; a multiply pass darkens what the sun cannot reach"
+                  },
+                  {
+                      "title":  "Clouds break the shafts into beams",
+                      "status":  "done",
+                      "note":  "the gaps now come from the real cloud geometry, not a 48x48 screen map"
+                  },
+                  {
+                      "title":  "Live test in game",
+                      "status":  "doing",
+                      "note":  "clouds, ground shadows, beams, underwater rays, fog"
+                  },
+                  {
+                      "title":  "Lens rain: refraction through the drops",
+                      "status":  "done",
+                      "note":  "gh_lens_rain.fsh - the world is sampled through each drop, not sprites over it"
+                  },
+                  {
+                      "title":  "Lens rain: the wind decides the character",
+                      "status":  "done",
+                      "note":  "the wind blowing into the player makes the drops run down; the other way gives small splashes"
+                  },
+                  {
+                      "title":  "Lens rain: driven by the body wetness",
+                      "status":  "done",
+                      "note":  "clear below 50% wet, fewer and smaller as the player dries from 100%"
+                  },
+                  {
+                      "title":  "Lens rain: the slush on surfacing",
+                      "status":  "done",
+                      "note":  "a sheet running off the lens for 2.2s, then it settles into the drops"
+                  },
+                  {
+                      "title":  "Live test in game",
+                      "status":  "doing",
+                      "note":  "rain in the wind, and coming out of the water"
+                  },
+                  {
+                      "title":  "Clouds drifting while paused",
+                      "status":  "done",
+                      "note":  "the drift is integrated from the system clock; now gated on Minecraft.isPaused()"
+                  },
+                  {
+                      "title":  "Survey every per-frame animation",
+                      "status":  "done",
+                      "note":  "system clock users found across all five subpacks"
+                  },
+                  {
+                      "title":  "New pause-aware GameClock",
+                      "status":  "done",
+                      "note":  "the same wall clock, but it only advances while the game runs"
+                  },
+                  {
+                      "title":  "HUD clocks on the pause-aware clock",
+                      "status":  "done",
+                      "note":  "kill feed rows, combat timer message, bandage in-hand spin"
+                  },
+                  {
+                      "title":  "CelestialLight: the sun or the moon, whichever is up",
+                      "status":  "done",
+                      "note":  "the moon is the sun direction reversed - vanilla draws both in the same rotated frame"
+                  },
+                  {
+                      "title":  "The shadow map follows the light",
+                      "status":  "done",
+                      "note":  "so the trees block the moonlight too and the shafts come through the canopy at night"
+                  },
+                  {
+                      "title":  "Cold silver moon shafts",
+                      "status":  "done",
+                      "note":  "silver-blue tint, a fraction of the sun strength"
+                  },
+                  {
+                      "title":  "A darker night",
+                      "status":  "done",
+                      "note":  "NightDarkeningRenderer: a fullscreen multiply, run BEFORE the shafts are added"
+                  },
+                  {
+                      "title":  "The moon's phase survives",
+                      "status":  "done",
+                      "note":  "the screen-space pass is daytime only - its hard disc would wash the phase out"
+                  },
+                  {
+                      "title":  "The player was not reflected",
+                      "status":  "done",
+                      "note":  "the march stepped 1.7 blocks at a time and stepped straight over a 0.6 block wide player"
+                  },
+                  {
+                      "title":  "The march step now grows with distance",
+                      "status":  "done",
+                      "note":  "fine near, coarse far - near geometry is what a puddle reflects"
+                  },
+                  {
+                      "title":  "The refinement bisected screen space",
+                      "status":  "done",
+                      "note":  "it mixed the depths of two points at different distances; now it bisects the distance along the ray in world space"
+                  },
+                  {
+                      "title":  "The puddle edge was a hard aliased line",
+                      "status":  "done",
+                      "note":  "the mask is now linearly filtered and its value is the reflection alpha, so it fades over the edge"
+                  },
+                  {
+                      "title":  "Looking straight down lost the reflection",
+                      "status":  "done",
+                      "note":  "pure water is 2% at normal incidence; MIN_REFLECTANCE 0.12 gives the wet-surface sheen"
+                  },
+                  {
+                      "title":  "Tree Falling System Phase 1-5",
+                      "status":  "done",
+                      "note": "FallingTreeEntity with fall physics, direction, stump height, branch separation, leaf decay, chain reaction, crash sound"
+                  },
                   {
                       "title":  "World Gen: Custom Blocks (9 new)",
                       "status":  "done",
@@ -20,8 +270,8 @@
                   },
                   {
                       "title":  "World Gen: River System Overhaul",
-                      "status":  "open",
-                      "note": "Three-tier system: Highland (carved channels), Rolling (meandering), Flat (braided distributaries)"
+                      "status":  "doing",
+                      "note": "Three-tier system: Highland (carved channels), Rolling (meandering), Flat (braided distributaries) with riverbank blocks"
                   },
                   {
                       "title":  "World Gen: 256+ Height Mountains",
@@ -75,6 +325,18 @@
                       "action":  "modified"
                   },
                   {
+                      "path":  "Farming_Overhaul_Subpack/src/main/java/net/enderwish/Farming_Overhaul_Subpack/entity/FallingTreeEntity.java",
+                      "action":  "modified"
+                  },
+                  {
+                      "path":  "Farming_Overhaul_Subpack/src/main/java/net/enderwish/Farming_Overhaul_Subpack/client/entity/FallingTreeRenderer.java",
+                      "action":  "new"
+                  },
+                  {
+                      "path":  "Farming_Overhaul_Subpack/src/main/java/net/enderwish/Farming_Overhaul_Subpack/event/TreeFallHandler.java",
+                      "action":  "modified"
+                  },
+                  {
                       "path":  "Farming_Overhaul_Subpack/src/main/resources/data/gh_farming_overhaul/fruit_trees/*.json",
                       "action":  "new"
                   },
@@ -91,7 +353,11 @@
                       "action":  "modified"
                   },
                   {
-                      "path":  "Farming_Overhaul_Subpack/src/main/resources/assets/gh_farming_overhaul/lang/en_us.json",
+                      "path":  "TerraForma_Subpack/src/main/java/net/enderwish/TerraForma_Subpack/core/worldgen/river/RiverNetwork.java",
+                      "action":  "modified"
+                  },
+                  {
+                      "path":  "TerraForma_Subpack/src/main/java/net/enderwish/TerraForma_Subpack/core/worldgen/GHChunkGenerator.java",
                       "action":  "modified"
                   }
               ],
@@ -100,7 +366,7 @@
                   "28 biomes across 5 climate zones (Arctic, Temperate, Mediterranean, Tropical, Wasteland, Seas)",
                   "13 new tree variants: Apple, Pear, Cherry, Fig, Guava, Kiwi, Mango, Orange, Papaya, Peach, Persimmon, Plum, Pomegranate",
                   "New bushes/vines planned: Grape Vine, Currant Bush, Raspberry Bush, Blueberry Bush, Coffee Shrub, Cocoa Tree",
-                  "River system needs overhaul: three-tier system (Highland/Rolling/Flat) with proper banks",
+                  "River system: three-tier system (Highland/Rolling/Flat) with biome-aware tier detection and bank blocks",
                   "World height: 256+ for dramatic mountain peaks in Glacial Peaks, Volcanic Highlands"
               ]
 }

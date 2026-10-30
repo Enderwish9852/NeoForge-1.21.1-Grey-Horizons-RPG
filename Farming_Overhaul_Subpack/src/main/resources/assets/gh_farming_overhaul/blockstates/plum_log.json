@@ -1,0 +1,220 @@
+﻿{
+    "variants":  {
+                     "axis=x,capped=false,parent=neg,thickness=4":  {
+                                                                        "model":  "gh_farming_overhaul:block/plum_log_branch_x_neg_false"
+                                                                    },
+                     "axis=x,capped=false,parent=neg,thickness=1":  {
+                                                                        "model":  "gh_farming_overhaul:block/plum_log_sprig_x_neg_false"
+                                                                    },
+                     "axis=z,capped=false,parent=neg,thickness=2":  {
+                                                                        "model":  "gh_farming_overhaul:block/plum_log_twig_z_neg_false"
+                                                                    },
+                     "axis=y,capped=true,parent=neg,thickness=4":  {
+                                                                       "model":  "gh_farming_overhaul:block/plum_log_branch_y_neg_true"
+                                                                   },
+                     "axis=y,capped=false,parent=pos,thickness=5":  {
+                                                                        "model":  "gh_farming_overhaul:block/plum_log_limb_y_pos_false"
+                                                                    },
+                     "axis=x,capped=true,parent=neg,thickness=5":  {
+                                                                       "model":  "gh_farming_overhaul:block/plum_log_limb_x_neg_true"
+                                                                   },
+                     "axis=x,capped=false,parent=neg,thickness=2":  {
+                                                                        "model":  "gh_farming_overhaul:block/plum_log_twig_x_neg_false"
+                                                                    },
+                     "axis=x,capped=true,parent=neg,thickness=6":  {
+                                                                       "model":  "gh_farming_overhaul:block/plum_log_trunk_x_neg_true"
+                                                                   },
+                     "axis=y,capped=false,parent=pos,thickness=3":  {
+                                                                        "model":  "gh_farming_overhaul:block/plum_log_branchlet_y_pos_false"
+                                                                    },
+                     "axis=y,capped=true,parent=pos,thickness=2":  {
+                                                                       "model":  "gh_farming_overhaul:block/plum_log_twig_y_pos_true"
+                                                                   },
+                     "axis=y,capped=true,parent=pos,thickness=1":  {
+                                                                       "model":  "gh_farming_overhaul:block/plum_log_sprig_y_pos_true"
+                                                                   },
+                     "axis=x,capped=false,parent=neg,thickness=6":  {
+                                                                        "model":  "gh_farming_overhaul:block/plum_log_trunk_x_neg_false"
+                                                                    },
+                     "axis=z,capped=true,parent=neg,thickness=2":  {
+                                                                       "model":  "gh_farming_overhaul:block/plum_log_twig_z_neg_true"
+                                                                   },
+                     "axis=x,capped=true,parent=neg,thickness=2":  {
+                                                                       "model":  "gh_farming_overhaul:block/plum_log_twig_x_neg_true"
+                                                                   },
+                     "axis=z,capped=true,parent=neg,thickness=1":  {
+                                                                       "model":  "gh_farming_overhaul:block/plum_log_sprig_z_neg_true"
+                                                                   },
+                     "axis=z,capped=true,parent=neg,thickness=4":  {
+                                                                       "model":  "gh_farming_overhaul:block/plum_log_branch_z_neg_true"
+                                                                   },
+                     "axis=y,capped=true,parent=pos,thickness=6":  {
+                                                                       "model":  "gh_farming_overhaul:block/plum_log_trunk_y_pos_true"
+                                                                   },
+                     "axis=y,capped=true,parent=pos,thickness=5":  {
+                                                                       "model":  "gh_farming_overhaul:block/plum_log_limb_y_pos_true"
+                                                                   },
+                     "axis=z,capped=true,parent=pos,thickness=3":  {
+                                                                       "model":  "gh_farming_overhaul:block/plum_log_branchlet_z_pos_true"
+                                                                   },
+                     "axis=x,capped=false,parent=pos,thickness=4":  {
+                                                                        "model":  "gh_farming_overhaul:block/plum_log_branch_x_pos_false"
+                                                                    },
+                     "axis=z,capped=true,parent=pos,thickness=4":  {
+                                                                       "model":  "gh_farming_overhaul:block/plum_log_branch_z_pos_true"
+                                                                   },
+                     "axis=y,capped=false,parent=neg,thickness=3":  {
+                                                                        "model":  "gh_farming_overhaul:block/plum_log_branchlet_y_neg_false"
+                                                                    },
+                     "axis=x,capped=true,parent=pos,thickness=2":  {
+                                                                       "model":  "gh_farming_overhaul:block/plum_log_twig_x_pos_true"
+                                                                   },
+                     "axis=x,capped=false,parent=neg,thickness=5":  {
+                                                                        "model":  "gh_farming_overhaul:block/plum_log_limb_x_neg_false"
+                                                                    },
+                     "axis=x,capped=true,parent=pos,thickness=1":  {
+                                                                       "model":  "gh_farming_overhaul:block/plum_log_sprig_x_pos_true"
+                                                                   },
+                     "axis=x,capped=false,parent=pos,thickness=2":  {
+                                                                        "model":  "gh_farming_overhaul:block/plum_log_twig_x_pos_false"
+                                                                    },
+                     "axis=z,capped=false,parent=pos,thickness=6":  {
+                                                                        "model":  "gh_farming_overhaul:block/plum_log_trunk_z_pos_false"
+                                                                    },
+                     "axis=y,capped=true,parent=neg,thickness=1":  {
+                                                                       "model":  "gh_farming_overhaul:block/plum_log_sprig_y_neg_true"
+                                                                   },
+                     "axis=y,capped=true,parent=neg,thickness=2":  {
+                                                                       "model":  "gh_farming_overhaul:block/plum_log_twig_y_neg_true"
+                                                                   },
+                     "axis=x,capped=true,parent=pos,thickness=5":  {
+                                                                       "model":  "gh_farming_overhaul:block/plum_log_limb_x_pos_true"
+                                                                   },
+                     "axis=z,capped=false,parent=pos,thickness=2":  {
+                                                                        "model":  "gh_farming_overhaul:block/plum_log_twig_z_pos_false"
+                                                                    },
+                     "axis=y,capped=true,parent=neg,thickness=5":  {
+                                                                       "model":  "gh_farming_overhaul:block/plum_log_limb_y_neg_true"
+                                                                   },
+                     "axis=y,capped=false,parent=pos,thickness=4":  {
+                                                                        "model":  "gh_farming_overhaul:block/plum_log_branch_y_pos_false"
+                                                                    },
+                     "axis=y,capped=true,parent=neg,thickness=6":  {
+                                                                       "model":  "gh_farming_overhaul:block/plum_log_trunk_y_neg_true"
+                                                                   },
+                     "axis=x,capped=false,parent=pos,thickness=3":  {
+                                                                        "model":  "gh_farming_overhaul:block/plum_log_branchlet_x_pos_false"
+                                                                    },
+                     "axis=y,capped=false,parent=pos,thickness=2":  {
+                                                                        "model":  "gh_farming_overhaul:block/plum_log_twig_y_pos_false"
+                                                                    },
+                     "axis=y,capped=false,parent=neg,thickness=5":  {
+                                                                        "model":  "gh_farming_overhaul:block/plum_log_limb_y_neg_false"
+                                                                    },
+                     "axis=z,capped=false,parent=neg,thickness=5":  {
+                                                                        "model":  "gh_farming_overhaul:block/plum_log_limb_z_neg_false"
+                                                                    },
+                     "axis=z,capped=true,parent=pos,thickness=5":  {
+                                                                       "model":  "gh_farming_overhaul:block/plum_log_limb_z_pos_true"
+                                                                   },
+                     "axis=z,capped=true,parent=pos,thickness=6":  {
+                                                                       "model":  "gh_farming_overhaul:block/plum_log_trunk_z_pos_true"
+                                                                   },
+                     "axis=z,capped=false,parent=neg,thickness=1":  {
+                                                                        "model":  "gh_farming_overhaul:block/plum_log_sprig_z_neg_false"
+                                                                    },
+                     "axis=z,capped=false,parent=pos,thickness=4":  {
+                                                                        "model":  "gh_farming_overhaul:block/plum_log_branch_z_pos_false"
+                                                                    },
+                     "axis=z,capped=true,parent=neg,thickness=6":  {
+                                                                       "model":  "gh_farming_overhaul:block/plum_log_trunk_z_neg_true"
+                                                                   },
+                     "axis=x,capped=true,parent=neg,thickness=4":  {
+                                                                       "model":  "gh_farming_overhaul:block/plum_log_branch_x_neg_true"
+                                                                   },
+                     "axis=z,capped=false,parent=pos,thickness=3":  {
+                                                                        "model":  "gh_farming_overhaul:block/plum_log_branchlet_z_pos_false"
+                                                                    },
+                     "axis=x,capped=false,parent=pos,thickness=1":  {
+                                                                        "model":  "gh_farming_overhaul:block/plum_log_sprig_x_pos_false"
+                                                                    },
+                     "axis=z,capped=true,parent=neg,thickness=3":  {
+                                                                       "model":  "gh_farming_overhaul:block/plum_log_branchlet_z_neg_true"
+                                                                   },
+                     "axis=x,capped=false,parent=pos,thickness=5":  {
+                                                                        "model":  "gh_farming_overhaul:block/plum_log_limb_x_pos_false"
+                                                                    },
+                     "axis=z,capped=false,parent=neg,thickness=6":  {
+                                                                        "model":  "gh_farming_overhaul:block/plum_log_trunk_z_neg_false"
+                                                                    },
+                     "axis=y,capped=true,parent=pos,thickness=4":  {
+                                                                       "model":  "gh_farming_overhaul:block/plum_log_branch_y_pos_true"
+                                                                   },
+                     "axis=y,capped=false,parent=neg,thickness=6":  {
+                                                                        "model":  "gh_farming_overhaul:block/plum_log_trunk_y_neg_false"
+                                                                    },
+                     "axis=z,capped=true,parent=neg,thickness=5":  {
+                                                                       "model":  "gh_farming_overhaul:block/plum_log_limb_z_neg_true"
+                                                                   },
+                     "axis=x,capped=false,parent=pos,thickness=6":  {
+                                                                        "model":  "gh_farming_overhaul:block/plum_log_trunk_x_pos_false"
+                                                                    },
+                     "axis=z,capped=false,parent=neg,thickness=4":  {
+                                                                        "model":  "gh_farming_overhaul:block/plum_log_branch_z_neg_false"
+                                                                    },
+                     "axis=y,capped=false,parent=neg,thickness=1":  {
+                                                                        "model":  "gh_farming_overhaul:block/plum_log_sprig_y_neg_false"
+                                                                    },
+                     "axis=x,capped=true,parent=neg,thickness=3":  {
+                                                                       "model":  "gh_farming_overhaul:block/plum_log_branchlet_x_neg_true"
+                                                                   },
+                     "axis=x,capped=false,parent=neg,thickness=3":  {
+                                                                        "model":  "gh_farming_overhaul:block/plum_log_branchlet_x_neg_false"
+                                                                    },
+                     "axis=y,capped=true,parent=neg,thickness=3":  {
+                                                                       "model":  "gh_farming_overhaul:block/plum_log_branchlet_y_neg_true"
+                                                                   },
+                     "axis=z,capped=false,parent=pos,thickness=5":  {
+                                                                        "model":  "gh_farming_overhaul:block/plum_log_limb_z_pos_false"
+                                                                    },
+                     "axis=z,capped=false,parent=neg,thickness=3":  {
+                                                                        "model":  "gh_farming_overhaul:block/plum_log_branchlet_z_neg_false"
+                                                                    },
+                     "axis=z,capped=true,parent=pos,thickness=2":  {
+                                                                       "model":  "gh_farming_overhaul:block/plum_log_twig_z_pos_true"
+                                                                   },
+                     "axis=y,capped=false,parent=pos,thickness=6":  {
+                                                                        "model":  "gh_farming_overhaul:block/plum_log_trunk_y_pos_false"
+                                                                    },
+                     "axis=z,capped=false,parent=pos,thickness=1":  {
+                                                                        "model":  "gh_farming_overhaul:block/plum_log_sprig_z_pos_false"
+                                                                    },
+                     "axis=y,capped=false,parent=pos,thickness=1":  {
+                                                                        "model":  "gh_farming_overhaul:block/plum_log_sprig_y_pos_false"
+                                                                    },
+                     "axis=y,capped=true,parent=pos,thickness=3":  {
+                                                                       "model":  "gh_farming_overhaul:block/plum_log_branchlet_y_pos_true"
+                                                                   },
+                     "axis=x,capped=true,parent=pos,thickness=6":  {
+                                                                       "model":  "gh_farming_overhaul:block/plum_log_trunk_x_pos_true"
+                                                                   },
+                     "axis=y,capped=false,parent=neg,thickness=4":  {
+                                                                        "model":  "gh_farming_overhaul:block/plum_log_branch_y_neg_false"
+                                                                    },
+                     "axis=z,capped=true,parent=pos,thickness=1":  {
+                                                                       "model":  "gh_farming_overhaul:block/plum_log_sprig_z_pos_true"
+                                                                   },
+                     "axis=x,capped=true,parent=pos,thickness=4":  {
+                                                                       "model":  "gh_farming_overhaul:block/plum_log_branch_x_pos_true"
+                                                                   },
+                     "axis=x,capped=true,parent=neg,thickness=1":  {
+                                                                       "model":  "gh_farming_overhaul:block/plum_log_sprig_x_neg_true"
+                                                                   },
+                     "axis=y,capped=false,parent=neg,thickness=2":  {
+                                                                        "model":  "gh_farming_overhaul:block/plum_log_twig_y_neg_false"
+                                                                    },
+                     "axis=x,capped=true,parent=pos,thickness=3":  {
+                                                                       "model":  "gh_farming_overhaul:block/plum_log_branchlet_x_pos_true"
+                                                                   }
+                 }
+}

@@ -1,0 +1,19 @@
+﻿{
+    "variants":  {
+                     "season_stage=budding":  {
+                                                  "model":  "gh_farming_overhaul:block/pomegranate_leaves_budding"
+                                              },
+                     "season_stage=full":  {
+                                               "model":  "gh_farming_overhaul:block/pomegranate_leaves_full"
+                                           },
+                     "season_stage=blossom":  {
+                                                  "model":  "gh_farming_overhaul:block/pomegranate_leaves_blossom"
+                                              },
+                     "season_stage=bare":  {
+                                               "model":  "gh_farming_overhaul:block/pomegranate_leaves_bare"
+                                           },
+                     "season_stage=coloured":  {
+                                                   "model":  "gh_farming_overhaul:block/pomegranate_leaves_coloured"
+                                               }
+                 }
+}

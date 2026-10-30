@@ -1,0 +1,19 @@
+﻿{
+    "variants":  {
+                     "season_stage=budding":  {
+                                                  "model":  "gh_farming_overhaul:block/plum_leaves_budding"
+                                              },
+                     "season_stage=full":  {
+                                               "model":  "gh_farming_overhaul:block/plum_leaves_full"
+                                           },
+                     "season_stage=blossom":  {
+                                                  "model":  "gh_farming_overhaul:block/plum_leaves_blossom"
+                                              },
+                     "season_stage=bare":  {
+                                               "model":  "gh_farming_overhaul:block/plum_leaves_bare"
+                                           },
+                     "season_stage=coloured":  {
+                                                   "model":  "gh_farming_overhaul:block/plum_leaves_coloured"
+                                               }
+                 }
+}
