@@ -1,0 +1,8 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": ["gh_terraforma:cherry_grove"],
+  "features": [
+    "gh_farming_overhaul:cherry_normal"
+  ],
+  "step": "vegetal_decoration"
+}

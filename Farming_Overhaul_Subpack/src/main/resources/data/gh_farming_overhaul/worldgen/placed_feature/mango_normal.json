@@ -1,9 +1,9 @@
-{
+﻿{
   "feature": "gh_farming_overhaul:mango_tree",
   "placement": [
     {
       "type": "minecraft:count",
-      "count": 3
+      "count": 6
     },
     {
       "type": "minecraft:in_square"
@@ -21,3 +21,4 @@
     }
   ]
 }
+
