@@ -65,8 +65,8 @@ public class GHBiomeSource extends BiomeSource {
      * we don't need vanilla's per-column vertical scan at all, so we can afford
      * a much larger radius at a coarser step without it getting slow.
      */
-    private static final int LOCATE_MIN_RADIUS = 60_000;
-    private static final int LOCATE_MIN_STEP = 64;
+    private static final int LOCATE_MIN_RADIUS = 500_000;
+    private static final int LOCATE_MIN_STEP = 128;
 
     public static final MapCodec<GHBiomeSource> CODEC = RecordCodecBuilder.mapCodec(instance ->
             instance.group(
