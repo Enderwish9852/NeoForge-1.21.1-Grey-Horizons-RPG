@@ -1,0 +1,7 @@
+{
+  "type": "gh_farming_overhaul:custom_tree",
+  "config": {
+    "species": "mango",
+    "semi_mature_chance": 0.15
+  }
+}

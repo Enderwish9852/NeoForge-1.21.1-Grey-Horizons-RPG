@@ -1,0 +1,73 @@
+{
+  "log_block":     "gh_farming_overhaul:apple_log",
+  "leaf_block":    "gh_farming_overhaul:apple_leaves",
+  "seasonal_type": "TEMPERATE",
+  "architecture":  "DELIQUESCENT",
+
+  "trunk": {
+    "thickness_level":    5,
+    "height_min":         5,
+    "height_max":         7,
+    "split_fraction_min": 0.6,
+    "split_fraction_max": 0.75,
+    "taper":              0.75,
+    "root_flare":         true
+  },
+
+  "primary_limbs": {
+    "thickness_level":  4,
+    "count_min":        3,
+    "count_max":        4,
+    "length_min":       3,
+    "length_max":       5,
+    "spread_min":       1.0,
+    "spread_max":       1.4,
+    "upward_lift_min":  0.4,
+    "upward_lift_max":  0.7,
+    "taper":            0.5
+  },
+
+  "secondary_branches": {
+    "thickness_level":      3,
+    "count_per_parent_min": 2,
+    "count_per_parent_max": 3,
+    "length_min":           2,
+    "length_max":           4,
+    "inward_pull_min":      0.0,
+    "inward_pull_max":      0.0,
+    "upward_lift_min":      0.3,
+    "upward_lift_max":      0.6,
+    "zigzag_min":           0.1,
+    "zigzag_max":           0.2,
+    "taper":                0.5
+  },
+
+  "twigs": {
+    "thickness_level":      1,
+    "count_per_parent_min": 2,
+    "count_per_parent_max": 3,
+    "length_min":           1,
+    "length_max":           2,
+    "verticality_min":      0.6,
+    "verticality_max":      0.9
+  },
+
+  "canopy": {
+    "cluster_radius_min": 2,
+    "cluster_radius_max": 3,
+    "leaf_density_min":   0.8,
+    "leaf_density_max":   0.9,
+    "top_bias":           0.5
+  },
+
+  "fruit": {
+    "spawn_rate":    0.15,
+    "growth_chance": 0.3,
+    "drop_chance":   0.8,
+    "fruiting_seasons": ["AUTUMN"]
+  },
+
+  "biome_tags": [
+    "gh_terraforma:has_apple_trees"
+  ]
+}

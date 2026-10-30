@@ -1,6 +1,9 @@
 {
   "type": "neoforge:add_features",
   "biomes": ["gh_terraforma:mangrove_coast"],
-  "features": ["gh_farming_overhaul:mangrove_normal"],
+  "features": [
+    "gh_farming_overhaul:kiwi_normal",
+    "gh_farming_overhaul:papaya_normal"
+  ],
   "step": "vegetal_decoration"
 }

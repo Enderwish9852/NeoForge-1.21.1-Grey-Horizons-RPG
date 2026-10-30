@@ -1,0 +1,51 @@
+{
+  "log_block":     "gh_farming_overhaul:papaya_log",
+  "leaf_block":    "gh_farming_overhaul:papaya_leaves",
+  "seasonal_type": "TROPICAL",
+  "architecture":  "EXCURRENT",
+
+  "trunk": {
+    "thickness_level":    3,
+    "height_min":         5,
+    "height_max":         8,
+    "split_fraction_min": 0.0,
+    "split_fraction_max": 0.0,
+    "taper":              0.5,
+    "root_flare":         false
+  },
+
+  "whorls": {
+    "thickness_level":  1,
+    "spacing_min":      3,
+    "spacing_max":      4,
+    "branch_count_min": 4,
+    "branch_count_max": 6,
+    "base_length_min":  1,
+    "base_length_max":  2,
+    "length_taper":     0.6,
+    "spread":           0.8,
+    "droop":            false,
+    "sub_branch_thickness": 0,
+    "taper":            0.4
+  },
+
+  "canopy": {
+    "cluster_radius_min": 1,
+    "cluster_radius_max": 2,
+    "leaf_density_min":   0.9,
+    "leaf_density_max":   1.0,
+    "top_bias":           0.9,
+    "covers_full_branch": false
+  },
+
+  "fruit": {
+    "spawn_rate":    0.2,
+    "growth_chance": 0.3,
+    "drop_chance":   0.8,
+    "fruiting_seasons": ["SUMMER", "AUTUMN", "WINTER"]
+  },
+
+  "biome_tags": [
+    "gh_terraforma:has_papaya_trees"
+  ]
+}

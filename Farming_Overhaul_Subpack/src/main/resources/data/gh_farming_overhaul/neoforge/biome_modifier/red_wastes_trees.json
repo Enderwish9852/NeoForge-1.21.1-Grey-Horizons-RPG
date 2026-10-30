@@ -1,0 +1,8 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": ["gh_terraforma:red_wastes"],
+  "features": [
+    "gh_farming_overhaul:pomegranate_normal"
+  ],
+  "step": "vegetal_decoration"
+}

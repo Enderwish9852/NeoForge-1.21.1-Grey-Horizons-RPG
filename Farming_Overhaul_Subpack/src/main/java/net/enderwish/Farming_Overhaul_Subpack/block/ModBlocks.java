@@ -372,6 +372,128 @@ public class ModBlocks {
                     .noOcclusion().randomTicks().isSuffocating((s,l,p)->false)
                     .isViewBlocking((s,l,p)->false).ignitedByLava()));
 
+    // ── New Fruit Trees (Phase 3) ─────────────────────────────────────────────
+
+    public static final DeferredBlock<Block> APPLE_LOG = BLOCKS.register("apple_log",
+            () -> new FruitTreeLogBlock("apple", BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_BROWN).strength(2.0f).sound(SoundType.WOOD).ignitedByLava().requiresCorrectToolForDrops()));
+
+    public static final DeferredBlock<Block> APPLE_LEAVES = BLOCKS.register("apple_leaves",
+            () -> new FruitTreeLeavesBlock("apple", BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.PLANT).strength(0.2f).sound(SoundType.GRASS)
+                    .noOcclusion().randomTicks().isSuffocating((s,l,p)->false)
+                    .isViewBlocking((s,l,p)->false).ignitedByLava()));
+
+    public static final DeferredBlock<Block> PEAR_LOG = BLOCKS.register("pear_log",
+            () -> new FruitTreeLogBlock("pear", BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_BROWN).strength(2.0f).sound(SoundType.WOOD).ignitedByLava().requiresCorrectToolForDrops()));
+
+    public static final DeferredBlock<Block> PEAR_LEAVES = BLOCKS.register("pear_leaves",
+            () -> new FruitTreeLeavesBlock("pear", BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.PLANT).strength(0.2f).sound(SoundType.GRASS)
+                    .noOcclusion().randomTicks().isSuffocating((s,l,p)->false)
+                    .isViewBlocking((s,l,p)->false).ignitedByLava()));
+
+    public static final DeferredBlock<Block> FIG_LOG = BLOCKS.register("fig_log",
+            () -> new FruitTreeLogBlock("fig", BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.TERRACOTTA_WHITE).strength(2.0f).sound(SoundType.WOOD).ignitedByLava().requiresCorrectToolForDrops()));
+
+    public static final DeferredBlock<Block> FIG_LEAVES = BLOCKS.register("fig_leaves",
+            () -> new FruitTreeLeavesBlock("fig", BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.PLANT).strength(0.2f).sound(SoundType.GRASS)
+                    .noOcclusion().randomTicks().isSuffocating((s,l,p)->false)
+                    .isViewBlocking((s,l,p)->false).ignitedByLava()));
+
+    public static final DeferredBlock<Block> GUAVA_LOG = BLOCKS.register("guava_log",
+            () -> new FruitTreeLogBlock("guava", BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_BROWN).strength(2.0f).sound(SoundType.WOOD).ignitedByLava().requiresCorrectToolForDrops()));
+
+    public static final DeferredBlock<Block> GUAVA_LEAVES = BLOCKS.register("guava_leaves",
+            () -> new FruitTreeLeavesBlock("guava", BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.PLANT).strength(0.2f).sound(SoundType.GRASS)
+                    .noOcclusion().randomTicks().isSuffocating((s,l,p)->false)
+                    .isViewBlocking((s,l,p)->false).ignitedByLava()));
+
+    public static final DeferredBlock<Block> KIWI_LOG = BLOCKS.register("kiwi_log",
+            () -> new FruitTreeLogBlock("kiwi", BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_BROWN).strength(2.0f).sound(SoundType.WOOD).ignitedByLava().requiresCorrectToolForDrops()));
+
+    public static final DeferredBlock<Block> KIWI_LEAVES = BLOCKS.register("kiwi_leaves",
+            () -> new FruitTreeLeavesBlock("kiwi", BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.PLANT).strength(0.2f).sound(SoundType.GRASS)
+                    .noOcclusion().randomTicks().isSuffocating((s,l,p)->false)
+                    .isViewBlocking((s,l,p)->false).ignitedByLava()));
+
+    public static final DeferredBlock<Block> MANGO_LOG = BLOCKS.register("mango_log",
+            () -> new FruitTreeLogBlock("mango", BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_BROWN).strength(2.0f).sound(SoundType.WOOD).ignitedByLava().requiresCorrectToolForDrops()));
+
+    public static final DeferredBlock<Block> MANGO_LEAVES = BLOCKS.register("mango_leaves",
+            () -> new FruitTreeLeavesBlock("mango", BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.PLANT).strength(0.2f).sound(SoundType.GRASS)
+                    .noOcclusion().randomTicks().isSuffocating((s,l,p)->false)
+                    .isViewBlocking((s,l,p)->false).ignitedByLava()));
+
+    public static final DeferredBlock<Block> ORANGE_LOG = BLOCKS.register("orange_log",
+            () -> new FruitTreeLogBlock("orange", BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_ORANGE).strength(2.0f).sound(SoundType.WOOD).ignitedByLava().requiresCorrectToolForDrops()));
+
+    public static final DeferredBlock<Block> ORANGE_LEAVES = BLOCKS.register("orange_leaves",
+            () -> new FruitTreeLeavesBlock("orange", BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.PLANT).strength(0.2f).sound(SoundType.GRASS)
+                    .noOcclusion().randomTicks().isSuffocating((s,l,p)->false)
+                    .isViewBlocking((s,l,p)->false).ignitedByLava()));
+
+    public static final DeferredBlock<Block> PAPAYA_LOG = BLOCKS.register("papaya_log",
+            () -> new FruitTreeLogBlock("papaya", BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_BROWN).strength(2.0f).sound(SoundType.WOOD).ignitedByLava().requiresCorrectToolForDrops()));
+
+    public static final DeferredBlock<Block> PAPAYA_LEAVES = BLOCKS.register("papaya_leaves",
+            () -> new FruitTreeLeavesBlock("papaya", BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.PLANT).strength(0.2f).sound(SoundType.GRASS)
+                    .noOcclusion().randomTicks().isSuffocating((s,l,p)->false)
+                    .isViewBlocking((s,l,p)->false).ignitedByLava()));
+
+    public static final DeferredBlock<Block> PEACH_LOG = BLOCKS.register("peach_log",
+            () -> new FruitTreeLogBlock("peach", BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_ORANGE).strength(2.0f).sound(SoundType.WOOD).ignitedByLava().requiresCorrectToolForDrops()));
+
+    public static final DeferredBlock<Block> PEACH_LEAVES = BLOCKS.register("peach_leaves",
+            () -> new FruitTreeLeavesBlock("peach", BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.PLANT).strength(0.2f).sound(SoundType.GRASS)
+                    .noOcclusion().randomTicks().isSuffocating((s,l,p)->false)
+                    .isViewBlocking((s,l,p)->false).ignitedByLava()));
+
+    public static final DeferredBlock<Block> PERSIMMON_LOG = BLOCKS.register("persimmon_log",
+            () -> new FruitTreeLogBlock("persimmon", BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_BROWN).strength(2.0f).sound(SoundType.WOOD).ignitedByLava().requiresCorrectToolForDrops()));
+
+    public static final DeferredBlock<Block> PERSIMMON_LEAVES = BLOCKS.register("persimmon_leaves",
+            () -> new FruitTreeLeavesBlock("persimmon", BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.PLANT).strength(0.2f).sound(SoundType.GRASS)
+                    .noOcclusion().randomTicks().isSuffocating((s,l,p)->false)
+                    .isViewBlocking((s,l,p)->false).ignitedByLava()));
+
+    public static final DeferredBlock<Block> PLUM_LOG = BLOCKS.register("plum_log",
+            () -> new FruitTreeLogBlock("plum", BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_PURPLE).strength(2.0f).sound(SoundType.WOOD).ignitedByLava().requiresCorrectToolForDrops()));
+
+    public static final DeferredBlock<Block> PLUM_LEAVES = BLOCKS.register("plum_leaves",
+            () -> new FruitTreeLeavesBlock("plum", BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.PLANT).strength(0.2f).sound(SoundType.GRASS)
+                    .noOcclusion().randomTicks().isSuffocating((s,l,p)->false)
+                    .isViewBlocking((s,l,p)->false).ignitedByLava()));
+
+    public static final DeferredBlock<Block> POMEGRANATE_LOG = BLOCKS.register("pomegranate_log",
+            () -> new FruitTreeLogBlock("pomegranate", BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_PURPLE).strength(2.0f).sound(SoundType.WOOD).ignitedByLava().requiresCorrectToolForDrops()));
+
+    public static final DeferredBlock<Block> POMEGRANATE_LEAVES = BLOCKS.register("pomegranate_leaves",
+            () -> new FruitTreeLeavesBlock("pomegranate", BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.PLANT).strength(0.2f).sound(SoundType.GRASS)
+                    .noOcclusion().randomTicks().isSuffocating((s,l,p)->false)
+                    .isViewBlocking((s,l,p)->false).ignitedByLava()));
+
 
 // ── Tree Leaves ───────────────────────────────────────────────────────────
 

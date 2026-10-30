@@ -1,0 +1,11 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": ["gh_terraforma:temperate_deciduous_forest"],
+  "features": [
+    "gh_farming_overhaul:apple_normal",
+    "gh_farming_overhaul:pear_normal",
+    "gh_farming_overhaul:persimmon_normal",
+    "gh_farming_overhaul:plum_normal"
+  ],
+  "step": "vegetal_decoration"
+}

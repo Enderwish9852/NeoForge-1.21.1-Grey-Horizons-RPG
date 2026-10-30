@@ -1,0 +1,73 @@
+{
+  "log_block":     "gh_farming_overhaul:pomegranate_log",
+  "leaf_block":    "gh_farming_overhaul:pomegranate_leaves",
+  "seasonal_type": "MEDITERRANEAN",
+  "architecture":  "DELIQUESCENT",
+
+  "trunk": {
+    "thickness_level":    3,
+    "height_min":         3,
+    "height_max":         5,
+    "split_fraction_min": 0.2,
+    "split_fraction_max": 0.5,
+    "taper":              0.5,
+    "root_flare":         false
+  },
+
+  "primary_limbs": {
+    "thickness_level":  2,
+    "count_min":        2,
+    "count_max":        4,
+    "length_min":       2,
+    "length_max":       3,
+    "spread_min":       0.8,
+    "spread_max":       1.2,
+    "upward_lift_min":  0.1,
+    "upward_lift_max":  0.3,
+    "taper":            0.5
+  },
+
+  "secondary_branches": {
+    "thickness_level":      1,
+    "count_per_parent_min": 2,
+    "count_per_parent_max": 4,
+    "length_min":           1,
+    "length_max":           2,
+    "inward_pull_min":      0.0,
+    "inward_pull_max":      0.0,
+    "upward_lift_min":      0.1,
+    "upward_lift_max":      0.3,
+    "zigzag_min":           0.2,
+    "zigzag_max":           0.4,
+    "taper":                0.5
+  },
+
+  "twigs": {
+    "thickness_level":      1,
+    "count_per_parent_min": 2,
+    "count_per_parent_max": 4,
+    "length_min":           1,
+    "length_max":           1,
+    "verticality_min":      0.2,
+    "verticality_max":      0.5
+  },
+
+  "canopy": {
+    "cluster_radius_min": 1,
+    "cluster_radius_max": 3,
+    "leaf_density_min":   0.6,
+    "leaf_density_max":   0.8,
+    "top_bias":           0.3
+  },
+
+  "fruit": {
+    "spawn_rate":    0.1,
+    "growth_chance": 0.2,
+    "drop_chance":   0.6,
+    "fruiting_seasons": ["AUTUMN", "WINTER"]
+  },
+
+  "biome_tags": [
+    "gh_terraforma:has_pomegranate_trees"
+  ]
+}

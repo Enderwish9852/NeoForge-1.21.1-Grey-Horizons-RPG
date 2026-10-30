@@ -1,6 +1,8 @@
 {
   "type": "neoforge:add_features",
   "biomes": ["gh_terraforma:cracked_badlands"],
-  "features": ["gh_farming_overhaul:acacia_very_sparse"],
+  "features": [
+    "gh_farming_overhaul:pomegranate_normal"
+  ],
   "step": "vegetal_decoration"
 }

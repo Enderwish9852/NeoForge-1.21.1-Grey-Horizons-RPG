@@ -1,6 +1,9 @@
 {
   "type": "neoforge:add_features",
   "biomes": ["gh_terraforma:coastal_cliffs"],
-  "features": ["gh_farming_overhaul:oak_very_sparse"],
+  "features": [
+    "gh_farming_overhaul:fig_normal",
+    "gh_farming_overhaul:orange_normal"
+  ],
   "step": "vegetal_decoration"
 }

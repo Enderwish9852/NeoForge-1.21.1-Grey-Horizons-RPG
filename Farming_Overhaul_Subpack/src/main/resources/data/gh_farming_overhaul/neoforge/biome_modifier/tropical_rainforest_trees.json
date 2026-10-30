@@ -1,6 +1,12 @@
 {
   "type": "neoforge:add_features",
   "biomes": ["gh_terraforma:tropical_rainforest"],
-  "features": ["gh_farming_overhaul:jungle_dense"],
+  "features": [
+    "gh_farming_overhaul:jungle_dense",
+    "gh_farming_overhaul:guava_normal",
+    "gh_farming_overhaul:kiwi_normal",
+    "gh_farming_overhaul:mango_normal",
+    "gh_farming_overhaul:papaya_normal"
+  ],
   "step": "vegetal_decoration"
 }

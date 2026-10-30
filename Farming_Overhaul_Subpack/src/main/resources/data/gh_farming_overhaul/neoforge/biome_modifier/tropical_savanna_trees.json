@@ -1,0 +1,9 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": ["gh_terraforma:tropical_savanna"],
+  "features": [
+    "gh_farming_overhaul:guava_normal",
+    "gh_farming_overhaul:mango_normal"
+  ],
+  "step": "vegetal_decoration"
+}

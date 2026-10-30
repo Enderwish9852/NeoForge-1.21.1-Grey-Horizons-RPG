@@ -1,6 +1,9 @@
 {
   "type": "neoforge:add_features",
   "biomes": ["gh_terraforma:birch_highlands"],
-  "features": ["gh_farming_overhaul:birch_dense"],
+  "features": [
+    "gh_farming_overhaul:apple_normal",
+    "gh_farming_overhaul:persimmon_normal"
+  ],
   "step": "vegetal_decoration"
 }
